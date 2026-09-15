@@ -1,0 +1,15 @@
+# OS / Editor
+.DS_Store
+.vscode/
+
+# Node / Next.js
+node_modules/
+.next/
+
+# Go / Binaries
+api/main
+api/api
+
+# Environment
+.env
+.env.local
