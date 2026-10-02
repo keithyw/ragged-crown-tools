@@ -6,10 +6,6 @@
 node_modules/
 .next/
 
-# Go / Binaries
-api/main
-api/api
-
 # Environment
 .env
 .env.local

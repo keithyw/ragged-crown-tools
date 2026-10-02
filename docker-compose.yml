@@ -1,0 +1,43 @@
+name: ragged-crown-tools
+services:
+  mongodb:
+    container_name: rc_mongodb
+    image: mongo:latest
+    ports:
+      - "27017:27017"
+    restart: unless-stopped
+    env_file:
+      - .env
+    networks:
+      - rc_network
+    volumes:
+      - rc_mongo_data:/data/db
+    healthcheck:
+      test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  rc_tools:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: rc_tools
+    depends_on:
+      mongodb:
+        condition: service_healthy
+    ports:
+      - "8080:8080"
+    env_file:
+      - .env
+    restart: on-failure
+    networks:
+      - rc_network
+
+networks:
+  rc_network:
+    driver: bridge
+
+volumes:
+  rc_mongo_data:
+    driver: local
