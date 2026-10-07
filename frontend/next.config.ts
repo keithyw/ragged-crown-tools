@@ -5,7 +5,8 @@ const nextConfig: NextConfig = {
 		if (dev) {
 			config.watchOptions = {
 				poll: 500, // Check for file changes every 500ms
-				aggregateTimeout: 300,
+				aggregateTimeout: 200,
+				ignored: ['node_modules', '.next'],
 			}
 		}
 		return config

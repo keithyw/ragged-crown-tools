@@ -82,7 +82,6 @@ ragged-crown-tools/
 ├── backend/            # Go REST API service
 │   ├── cmd/            # Application entrypoints
 │   ├── internal/       # Core business logic, handlers, and Mongo models
-│   └── Dockerfile
 ├── frontend/           # Next.js admin dashboard
 │   ├── src/
 │   │   ├── app/        # Next.js App Router pages & layouts
@@ -91,6 +90,7 @@ ragged-crown-tools/
 │   ├── globals.css     # Tailwind v4 @theme inline tokens
 │   └── package.json
 ├── docker-compose.yml  # Local stack orchestration
+├── Dockerfile
 └── README.md
 ```
 

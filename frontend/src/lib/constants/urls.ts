@@ -1,1 +1,6 @@
-export const DASHBOARD_URL = '/dashboard'
+export const URLS = {
+	DASHBOARD: '/dashboard',
+	TEST: '/test',
+	TILE_DEFINITIONS: '/tile-definitions',
+	ZONE: '/zone',
+}

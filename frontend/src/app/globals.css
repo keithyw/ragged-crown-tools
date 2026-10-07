@@ -1,5 +1,16 @@
 @import 'tailwindcss';
 
+/* @TODO copy the @source lines to game globals.css file when we get back to it */
+
+/* prettier-ignore */
+@source inline("text-{white,black}");
+/* prettier-ignore */
+@source inline("bg-{white,black}");
+/* prettier-ignore */
+@source inline("text-{zinc,red,orange,amber,yellow,lime,green,emerald,teal,cyan,sky,blue,violet,purple,pink,rose}-{300,400,500,600}{,/70}");
+/* prettier-ignore */
+@source inline("bg-{zinc,red,orange,amber,yellow,lime,green,emerald,teal,cyan,sky,blue,violet,purple,pink,rose}-{700,800,900,950}{,/30,/60}");
+
 :root {
 	/* Surface & Base */
 	--bg-app: #0d1117;

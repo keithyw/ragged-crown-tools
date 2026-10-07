@@ -1,0 +1,26 @@
+export const FAILED_LOADING_ASSETS_ERROR =
+	'Failed to load assets. Please try again.'
+export const FAILED_LOADING_BRANDS_ERROR =
+	'Failed to load brands. Please try again.'
+export const FAILED_LOADING_CATEGORIES_ERROR =
+	'Failed to load categories. Please try again.'
+export const FAILED_LOADING_GROUP_ERROR =
+	'Failed to load groups. Please try again.'
+export const FAILED_LOADING_PERMISSION_ERROR =
+	'Failed to load permissions. Please try again'
+export const FAILED_LOADING_PRICING_MODIFIERS_ERROR =
+	'Failed to load pricing modifiers. Please try again.'
+export const FAILED_LOADING_PRODUCT_ERROR =
+	'Failed to load product. Please try again.'
+export const FAILED_LOADING_PRODUCT_ATTRIBUTE_ERROR =
+	'Failed to load product attributes. Please try again.'
+export const FAILED_LOADING_PRODUCT_ATTRIBUTE_SET_ERROR =
+	'Failed to load product attribute set. Please try again.'
+export const FAILED_LOADING_USER_ERROR =
+	'Failed to load user. Please try again.'
+export const GENERIC_SERVER_ERROR =
+	'Network error or request failed. Please try again.'
+export const UNEXPECTED_SERVER_ERROR =
+	'Unexpected server error. Please try again.'
+export const FAILED_LOADING_INVENTORY_ERROR =
+	'Failed to load inventory. Please try again.'
