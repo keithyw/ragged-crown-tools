@@ -1,1 +1,5 @@
 export * from './LoadingSpinner'
+export * from './SpinnerSection'
+export * from './TileCard'
+export * from './TileGlyph'
+export * from './TileInspector'

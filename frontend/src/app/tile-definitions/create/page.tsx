@@ -1,7 +1,7 @@
 'use client'
 
 import { CreateFormLayout, FormInput } from '@/components'
-import { useCreateRecord } from '@/hooks/useCreateRecord'
+import { useCreateRecord } from '@/hooks'
 import { URLS } from '@/lib/constants'
 import { collectionService } from '@/lib/services'
 import { FormField } from '@/lib/types'
@@ -109,6 +109,9 @@ const CreateTileDefinitionPage = () => {
 		},
 		createFn: collectionService.create,
 		redirectUrl: URLS.TILE_DEFINITIONS,
+		successMessage: () => {
+			return `Tile Definition Created`
+		},
 	})
 	return (
 		<CreateFormLayout

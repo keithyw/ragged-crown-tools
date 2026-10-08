@@ -5,7 +5,7 @@ export interface SaveResponse {
 	id: string
 }
 
-type StoredDoc<TData> = TData & { _id: string; updated_at: string }
+export type StoredDoc<TData> = TData & { _id: string; updated_at: string }
 
 interface CollectionService {
 	create: <TData extends object>(
@@ -13,6 +13,9 @@ interface CollectionService {
 		id: string,
 		data: TData,
 	) => Promise<SaveResponse>
+	fetch: <TData extends object>(
+		collectionName: string,
+	) => Promise<StoredDoc<TData>[]>
 }
 
 export const collectionService: CollectionService = {
@@ -24,6 +27,14 @@ export const collectionService: CollectionService = {
 		const res = await client.post<SaveResponse>(
 			`/collection/${collectionName}/${id}`,
 			data,
+		)
+		return res.data
+	},
+	fetch: async <TData extends object>(
+		collectionName: string,
+	): Promise<StoredDoc<TData>[]> => {
+		const res = await client.get<StoredDoc<TData>[]>(
+			`/collection/${collectionName}`,
 		)
 		return res.data
 	},
