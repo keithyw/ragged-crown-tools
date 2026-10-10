@@ -22,11 +22,9 @@ export default function RootLayout({ children }: LayoutProps<'/'>) {
 			className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
 		>
 			<body className='flex min-h-full flex-col'>
-				<>
-					<MainNavbar />
-					<div>{children}</div>
-					<Toaster position='bottom-right' />
-				</>
+				<MainNavbar />
+				<div>{children}</div>
+				<Toaster position='bottom-right' />
 			</body>
 		</html>
 	)
