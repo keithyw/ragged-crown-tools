@@ -3,11 +3,13 @@
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import {
+	Breadcrumbs,
 	ConfirmationModal,
 	CreateItemSection,
 	SpinnerSection,
 	TileCard,
 	TileInspector,
+	type Crumb,
 } from '@/components'
 import { useCollection, useDeleteRecord } from '@/hooks'
 import { URLS } from '@/lib/constants'
@@ -43,6 +45,7 @@ const TileDefinitionsPage = () => {
 
 	return (
 		<>
+			<Breadcrumbs items={[{ label: 'Tile Definitions' }]} />
 			<CreateItemSection href={`${URLS.TILE_DEFINITIONS}/create`}>
 				Create Tile Definition
 			</CreateItemSection>

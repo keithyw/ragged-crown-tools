@@ -6,6 +6,7 @@ import {
 	FormInput,
 	ServerErrorMessages,
 	SpinnerSection,
+	type Crumb,
 } from '@/components'
 import { FormField } from '@/lib/types'
 
@@ -18,6 +19,7 @@ interface EditFormLayoutProps<T extends Record<string, any>> {
 	isSubmitting: boolean
 	loadingError: string | null
 	cancelUrl?: string
+	breadcrumbs?: Crumb[]
 	handleSubmit: React.SubmitEventHandler<HTMLFormElement>
 	register: UseFormRegister<T>
 	control: Control<T>
@@ -34,6 +36,7 @@ export const EditFormLayout = <T extends Record<string, any>>({
 	isSubmitting,
 	loadingError,
 	cancelUrl,
+	breadcrumbs,
 	handleSubmit,
 	register,
 	control,
@@ -56,6 +59,7 @@ export const EditFormLayout = <T extends Record<string, any>>({
 			submittingText='Saving...'
 			handleSubmit={handleSubmit}
 			cancelUrl={cancelUrl}
+			breadcrumbs={breadcrumbs}
 		>
 			{fields.map((f, idx) => (
 				<FormInput

@@ -60,6 +60,10 @@ const EditTileDefinitionPage = () => {
 			isSubmitting={editController.isSubmitting}
 			loadingError={editController.loadingError}
 			cancelUrl={URLS.TILE_DEFINITIONS}
+			breadcrumbs={[
+				{ label: 'Tile Definitions', href: URLS.TILE_DEFINITIONS },
+				{ label: editController.data?.name ?? 'Edit' },
+			]}
 			handleSubmit={editController.onSubmit}
 			register={editController.register}
 			control={editController.control}
