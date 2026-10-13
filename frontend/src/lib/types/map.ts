@@ -57,7 +57,7 @@ export type StationaryTile =
 
 export interface TileDef {
 	id: string
-	type: TileType
+	// type: TileType
 	symbol: string
 	color: string
 	name: string
@@ -65,7 +65,7 @@ export interface TileDef {
 	moveCost: number
 	isWalkable?: boolean
 	isConsumable?: boolean
-	spriteCoords: Position
+	spriteCoords?: Position
 	description?: string
 	encounterRate?: number
 	encounterTableKey?: string

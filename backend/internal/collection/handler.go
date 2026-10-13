@@ -2,6 +2,7 @@ package collection
 
 import (
 	"encoding/json"
+	"errors"
 	"log/slog"
 	"net/http"
 
@@ -21,19 +22,42 @@ func NewCollectionHandler(repo Repository, log *slog.Logger) *CollectionHandler 
 	}
 }
 
+func writeJSON(w http.ResponseWriter, status int, v any) {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(status)
+	json.NewEncoder(w).Encode(v)
+}
+
+func (h *CollectionHandler) fail(w http.ResponseWriter, err error, op, collName string) {
+	switch {
+	case errors.Is(err, ErrInvalidID):
+		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "invalid id"})
+	case errors.Is(err, ErrNotFound):
+		writeJSON(w, http.StatusNotFound, map[string]string{"error": "document not found"})
+	case errors.Is(err, ErrDuplicate):
+		writeJSON(w, http.StatusConflict, map[string]string{"error": "a document with that id already exists"})
+	default:
+		h.log.Error("request failed", slog.String("op", op), slog.String("collection", collName), slog.String("error", err.Error()))
+		writeJSON(w, http.StatusInternalServerError, map[string]string{"error": "internal error"})
+	}
+}
+
+func decodeBody(r *http.Request) (bson.M, error) {
+	var payload bson.M
+	if err := json.NewDecoder(r.Body).Decode(&payload); err != nil {
+		return nil, err
+	}
+	return payload, nil
+}
+
 func (h *CollectionHandler) Delete(w http.ResponseWriter, r *http.Request) {
 	collName := chi.URLParam(r, "collection")
-	id := chi.URLParam(r, "id")
 
-	if err := h.repository.Delete(r.Context(), collName, id); err != nil {
-		h.log.Error("Failed to delete document", slog.String("collection", collName), slog.String("id", id), slog.String("error", err.Error()))
-		http.Error(w, `{"error":"failed to delete document"}`, http.StatusInternalServerError)
+	if err := h.repository.Delete(r.Context(), collName, chi.URLParam(r, "id")); err != nil {
+		h.fail(w, err, "delete", collName)
 		return
 	}
-
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(http.StatusOK)
-	json.NewEncoder(w).Encode(map[string]string{"status": "deleted", "id": id})
+	w.WriteHeader(http.StatusNoContent)	
 }
 
 func (h *CollectionHandler) GetAll(w http.ResponseWriter, r *http.Request) {
@@ -41,13 +65,10 @@ func (h *CollectionHandler) GetAll(w http.ResponseWriter, r *http.Request) {
 
 	docs, err := h.repository.GetAll(r.Context(), collName)
 	if err != nil {
-		h.log.Error("Failed to fetch collection documents", slog.String("collection", collName), slog.String("error", err.Error()))
-		http.Error(w, `{"error":"failed to retrieve documents"}`, http.StatusInternalServerError)
+		h.fail(w, err, "get_all", collName)
 		return
 	}
-
-	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(docs)
+	writeJSON(w, http.StatusOK, docs)
 }
 
 func (h *CollectionHandler) GetByID(w http.ResponseWriter, r *http.Request) {
@@ -56,34 +77,43 @@ func (h *CollectionHandler) GetByID(w http.ResponseWriter, r *http.Request) {
 
 	doc, err := h.repository.GetByID(r.Context(), collName, id)
 	if err != nil {
-		h.log.Warn("Document not found", slog.String("collection", collName), slog.String("id", id))
-		http.Error(w, `{"error":"document not found"}`, http.StatusNotFound)
+		h.fail(w, err, "get_by_id", collName)
 		return
 	}
-
-	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(doc)
+	writeJSON(w, http.StatusOK, doc)
 }
 
-func (h *CollectionHandler) Upsert(w http.ResponseWriter, r *http.Request) {
+func (h *CollectionHandler) Post(w http.ResponseWriter, r *http.Request) {
 	collName := chi.URLParam(r, "collection")
-	id := chi.URLParam(r, "id")
 
-	var payload bson.M
-	if err := json.NewDecoder(r.Body).Decode(&payload); err != nil {
-		h.log.Warn("Invalid JSON payload", slog.String("collection", collName), slog.String("id", id), slog.String("error", err.Error()))
-		http.Error(w, `{"error":"invalid json body"}`, http.StatusBadRequest)
+	payload, err := decodeBody(r)
+	if err != nil {
+		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "invalid json body"})
 		return
 	}
 
-	if err := h.repository.Upsert(r.Context(), collName, id, payload); err != nil {
-		h.log.Error("Failed to save document", slog.String("collection", collName), slog.String("id", id), slog.String("error", err.Error()))
-		http.Error(w, `{"error":"failed to save document"}`, http.StatusInternalServerError)
+	doc, err := h.repository.Create(r.Context(), collName, payload)
+	if err != nil {
+		h.fail(w, err, "create", collName)
+		return
+	}
+	writeJSON(w, http.StatusCreated, doc)
+}
+
+func (h *CollectionHandler) Put(w http.ResponseWriter, r *http.Request) {
+	collName := chi.URLParam(r, "collection")
+
+	payload, err := decodeBody(r)
+	if err != nil {
+		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "invalid json body"})
 		return
 	}
 
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(http.StatusOK)
-	json.NewEncoder(w).Encode(map[string]string{"status": "saved", "id": id})
+	doc, err := h.repository.Replace(r.Context(), collName, chi.URLParam(r, "id"), payload)
+	if err != nil {
+		h.fail(w, err, "replace", collName)
+		return
+	}
+	writeJSON(w, http.StatusOK, doc)
 }
 

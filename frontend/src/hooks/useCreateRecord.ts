@@ -7,24 +7,17 @@ import { z } from 'zod'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { handleFormErrors } from '@/lib/utils'
 
-interface UseCreateOptions<T extends z.ZodType<{ id: string }>, TResponse> {
+interface UseCreateOptions<T extends z.ZodType, TResponse> {
 	collectionName: string
 	schema: T
 	defaultValues: DefaultValues<z.infer<T>>
-	createFn: (
-		collectionName: string,
-		id: string,
-		data: z.infer<T>,
-	) => Promise<TResponse>
+	createFn: (collectionName: string, data: z.infer<T>) => Promise<TResponse>
 	redirectUrl?: string
 	successMessage?: (res: TResponse) => string
 	onSuccess?: (res: TResponse) => void
 }
 
-export function useCreateRecord<
-	T extends z.ZodType<{ id: string }>,
-	TResponse,
->({
+export function useCreateRecord<T extends z.ZodType, TResponse>({
 	collectionName,
 	schema,
 	defaultValues,
@@ -46,7 +39,7 @@ export function useCreateRecord<
 
 	const onSubmit = async (data: TFieldValues) => {
 		try {
-			const res = await createFn(collectionName, data.id, data)
+			const res = await createFn(collectionName, data)
 			const msg = successMessage ? successMessage(res) : 'Item created'
 			toast.success(msg)
 			reset()

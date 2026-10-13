@@ -29,8 +29,8 @@ func NewServer(store database.Mongo, log *slog.Logger) http.Handler {
 		r.Delete("/{id}", h.Delete)
 		r.Get("/", h.GetAll)
 		r.Get("/{id}", h.GetByID)
-		r.Post("/{id}", h.Upsert)
-		r.Put("/{id}", h.Upsert)
+		r.Post("/", h.Post)
+		r.Put("/{id}", h.Put)
 	})
 	return r
 }
