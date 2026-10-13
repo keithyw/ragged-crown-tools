@@ -25,7 +25,6 @@ interface UseEditRecordProps<T extends z.ZodType<{ id: string }>, TResponse> {
 	transformData: (data: z.infer<T>) => Promise<z.infer<T>>
 }
 
-// export function useCollection<TData extends object>(collectionName: string) {
 export function useEditRecord<T extends z.ZodType<{ id: string }>, TResponse>({
 	collectionName,
 	id,

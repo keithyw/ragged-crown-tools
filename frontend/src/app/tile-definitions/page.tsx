@@ -3,21 +3,35 @@
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import {
+	ConfirmationModal,
 	CreateItemSection,
 	SpinnerSection,
 	TileCard,
 	TileInspector,
 } from '@/components'
-import { useCollection } from '@/hooks'
+import { useCollection, useDeleteRecord } from '@/hooks'
 import { URLS } from '@/lib/constants'
+import { collectionService, StoredDoc } from '@/lib/services'
 import { TileDef } from '@/lib/types'
 
 const TileDefinitionsPage = () => {
 	const router = useRouter()
 	const [selectedTile, setSelectedTile] = useState<
-		(TileDef & { _id: string }) | null
+		(TileDef & { _id: string; updated_at: string }) | null
 	>(null)
-	const { items: tiles, isLoading, error } = useCollection<TileDef>('tile_defs')
+	const {
+		items: tiles,
+		isLoading,
+		error,
+		refresh,
+	} = useCollection<TileDef>('tile_defs')
+
+	const deleteController = useDeleteRecord<StoredDoc<TileDef>>({
+		collectionName: 'tile_defs',
+		deleteFn: collectionService.delete,
+		onSuccess: refresh,
+		itemNameProp: 'name',
+	})
 
 	if (isLoading) {
 		return <SpinnerSection spinnerMessage='Loading Tiles' />
@@ -57,7 +71,10 @@ const TileDefinitionsPage = () => {
 										`${URLS.TILE_DEFINITIONS}/${selectedTile._id}/edit`,
 									)
 								}
-								onDelete={() => {}}
+								onDelete={() => {
+									deleteController.openDeleteModal(selectedTile)
+									setSelectedTile(null)
+								}}
 							/>
 						) : (
 							<p className='text-sm text-gray-500'>
@@ -74,6 +91,17 @@ const TileDefinitionsPage = () => {
 					definitions.
 				</div>
 			)}
+			<ConfirmationModal
+				isOpen={deleteController.isModalOpen}
+				onClose={deleteController.closeDeleteModal}
+				onConfirm={deleteController.handleDelete}
+				title='Delete Tile Def'
+				message={`Are you sure you want to delete this tile?`}
+				isDeleting={deleteController.isDeleting}
+				confirmButtonText={
+					deleteController.isDeleting ? 'Deleting...' : 'Delete'
+				}
+			/>
 		</>
 	)
 }

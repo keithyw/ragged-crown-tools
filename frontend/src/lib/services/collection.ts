@@ -12,6 +12,7 @@ interface CollectionService {
 		collectionName: string,
 		data: TData,
 	) => Promise<StoredDoc<TData>>
+	delete: (collectionName: string, id: string) => Promise<void>
 	fetch: <TData extends object>(
 		collectionName: string,
 	) => Promise<StoredDoc<TData>[]>
@@ -36,6 +37,9 @@ export const collectionService: CollectionService = {
 			data,
 		)
 		return res.data
+	},
+	delete: async (collectionName: string, id: string): Promise<void> => {
+		await client.delete(`/collection/${collectionName}/${id}`)
 	},
 	fetch: async <TData extends object>(
 		collectionName: string,
