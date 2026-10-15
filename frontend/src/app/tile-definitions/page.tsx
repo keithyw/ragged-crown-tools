@@ -9,7 +9,6 @@ import {
 	SpinnerSection,
 	TileCard,
 	TileInspector,
-	type Crumb,
 } from '@/components'
 import { useCollection, useDeleteRecord } from '@/hooks'
 import { URLS } from '@/lib/constants'
