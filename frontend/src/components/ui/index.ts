@@ -1,6 +1,7 @@
 export * from './LoadingSpinner'
 export * from './SpinnerSection'
 export * from './TileCard'
+export * from './TileCell'
 export * from './TileGlyph'
 export * from './TileInspector'
 export * from './ZoneMapGrid'

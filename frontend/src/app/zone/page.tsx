@@ -8,7 +8,7 @@ const ZonePage = () => {
 		<>
 			<Breadcrumbs items={[{ label: 'Zones' }]} />
 			<CreateItemSection href={`${URLS.ZONE}/create`}>
-				Create Tile Definition
+				Create New Zone
 			</CreateItemSection>
 		</>
 	)

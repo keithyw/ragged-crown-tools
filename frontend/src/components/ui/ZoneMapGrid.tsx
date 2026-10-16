@@ -1,46 +1,83 @@
 'use client'
 
+import { useRef } from 'react'
+import { TileCell } from '@/components'
 import { type StoredDoc } from '@/lib/services'
 import { type TileDef } from '@/lib/types'
 import { cn, type ZoneGrid } from '@/lib/utils'
 
 const CELL_REM = 2.75
 
-const MapCell = ({ tile }: { tile?: StoredDoc<TileDef> }) => (
-	<span aria-hidden='true' className='f-11 flex h-11 bg-slate-950'>
-		<span
-			className={cn(
-				'flex h-full w-full items-center justify-center font-mono text-xl',
-				tile?.bg ?? 'bg-red-950/60',
-				tile?.color ?? 'text-red-400',
-			)}
-		>
-			{tile ? tile.symbol : '?'}
-		</span>
-	</span>
-)
+const cellAt = (e: React.PointerEvent<HTMLElement>) => {
+	const el = document
+		.elementFromPoint(e.clientX, e.clientY)
+		?.closest<HTMLElement>('[data-x]')
+	if (!el || !e.currentTarget.contains(el)) return null
+	return { x: Number(el.dataset.x), y: Number(el.dataset.y) }
+}
 
 interface ZoneMapGridProps {
 	grid: ZoneGrid
 	tilesById: ReadonlyMap<string, StoredDoc<TileDef>>
+	onPaint?: (x: number, y: number) => void
 }
 
-export const ZoneMapGrid = ({ grid, tilesById }: ZoneMapGridProps) => {
+export const ZoneMapGrid = ({ grid, tilesById, onPaint }: ZoneMapGridProps) => {
 	const width = grid[0]?.length ?? 0
+	// this is cool. huh huh. shutup beavis!
+	const isStroking = useRef(false)
+	const lastCell = useRef<string | null>(null)
+
+	const paintAt = (e: React.PointerEvent<HTMLElement>) => {
+		const cell = cellAt(e)
+		if (!cell || !onPaint) return
+		// probably need to extract this into some util function to keep things consistent
+		const key = `${cell.x},${cell.y}`
+		if (key === lastCell.current) return
+		lastCell.current = key
+		onPaint(cell.x, cell.y)
+	}
+
+	const endStroke = () => {
+		isStroking.current = false
+		lastCell.current = null
+	}
 
 	return (
-		// slate-950 approximates the game's map panel, so translucent tile
-		// backgrounds look the same here as they do in the game
 		<div className='w-fit max-w-full overflow-auto rounded border border-slate-700'>
 			<div
 				role='img'
 				aria-label={`Zone map, ${width} by ${grid.length} tiles`}
-				className='grid w-max'
+				className={cn(
+					'grid w-max',
+					onPaint && 'cursor-crosshair touch-none select-none',
+				)}
 				style={{ gridTemplateColumns: `repeat(${width}, ${CELL_REM}rem)` }}
+				onPointerDown={(e) => {
+					if (!onPaint || e.button !== 0) return
+					isStroking.current = true
+					paintAt(e)
+				}}
+				onPointerMove={(e) => {
+					if (isStroking.current) paintAt(e)
+				}}
+				onPointerUp={endStroke}
+				onPointerLeave={endStroke}
+				onPointerCancel={endStroke}
 			>
 				{grid.flatMap((row, y) =>
 					row.map((tileId, x) => (
-						<MapCell key={`${x},${y}`} tile={tilesById.get(tileId)} />
+						<TileCell
+							key={`${x},${y}`}
+							data-x={x}
+							data-y={y}
+							tile={tilesById.get(tileId)}
+							className={
+								onPaint
+									? 'hover:outline-2 hover:-outline-offset-2 hover:outline-amber-300'
+									: undefined
+							}
+						/>
 					)),
 				)}
 			</div>

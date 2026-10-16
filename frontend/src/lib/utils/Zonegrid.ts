@@ -22,3 +22,20 @@ export const gridSize = (grid: ZoneGrid) => ({
 // painted on it. A freshly drawn, untouched grid doesn't need a confirmation.
 export const hasPaintedContent = (grid: ZoneGrid) =>
 	new Set(grid.flat()).size > 1
+
+// Returns a new grid with one cell changed. Only the touched row is copied.
+// If the cell already holds that tile it returns the SAME grid, so React's
+// setState bails out and dragging across painted cells causes no re-renders.
+export const paintCell = (
+	grid: ZoneGrid,
+	x: number,
+	y: number,
+	tileId: string,
+): ZoneGrid => {
+	if (grid[y]?.[x] === undefined || grid[y][x] === tileId) return grid
+	const row = grid[y].slice()
+	row[x] = tileId
+	const next = grid.slice()
+	next[y] = row
+	return next
+}
