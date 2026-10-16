@@ -17,6 +17,7 @@ export const HUES = [
 	'purple',
 	'pink',
 	'rose',
+	'stone',
 ] as const
 
 export const SHADES: Record<ColorKind, number[]> = {

@@ -8,7 +8,12 @@ interface TileGlyphProps {
 	className?: string
 }
 export const TileGlyph = ({ tile, className = '' }: TileGlyphProps) => (
-	<span className='flex aspect-square w-16 items-center justify-center rounded bg-black'>
+	<span
+		className={cn(
+			'flex aspect-square w-16 items-center justify-center rounded bg-black',
+			className,
+		)}
+	>
 		<span
 			className={cn(
 				'flex h-full w-full items-center justify-center rounded font-mono text-2xl',

@@ -257,6 +257,7 @@ Things the code currently does that are worth a decision. Verified against the r
 8. **Shared types are copied by hand** between the tools and the game.
 9. **Referential integrity.** Once zones reference tile `_id`s, deleting a tile that is in use will leave dangling references.
 10. **`useCollection` has no create/delete awareness**; the list page relies on `refresh` after deletes.
+11. **Two tile renderers.** `TileGlyph` (tile list and inspector) and `TileCell` (zone grid, tile picker) render the same symbol/bg/color stack separately and have drifted (base `bg-black` vs `bg-slate-950`, rounded vs square, `text-2xl` vs `text-xl`, only `TileCell` has a missing-tile fallback). Sprite support (section 4.5, Roadmap) would need changes in both.
 
 Note from lead: This section is fine as-is for now. I did not want to overthink things nor get bogged down by rare conditions. As with any tech
 project, there will be tech debt that gets addressed (or quickly forgotten) over time.
@@ -269,3 +270,14 @@ project, there will be tech debt that gets addressed (or quickly forgotten) over
 - `events` collection and a way to create and associate `ActionPayload` records, filterable by zone, action type and tile type.
 - Tile `type` / category and an indoor-outdoor style environment setting to choose default base tiles.
 - Sprite support in `TileGlyph` (`spriteCoords`).
+
+---
+
+## 10. Future ideas
+
+Not planned work. Notes from design discussions, kept as a reference point for when they become relevant.
+
+- **JSON export for the game.** The tools generate JSON files that the game loads, instead of the game calling the API. This matches how the game worked before the tools existed and means the editing backend never has to be deployed.
+- **Player state in localStorage as a delta.** Store only what the player changed (completed event `_id`s, flags), keyed by zone `_id`, and apply it on top of the static exported data. Avoid copying whole zones into the browser: a copy would keep stale content after a re-export, while a delta picks up fixes automatically and keeps saves small. Stable `_id` keys are what make this work.
+- **Before any deploy: split reads from writes.** The generic `/collection/{collection}` API allows open PUT/DELETE and must not be exposed publicly as-is. Either deploy read-only routes for game content (or skip the API entirely via JSON export) and keep writes local, or put the tools behind a single admin credential.
+- **Player accounts are a separate concern** from protecting the tools: users, characters and saves are player-written data, likely in their own collections and routes, probably using a managed auth provider.

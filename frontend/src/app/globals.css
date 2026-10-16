@@ -7,9 +7,9 @@
 /* prettier-ignore */
 @source inline("bg-{white,black}");
 /* prettier-ignore */
-@source inline("text-{zinc,red,orange,amber,yellow,lime,green,emerald,teal,cyan,sky,blue,violet,purple,pink,rose}-{300,400,500,600}{,/70}");
+@source inline("text-{zinc,red,orange,amber,yellow,lime,green,emerald,teal,cyan,sky,blue,violet,purple,pink,rose,stone}-{300,400,500,600}{,/70}");
 /* prettier-ignore */
-@source inline("bg-{zinc,red,orange,amber,yellow,lime,green,emerald,teal,cyan,sky,blue,violet,purple,pink,rose}-{700,800,900,950}{,/30,/60}");
+@source inline("bg-{zinc,red,orange,amber,yellow,lime,green,emerald,teal,cyan,sky,blue,violet,purple,pink,rose,stone}-{700,800,900,950}{,/30,/60}");
 
 :root {
 	/* Surface & Base */
