@@ -3,7 +3,7 @@
 import { useRef } from 'react'
 import { TileCell } from '@/components'
 import { type StoredDoc } from '@/lib/services'
-import { type TileDef } from '@/lib/types'
+import { type Position, type TileDef } from '@/lib/types'
 import { cn, type ZoneGrid } from '@/lib/utils'
 
 const CELL_REM = 2.75
@@ -19,10 +19,16 @@ const cellAt = (e: React.PointerEvent<HTMLElement>) => {
 interface ZoneMapGridProps {
 	grid: ZoneGrid
 	tilesById: ReadonlyMap<string, StoredDoc<TileDef>>
-	onPaint?: (x: number, y: number) => void
+	startingPosition?: Position
+	onCellAction?: (x: number, y: number) => void
 }
 
-export const ZoneMapGrid = ({ grid, tilesById, onPaint }: ZoneMapGridProps) => {
+export const ZoneMapGrid = ({
+	grid,
+	tilesById,
+	startingPosition,
+	onCellAction,
+}: ZoneMapGridProps) => {
 	const width = grid[0]?.length ?? 0
 	// this is cool. huh huh. shutup beavis!
 	const isStroking = useRef(false)
@@ -30,12 +36,12 @@ export const ZoneMapGrid = ({ grid, tilesById, onPaint }: ZoneMapGridProps) => {
 
 	const paintAt = (e: React.PointerEvent<HTMLElement>) => {
 		const cell = cellAt(e)
-		if (!cell || !onPaint) return
+		if (!cell || !onCellAction) return
 		// probably need to extract this into some util function to keep things consistent
 		const key = `${cell.x},${cell.y}`
 		if (key === lastCell.current) return
 		lastCell.current = key
-		onPaint(cell.x, cell.y)
+		onCellAction(cell.x, cell.y)
 	}
 
 	const endStroke = () => {
@@ -50,11 +56,11 @@ export const ZoneMapGrid = ({ grid, tilesById, onPaint }: ZoneMapGridProps) => {
 				aria-label={`Zone map, ${width} by ${grid.length} tiles`}
 				className={cn(
 					'grid w-max',
-					onPaint && 'cursor-crosshair touch-none select-none',
+					onCellAction && 'cursor-crosshair touch-none select-none',
 				)}
 				style={{ gridTemplateColumns: `repeat(${width}, ${CELL_REM}rem)` }}
 				onPointerDown={(e) => {
-					if (!onPaint || e.button !== 0) return
+					if (!onCellAction || e.button !== 0) return
 					isStroking.current = true
 					paintAt(e)
 				}}
@@ -72,11 +78,13 @@ export const ZoneMapGrid = ({ grid, tilesById, onPaint }: ZoneMapGridProps) => {
 							data-x={x}
 							data-y={y}
 							tile={tilesById.get(tileId)}
-							className={
-								onPaint
-									? 'hover:outline-2 hover:-outline-offset-2 hover:outline-amber-300'
-									: undefined
-							}
+							className={cn(
+								startingPosition?.x === x &&
+									startingPosition?.y === y &&
+									'outline-2 -outline-offset-2 outline-sky-400',
+								onCellAction &&
+									'hover:outline-2 hover:-outline-offset-2 hover:outline-amber-300',
+							)}
 						/>
 					)),
 				)}

@@ -16,7 +16,7 @@ import {
 } from '@/components'
 import { useCollection } from '@/hooks'
 import { URLS } from '@/lib/constants'
-import type { TileDef } from '@/lib/types'
+import type { Position, TileDef } from '@/lib/types'
 import {
 	createGrid,
 	gridSize,
@@ -26,11 +26,16 @@ import {
 } from '@/lib/utils'
 import { detailFields, type ZoneDetailsFormData } from '@/app/zone/fields'
 
+// One tool at a time; a click on the map does exactly one thing.
+type Tool = 'paint' | 'start'
+
 const CreateZonePage = () => {
 	const { register } = useForm<ZoneDetailsFormData>({
 		defaultValues: { dangerLevel: 0 },
 	})
+	const [tool, setTool] = useState<Tool | null>(null)
 	const [activeTileId, setActiveTileId] = useState<string | null>(null)
+	const [startingPosition, setStartingPosition] = useState<Position>()
 	const [grid, setGrid] = useState<ZoneGrid | null>(null)
 	const [isModalOpen, setIsModalOpen] = useState(false)
 	const [isPickerOpen, setIsPickerOpen] = useState(false)
@@ -44,24 +49,33 @@ const CreateZonePage = () => {
 	const activeTile = activeTileId ? tilesById.get(activeTileId) : undefined
 
 	useEffect(() => {
-		if (!activeTileId || isPickerOpen) return
+		if (!tool || isPickerOpen) return
 		const onKeyDown = (e: KeyboardEvent) => {
-			if (e.key === 'Escape') setActiveTileId(null)
+			if (e.key === 'Escape') setTool(null)
 		}
 		window.addEventListener('keydown', onKeyDown)
 		return () => window.removeEventListener('keydown', onKeyDown)
-	}, [activeTileId, isPickerOpen])
+	}, [tool, isPickerOpen])
 
-	const handlePaint = useCallback(
+	const handleCell = useCallback(
 		(x: number, y: number) => {
-			if (!activeTileId) return
-			setGrid((prev) => (prev ? paintCell(prev, x, y, activeTileId) : prev))
+			if (tool === 'paint' && activeTileId) {
+				setGrid((prev) => (prev ? paintCell(prev, x, y, activeTileId) : prev))
+			} else if (tool === 'start') {
+				// One-shot: pick a tile, then the tool turns off.
+				setStartingPosition({ x, y })
+				setTool(null)
+			}
 		},
-		[activeTileId],
+		[tool, activeTileId],
 	)
 
 	const handleDraw = ({ width, height, tileId }: NewMapValues) => {
 		setGrid(createGrid(width, height, tileId))
+		// Keep the start only if it still fits on the redrawn map.
+		setStartingPosition((p) =>
+			p && p.x < width && p.y < height ? p : undefined,
+		)
 		setIsModalOpen(false)
 	}
 
@@ -94,7 +108,8 @@ const CreateZonePage = () => {
 						<ZoneMapGrid
 							grid={grid}
 							tilesById={tilesById}
-							onPaint={activeTileId ? handlePaint : undefined}
+							startingPosition={startingPosition}
+							onCellAction={tool ? handleCell : undefined}
 						/>
 					) : (
 						<div className='rounded border border-dashed border-gray-300 p-12 text-center text-sm text-gray-500'>
@@ -142,23 +157,72 @@ const CreateZonePage = () => {
 							>
 								{activeTile ? 'Change tile' : 'Choose tile'}
 							</Button>
-							{activeTile && (
+							{tool === 'paint' ? (
 								<Button
 									type='button'
 									actionType='neutral'
-									onClick={() => setActiveTileId(null)}
+									onClick={() => setTool(null)}
 								>
 									Stop
 								</Button>
+							) : (
+								activeTile && (
+									<Button
+										type='button'
+										actionType='submit'
+										onClick={() => setTool('paint')}
+									>
+										Paint
+									</Button>
+								)
 							)}
 						</div>
 						<p className='mt-2 text-xs text-gray-500'>
-							{activeTile
+							{tool === 'paint'
 								? 'Click or drag on the map to paint. Esc to stop.'
-								: grid
-									? 'Choose a tile to start painting.'
-									: 'Draw a map first.'}
+								: !grid
+									? 'Draw a map first.'
+									: activeTile
+										? 'Press Paint to continue with this tile.'
+										: 'Choose a tile to start painting.'}
 						</p>
+					</section>
+					<section>
+						<h3 className='mb-2 text-sm font-bold text-gray-700'>
+							Start Position
+						</h3>
+						<div className='mb-3 text-sm'>
+							{startingPosition ? (
+								<span>
+									x {startingPosition.x}, y {startingPosition.y}
+								</span>
+							) : (
+								<span className='text-gray-500'>Not set</span>
+							)}
+						</div>
+						{tool === 'start' ? (
+							<Button
+								type='button'
+								actionType='neutral'
+								onClick={() => setTool(null)}
+							>
+								Cancel
+							</Button>
+						) : (
+							<Button
+								type='button'
+								actionType='submit'
+								disabled={!grid}
+								onClick={() => setTool('start')}
+							>
+								{startingPosition ? 'Change start' : 'Choose start'}
+							</Button>
+						)}
+						{tool === 'start' && (
+							<p className='mt-2 text-xs text-gray-500'>
+								Click a tile on the map to set the start. Esc to cancel.
+							</p>
+						)}
 					</section>
 					{sz && (
 						<dl className='text-sm'>
@@ -179,6 +243,7 @@ const CreateZonePage = () => {
 				onClose={() => setIsPickerOpen(false)}
 				onSelect={(t) => {
 					setActiveTileId(t._id)
+					setTool('paint')
 					setIsPickerOpen(false)
 				}}
 			/>
