@@ -1,9 +1,11 @@
 'use client'
 
 import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useForm } from 'react-hook-form'
 import {
 	Breadcrumbs,
 	Button,
+	FormInput,
 	NewMapModal,
 	ServerErrorMessages,
 	SpinnerSection,
@@ -22,8 +24,12 @@ import {
 	paintCell,
 	type ZoneGrid,
 } from '@/lib/utils'
+import { detailFields, type ZoneDetailsFormData } from '@/app/zone/fields'
 
 const CreateZonePage = () => {
+	const { register } = useForm<ZoneDetailsFormData>({
+		defaultValues: { dangerLevel: 0 },
+	})
 	const [activeTileId, setActiveTileId] = useState<string | null>(null)
 	const [grid, setGrid] = useState<ZoneGrid | null>(null)
 	const [isModalOpen, setIsModalOpen] = useState(false)
@@ -98,6 +104,12 @@ const CreateZonePage = () => {
 					)}
 				</section>
 				<aside className='sticky top-4 space-y-4 rounded border border-gray-200 bg-white p-4 text-gray-900 shadow'>
+					<section>
+						<h3 className='mb-2 text-sm font-bold text-gray-700'>Details</h3>
+						{detailFields.map((field) => (
+							<FormInput key={field.name} field={field} register={register} />
+						))}
+					</section>
 					<section>
 						<h3 className='mb-2 text-sm font-bold text-gray-700'>Paint</h3>
 						<div className='flex items-center gap-3'>
