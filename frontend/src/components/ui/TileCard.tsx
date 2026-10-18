@@ -1,11 +1,12 @@
 'use client'
 
 import { TileGlyph } from '@/components'
-import { type TileDef } from '@/lib/types'
+import { type BaseDef } from '@/lib/types'
 import { cn } from '@/lib/utils'
 
 interface TileCardProps {
-	tile: TileDef
+	// Any definition, not just tiles: objects and items reuse this card.
+	tile: Pick<BaseDef, 'id' | 'name' | 'glyph'>
 	selected: boolean
 	onSelect: () => void
 	onOpen: () => void

@@ -1,10 +1,11 @@
 'use client'
 
-import { TileDef } from '@/lib/types'
+import { Glyph } from '@/lib/types'
 import { cn } from '@/lib/utils'
 
 interface TileGlyphProps {
-	tile: TileDef
+	// Anything with a glyph: tiles, objects, items.
+	tile: { glyph: Glyph }
 	className?: string
 }
 export const TileGlyph = ({ tile, className = '' }: TileGlyphProps) => (

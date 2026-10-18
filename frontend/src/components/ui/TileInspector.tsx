@@ -10,7 +10,7 @@ interface TileInspectorProps {
 	onDelete: () => void
 }
 
-const TileDetails = ({
+export const TileDetails = ({
 	description,
 	val,
 }: {

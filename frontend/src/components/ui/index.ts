@@ -1,4 +1,5 @@
 export * from './LoadingSpinner'
+export * from './ObjectInspector'
 export * from './SpinnerSection'
 export * from './TileCard'
 export * from './TileCell'

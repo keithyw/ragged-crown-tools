@@ -1,6 +1,6 @@
 # Architecture
 
-Ragged Crown Tools is an internal editor for the data that drives the Ragged Crown game (tile definitions today; zones, items, entities and events later).
+Ragged Crown Tools is an internal editor for the data that drives the Ragged Crown game (tile definitions today; zones, objects and items later).
 It replaces hand-edited JSON files with a proper frontend.
 
 This is a first draft. Sections marked **Open question** or listed under **Known gaps** are places where the code and the intent may disagree and need a decision.
@@ -233,10 +233,10 @@ A text-heavy entity (e.g. characters) could reuse `useCollection` and the same c
 
 ## 5. Data contract with the game
 
-- `lib/types/map.ts` mirrors the game's `types/map.ts` (`TileDef`, `Zone`, `ActionPayload`, `Position`, ...). **The two files are copies and can drift.**
+- `lib/types/map.ts` mirrors the game's `types/map.ts` (`TileDef`, `Zone`, `Placement`, `Interaction`, `Position`, ...). **The two files are copies and can drift.**
 - The tool's `tileDefinitionSchema` covers a subset of `TileDef`. Not yet in the form: `type`, `spriteCoords`, `encounterTableKey`.
 - Planned change: a zone's `terrain` (`string[][]`) should reference tiles by Mongo `_id`, not the legacy `T001` keys. The game's map/tile loaders will need to resolve by `_id`.
-- Planned: tile events live in an `events` collection; a zone references event `_id`s per `"x,y"` cell.
+- Things on the map (objects, items) and their interactions live in a zone's `placements`, keyed by `"x,y"`, not in an `events` collection. See `DATA-MODEL.md`.
 
 ---
 
@@ -293,8 +293,8 @@ project, there will be tech debt that gets addressed (or quickly forgotten) over
 
 ## 9. Roadmap (from the Trello board)
 
-- Map/Zone Builder: grid editor using tile definitions as a palette, with name, danger level (bounded), start position (x/y inputs or pick from grid), and `tileEvents`.
-- `events` collection and a way to create and associate `ActionPayload` records, filterable by zone, action type and tile type.
+- Map/Zone Builder: grid editor using tile definitions as a palette, with name, danger level (bounded), start position (x/y inputs or pick from grid), and placements.
+- Object and item definition builders, and the placements layer with interactions (see `DATA-MODEL.md`).
 - Tile `type` / category and an indoor-outdoor style environment setting to choose default base tiles.
 - Sprite support in `TileGlyph` (`spriteCoords`).
 
