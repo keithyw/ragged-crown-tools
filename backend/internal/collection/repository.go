@@ -51,6 +51,7 @@ func (r *repository) Create(ctx context.Context, collName string, doc bson.M) (b
 		if mongo.IsDuplicateKeyError(err) {
 			return nil, fmt.Errorf("%w: %s", ErrDuplicate, collName)
 		}
+		return nil, fmt.Errorf("create in %s: %w", collName, err)
 	}
 
 	doc["_id"] = res.InsertedID 
