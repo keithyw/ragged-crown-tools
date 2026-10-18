@@ -1,0 +1,284 @@
+# Data Model
+
+The content model shared by the tools and the game. The tools define it; the game conforms to it. Hand-editing JSON does not scale to the content needed to test the game, so this model is designed from the tools' side, and the game engine (a prototype) is expected to change to match.
+
+Names marked _provisional_ may change while the types are written ([Model 2]). Record final names here when they settle. Anything not decided is listed under **Open questions**, not guessed.
+
+This replaces the `tileEvents` / `ActionPayload` design.
+
+---
+
+## 1. Definitions
+
+A **definition** ("def") is a reusable kind of thing: a grass tile, a chest, a spear, a townsperson. Defs live in Mongo; zones place them on the map.
+
+### 1.1 Base definition and `kind`
+
+Every def shares a base:
+
+| Field          | Type     | Notes                                                       |
+| -------------- | -------- | ----------------------------------------------------------- |
+| `_id`          | string   | Mongo ObjectID, server-generated. The only key.             |
+| `id`           | string?  | Legacy, user-facing label (e.g. `T001`). Display only.      |
+| `kind`         | `Kind`   | Discriminator, see below.                                   |
+| `name`         | string   |                                                             |
+| `description`  | string?  |                                                             |
+| `glyph`        | `Glyph`  | What it looks like on the map (1.2).                        |
+
+```ts
+type Kind = 'terrain' | 'object' | 'item' | 'creature' | 'portal'
+```
+
+JSON has no inheritance, so the kinds are modelled as a base type extended per kind (TS `extends`, zod `.extend`) plus a discriminated union on `kind`.
+
+`kind` is required. Existing `tile_defs` documents (flat `symbol`/`color`/`bg`, no `kind`) are **not** supported: there are only three, and they are recreated by hand under this model. Clearing them is done by the owner.
+
+### 1.2 Glyph (composition)
+
+Anything that can appear on the map has a glyph. It is **composed** into the def as a nested object, not inherited:
+
+```ts
+interface Glyph {
+	symbol: string // 1-2 characters
+	color: string // Tailwind text-* class
+	bg: string // Tailwind bg-* class
+}
+```
+
+There is no separate "invisible" concept: a thing meant to go unnoticed uses a glyph that blends in (section 2.1). Two defs may share the same glyph values: quicksand terrain and a deep-quicksand space look identical to the player.
+
+**Sprites are deferred.** The eventual plan is a simple sprite editor with a limited palette (Ultima 3-5 / ACS style) that saves into one large sprite sheet; a sprite then replaces the glyph in the game and the editor. Until that work starts, the glyph is the only appearance.
+
+The legacy category types in `map.ts` (`TileType`, `TileType2`, `TerrainTile`, `BuildingTile`, `CreatureTile`, `InventoryItemTile`, `StationaryTile`) were glyph and category information mixed into `TileDef`. They are retired: appearance is the `glyph`, and the category is the `kind` (plus `category` on items).
+
+### 1.3 Kinds
+
+| Kind       | Collection  | Kind-specific fields                                                                 |
+| ---------- | ----------- | ------------------------------------------------------------------------------------ |
+| `terrain`  | `tile_defs` | Today's `TileDef` fields minus the glyph and `isConsumable`: `moveCost`, `isWalkable?`, `encounterRate?`, `encounterTableKey?` |
+| `object`   | `entities`  | `isSolid`, `moveCost?` (spaces only, default 1), `numberOfUses?`, `container?`, `interactions?` |
+| `item`     | `items`     | `category`, `stackable`, `numberOfUses?`, `container?`, `interactions?` (on `USE`)   |
+| `creature` | `entities`  | Stub for now. Used by random encounters, not placed on the map                       |
+| `portal`   | `entities`  | None beyond the base: always walkable; its destination is set per placement          |
+
+`entities` holds several kinds and is filtered by `kind` on the server ([Backend 2]).
+
+**Items** are things the player can pick up and keep in their inventory, which is what separates them from objects. Categories (provisional) include weapons, armor, and usable items such as torches, keys, maps and magic items. A usable item has a single **use** option, as in Baldur's Gate, Ultima 5-6, Wizardry 6 and The Bard's Tale: its behavior is an interaction `on: USE`. Prerequisites (a key needed to open a chest) are conditions, worked out later.
+
+**Portals** are spaces with one specific job: moving the player to a `Destination`. They are their own kind because they are placed and validated differently from ordinary spaces.
+
+```ts
+interface Destination {
+	zoneId: string // the target zone's _id
+	pos?: Position // where the player arrives; absent = the zone's startingPosition
+}
+```
+
+Entering a town, castle or dungeon normally lands the player on its `startingPosition`, so `pos` is usually left out. It is set when the arrival point is specific: leaving a town onto its icon on the world map, or a staircase arriving next to another staircase.
+
+- **Entrances** sit on the world map with their own glyph, placed over the terrain: a cave mouth in the mountains, an elven village icon in the forest, a castle. The player enters by standing on one and pressing an **enter key** (`E`, as in Ultima 3-5), not by stepping onto it, so nobody walks into a town by accident. This is engine logic, not an interaction.
+- **Exits** inside that zone lead back the other way and need not look like the entrance: a door or a cave mouth.
+- Portals are for **narrow, explicit links** where one spot clearly leads to another: a dungeon entrance, a staircase, a trapdoor. Leaving across a zone's open edge is not a portal (section 2.2).
+- **The destination is per placement**, not per def. One "Staircase" def is placed many times, each placement with its own destination, instead of a def per staircase. As in Heroes of Might and Magic's editor, the tools **validate** the map and warn about any portal placement without a destination.
+
+**Creatures do not move on the map and do not chase the player** (unlike Ultima 3-5). They appear only in random encounters. A non-combat NPC, such as a townsperson or a friendly gold dragon quest giver, is not a creature: it is a solid **object** with interactions (dialog when bumped). An interaction can still turn it hostile, for example an action that replaces the object with an encounter.
+
+**Terrain has no interactions.** Its only behavior beyond movement is the chance of a random encounter, from its `encounterRate` and an encounter table chosen by the region's difficulty (zone `dangerLevel`) and the terrain. A dirt road in a low-level zone gives rats, deer or goblins; the same road in Hell gives demons.
+
+**Uses (`numberOfUses`, name provisional).** Replaces `isConsumable`. How many times an object or item can be used before it disappears; absent means unlimited. Examples: a wheat field (Ultima 5) is used once, disappears, and gives 1 food; a torch is consumed when used; a wand has charges; a healing fountain has N uses. This is the lifetime of the **thing**; an interaction's `limit` (section 4.2) is the lifetime of one **interaction**. Remaining uses are runtime/save state, never zone data.
+
+### 1.4 Spaces and objects (ACS mapping)
+
+Adventure Construction Set had spaces, custom spaces, objects and custom objects. Here:
+
+Spaces and objects are one `kind: 'object'`, told apart by `isSolid`:
+
+- `isSolid: true` is an **object**: the player cannot occupy its cell (a wall, a bookshelf). The player bumps into it, which **costs no movement**.
+- `isSolid: false` is a **space**: the player can stand on it, and the player's icon is drawn on top (a carpet, fire, quicksand). Entering it costs the space's `moveCost`, which defaults to 1; a def overrides it when something special is needed (quicksand costs more to get out of). Ultima 4's fire in the Tinker's forge is the model: several fire spaces, each costing extra movement and burning the player on the way to the Rune of Sacrifice.
+- A **static effect** (fire burns N, a magic carpet that levitates the player) is an interaction on the def, triggered when the player enters the cell.
+- **"Custom" is not a separate type.** A custom object or space is a placement that carries its own overrides (section 3).
+
+A cell is **blocked** if its terrain is not walkable or any placement in its stack is solid.
+
+### 1.5 Terrain vs objects and spaces
+
+Terrain and objects/spaces are distinct for the designer: terrain is **painted** onto the ground layer, objects and spaces are **placed** on top, each from its own palette.
+
+Terrain is the ground layer and does not change. It is where **random encounters** live (`encounterRate`, `encounterTableKey`), so it dominates the open world. Objects and spaces are things placed on top, mostly decoration, so they dominate towns and buildings.
+
+Some things could be either. A tree is normally terrain (it can carry an encounter rate), but it can also be an object when placed as decoration. A dangerous town that needs encounters uses special objects or spaces that start a set or random encounter, rather than encounter-bearing terrain.
+
+### 1.6 Containers
+
+Object and item defs may have the `container` capability. A chest is an object and a container; a bag is an item and a container.
+
+```ts
+interface ContainerSpec {
+	capacity: number
+	maxDepth?: number // total nesting levels, counting itself; absent, 0 or 1 = no nesting
+}
+```
+
+- Containers may contain containers: a corpse holding a treasure chest holding a bag of reagents.
+- Depth is a size question, so **each container def sets its own `maxDepth`**, counting itself. The corpse above needs 3 (corpse, chest, bag). `maxDepth` absent, 0 or 1 means it cannot hold other containers; there is no separate `allowNested` flag.
+- `MAX_CONTAINER_DEPTH = 3` is the overall ceiling, enforced by both the tools and the engine. Raise it if a real case needs more.
+- A Bag of Holding style container is just one with its own capacity.
+- When the player uses a container, its contents are shown in stack order, with identical stackable items grouped ("4 spears").
+
+---
+
+## 2. Zones
+
+```ts
+interface Zone {
+	id: string
+	name: string
+	dimensions?: { width: number; height: number }
+	dangerLevel: number
+	startingPosition?: Position
+	terrain: string[][] // terrain def _ids, indexed [y][x]
+	placements?: Record<CellKey, Placement[]>
+	edgeExits?: Partial<Record<Direction, Destination>> // provisional, section 2.2
+	/** @deprecated removed once the game is migrated ([Game 4]) */
+	tileEvents?: Record<string, ActionPayload[]>
+}
+```
+
+- **`terrain`** is unchanged: rows of terrain `_id`s, indexed `[y][x]`.
+- **`placements`** is the layer of things on top of terrain. It is sparse (only cells that have something) and each cell's array is ordered **bottom to top**.
+- **`CellKey`** is `"x,y"` (x first, no spaces). It is only ever built with the `cellKey(x, y)` helper, so `"x, y"` / `"y,x"` drift cannot happen.
+
+### 2.1 Top of the stack
+
+Only the **top** placement in a cell's stack is what the player interacts with. To hide something (a trap covering treasure, a mound covering a chest), the top placement must carry the interaction that reveals or triggers it.
+
+The top placement's glyph is always what is drawn; there is no special "invisible" rule. Disguise is done by the designer choosing the top glyph:
+
+- **Poisoned treasure:** the top is a poison object/space whose glyph looks like a chest or gold, so it seems safe.
+- **Pirate cache:** the top is a mound whose glyph matches the surrounding ground. Moving onto or bumping it with a `HAS_ITEM pirate map` condition runs a list of `GIVE_ITEM` actions.
+
+### 2.2 Edge exits
+
+Leaving across a zone's edge needs no portal. When the player stands on an edge cell and moves off the map, the engine checks the zone's exit for that direction (`'north' | 'south' | 'east' | 'west'`). If there is one, the player moves to its destination. **If there is none, the move is blocked**: there is no automatic exit and no wraparound to the opposite side of the grid (unlike The Bard's Tale).
+
+- **Open world** (Might and Magic 2 style: an overworld split into connected zones). Walking off an open edge loads the neighbouring zone. The player arrives at that zone's `startingPosition`, not at the matching spot on its edge. That can look odd, but it avoids lining positions up between zones.
+- **Towns and castles** (Ultima 3-5 style). Walking off the edge leaves the town, and the edge exit's `pos` puts the player on top of the town's icon in the world zone. Since entering takes the enter key, landing on the icon does not send the player straight back in.
+- **Dungeons** are walled all round, with a single portal as the entry and exit.
+
+To stop players leaving anywhere, the designer walls most of the edge off and leaves narrow gaps. Rows of portals along an edge are the wrong tool.
+
+---
+
+## 3. Placements
+
+A placement is one instance of a def on the map.
+
+```ts
+interface Placement {
+	uid: string // generated; stable id for this instance
+	defKind: Kind // with defId, a composite key: kind says which collection
+	defId: string // the def's _id
+	quantity?: number // for stackable items: "4 spears", not four rows
+	interactions?: Interaction[] // per-instance overrides (section 4)
+	contents?: Placement[] // for containers; nested, depth-limited
+	destination?: Destination // portals only; required for a valid map
+}
+```
+
+`uid` exists so runtime state (an interaction fired once, a placement removed) can refer to this instance without mutating zone data.
+
+---
+
+## 4. Interactions
+
+`ActionPayload` is retired. Its replacement (names _provisional_):
+
+```ts
+interface Interaction {
+	id: string
+	on: InteractionType // was ActionPayload.triggerOn
+	conditions?: Condition[]
+	actions: Action[]
+	limit?: number // times it can fire; absent = unlimited, 1 = once
+}
+```
+
+`Action` and `Condition` are **discriminated unions on `type`**, each type carrying only its own fields, not one bag of optionals. The old `tile` field is gone (appearance is the placement's def glyph).
+
+`InteractionType` keeps today's values: `WALK`, `TALK`, `PICKUP`, `DROP`, `USE`, `OPEN`, `CLOSE`, `BUMP_INTERACT`. Stepping onto a space is `WALK` (one movement point), so fire and the pirate mound trigger `on: WALK`.
+
+### 4.1 Precedence (which interaction runs)
+
+For a trigger on the top placement of a cell:
+
+1. Gather the **placement's** interactions first, then the **def's**.
+2. Evaluate them in order. The **first** interaction whose conditions pass runs; the rest are skipped.
+
+So a generic townsperson ("Hello good sirs! Welcome to X!") is an unconditional interaction on the def. A custom NPC adds its own interaction on the placement, which wins. A conditional custom interaction that fails falls through to the def's default.
+
+### 4.2 Repetition
+
+Interactions can be **unlimited** (a generic NPC's "Hello and welcome to town X"), **once** (the quest payout), or **limited to N** (a fishing spot that yields fish 10 times). That is `limit`: absent, `1`, or `N`.
+
+- An interaction's count goes down only when it **runs**. If its conditions fail, it stays and nothing is used up: a player with 9 of 10 bones gets the "bring me more" dialog, and the payout is still there for later.
+- Once an interaction has used up its `limit`, it is removed from that placement's runtime copy and is skipped from then on.
+- The count is tracked in runtime/save state per (placement `uid`, interaction `id`), never in the authored zone data.
+- Richer rules (a WoW-style daily quest, which needs a notion of time) are future work. The model only needs conditions plus limits for the basic cases now, and grows as interactions and objects are designed.
+- The engine never re-queues actions. This replaces `popOnComplete` and removes its infinite-loop design.
+- Interacting with something never removes it. Removal is an explicit `REMOVE_SELF` action.
+
+### 4.3 Initial conditions
+
+| Type           | Fields             |
+| -------------- | ------------------ |
+| `HAS_ITEM`     | `itemId`, `amount` |
+| `FLAG_SET`     | `flag`             |
+| `FLAG_NOT_SET` | `flag`             |
+
+### 4.4 Initial actions
+
+`SHOW_DIALOG`, `GIVE_ITEM`, `TAKE_ITEM`, `GIVE_XP`, `GIVE_CURRENCY`, `SET_FLAG`, `SPAWN { defKind, defId, quantity? }` (adds to this cell's stack at runtime), `REMOVE_SELF`, `TELEPORT { destination }`, `PLAY_SOUND`, `MODIFY_ATTRIBUTE`.
+
+The engine implements them incrementally ([Game 2]). Fields not listed here are decided when each type is written.
+
+### 4.5 Worked example: quest giver
+
+"Bring me 10 vulture bones." Three interactions on the NPC, all `on: TALK`:
+
+1. `limit: 1`, conditions `[HAS_ITEM bones x10]`, actions `[TAKE_ITEM bones x10, GIVE_XP 150, GIVE_CURRENCY 20 silver, GIVE_ITEM <reward>, SET_FLAG quest_done, SHOW_DIALOG "Thanks"]`.
+2. Conditions `[FLAG_NOT_SET quest_done]`, actions `[SHOW_DIALOG "Bring me 10 bones"]`.
+3. No conditions, actions `[SHOW_DIALOG "Thanks again"]`.
+
+The NPC never despawns.
+
+---
+
+## 5. Authored vs runtime
+
+Zone JSON is the **initial state only**. When a game starts, the player gets a runtime copy of the zones, and that copy is what changes as the player interacts with the world. Spawns, removals, interaction counts and remaining uses live in runtime state and the save file. Zone data is never mutated.
+
+---
+
+## 6. Storage and cross-repo
+
+**Collections:**
+
+| Collection  | Holds                                                    |
+| ----------- | -------------------------------------------------------- |
+| `tile_defs` | Terrain defs                                             |
+| `items`     | Item defs                                                |
+| `entities`  | Object, creature and portal defs (by `kind`)             |
+| `zones`     | Zones                                                    |
+| `events`    | Reserved, unused (kept in case reusable interaction templates are ever saved) |
+
+`maps` is redundant with `zones` and is removed from the allow-list ([Backend 4]).
+
+**Backend:** stays a schema-less generic store with one entry point. `GetAll` gains string equality filters, sort, and limit/offset ([Backend 2]). It knows nothing about `kind`.
+
+**Shared types:** `frontend/src/lib/types/map.ts` stays hand-copied to the game repo (no shared package, on purpose), so it must not import tools-only code. The game resolves everything by `_id`.
+
+---
+
+## Open questions
+
+- **Content delivery.** Does the game fetch from the backend or load an export in `public/data`? Decided in [Game 1].

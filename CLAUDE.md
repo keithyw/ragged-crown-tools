@@ -3,6 +3,7 @@
 Internal editor for the data behind the Ragged Crown game (tile definitions now; zones, items, entities and events later). Go API + MongoDB backend, Next.js frontend. Solo project, localhost only, no auth.
 
 @ARCHITECTURE.md
+@DATA-MODEL.md
 
 The architecture doc is the source of truth for how things fit together. Its "Known gaps" section is the owner's tech-debt list: do not fix items from it unless asked.
 
