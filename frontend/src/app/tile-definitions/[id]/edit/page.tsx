@@ -9,7 +9,6 @@ import { collectionService } from '@/lib/services'
 import { TileDef } from '@/lib/types'
 import { tileDefinitionSchema, type TileDefinitionFormData } from '@/schemas'
 import { fields } from '@/app/tile-definitions/fields'
-import { toTileDef, toTileForm } from '@/app/tile-definitions/toTileDef'
 
 const EditTileDefinitionPage = () => {
 	const params = useParams()
@@ -18,22 +17,35 @@ const EditTileDefinitionPage = () => {
 		collectionName: 'tile_defs',
 		id: params.id as string,
 		defaultValues: {
+			kind: 'terrain',
 			id: '',
-			symbol: '',
-			color: '',
 			name: '',
-			bg: '',
+			glyph: { symbol: '', color: '', bg: '' },
 			moveCost: 1,
 			isWalkable: true,
 			description: '',
 		},
 		getData: collectionService.get,
-		updateData: (collectionName, id, data) =>
-			collectionService.put(collectionName, id, toTileDef(data)),
+		updateData: collectionService.put,
 		errorLoadingMessage: '',
 		redirectUrl: '',
 		schema: tileDefinitionSchema,
-		handleFetchCallback: useCallback((t: TileDef) => toTileForm(t), []),
+		// Everything the doc holds except _id/updated_at, so the full-replace
+		// PUT keeps fields the form doesn't show (encounterTableKey).
+		handleFetchCallback: useCallback(
+			(t: TileDef) => ({
+				kind: 'terrain' as const,
+				id: t.id ?? '',
+				name: t.name,
+				description: t.description,
+				glyph: t.glyph,
+				moveCost: t.moveCost,
+				isWalkable: t.isWalkable,
+				encounterRate: t.encounterRate,
+				encounterTableKey: t.encounterTableKey,
+			}),
+			[],
+		),
 		transformData: async (data: TileDefinitionFormData) => {
 			return data
 		},
@@ -41,10 +53,7 @@ const EditTileDefinitionPage = () => {
 
 	return (
 		<EditFormLayout
-			item={
-				(editController.data &&
-					toTileForm(editController.data as TileDef)) as TileDefinitionFormData
-			}
+			item={editController.data as TileDefinitionFormData}
 			title='Edit Tile Definition'
 			fields={fields}
 			isLoading={editController.isLoading}

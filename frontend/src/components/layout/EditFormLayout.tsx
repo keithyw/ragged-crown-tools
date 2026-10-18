@@ -1,6 +1,6 @@
 'use client'
 
-import { Control, FieldErrors, UseFormRegister } from 'react-hook-form'
+import { Control, FieldErrors, get, UseFormRegister } from 'react-hook-form'
 import {
 	CreateFormLayout,
 	FormInput,
@@ -67,7 +67,7 @@ export const EditFormLayout = <T extends Record<string, any>>({
 					field={f}
 					register={register}
 					control={control}
-					errorMessage={errors[f.name]?.message as string}
+					errorMessage={get(errors, f.name)?.message}
 				/>
 			))}
 			{children}

@@ -1,3 +1,4 @@
+import { glyphFields } from '@/components'
 import type { FormField } from '@/lib/types'
 import type { TileDefinitionFormData } from '@/schemas'
 
@@ -9,33 +10,12 @@ export const fields: FormField<TileDefinitionFormData>[] = [
 		required: true,
 	},
 	{
-		name: 'symbol',
-		label: 'Symbol',
-		placeholder: 'Enter Symbol',
-		required: true,
-		inputWidth: 'xs',
-		inputAttrs: { maxLength: 2 },
-	},
-	{
-		name: 'color',
-		label: 'Color',
-		required: true,
-		type: 'color',
-		colorKind: 'text',
-	},
-	{
 		name: 'name',
 		label: 'Name',
 		placeholder: 'Enter Name',
 		required: true,
 	},
-	{
-		name: 'bg',
-		label: 'Background',
-		required: true,
-		type: 'color',
-		colorKind: 'bg',
-	},
+	...glyphFields<TileDefinitionFormData>(),
 	{
 		name: 'moveCost',
 		label: 'Move Cost',

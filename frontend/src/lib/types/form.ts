@@ -1,4 +1,5 @@
 import type { InputHTMLAttributes, TextareaHTMLAttributes } from 'react'
+import type { Path } from 'react-hook-form'
 import type { InputWidth } from '@/components'
 import type { ColorKind } from '@/lib/types'
 
@@ -10,7 +11,7 @@ export interface OptionType {
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export interface FormField<T extends Record<string, any>> {
 	inputWidth?: InputWidth
-	name: keyof T
+	name: Path<T> // a top-level key or a dotted path such as 'glyph.symbol'
 	label: string
 	type?: string
 	required?: boolean

@@ -1,12 +1,12 @@
 'use client'
 
+import { get } from 'react-hook-form'
 import { CreateFormLayout, FormInput } from '@/components'
 import { useCreateRecord } from '@/hooks'
 import { URLS } from '@/lib/constants'
 import { collectionService } from '@/lib/services'
 import { tileDefinitionSchema } from '@/schemas'
 import { fields } from '@/app/tile-definitions/fields'
-import { toTileDef } from '@/app/tile-definitions/toTileDef'
 
 const CreateTileDefinitionPage = () => {
 	const {
@@ -18,17 +18,15 @@ const CreateTileDefinitionPage = () => {
 		collectionName: 'tile_defs',
 		schema: tileDefinitionSchema,
 		defaultValues: {
+			kind: 'terrain', // not a visible field, but submitted with the form
 			id: '',
-			symbol: '',
-			color: '',
 			name: '',
-			bg: '',
+			glyph: { symbol: '', color: '', bg: '' },
 			moveCost: 1,
 			isWalkable: true,
 			description: '',
 		},
-		createFn: (collectionName, data) =>
-			collectionService.create(collectionName, toTileDef(data)),
+		createFn: collectionService.create,
 		redirectUrl: URLS.TILE_DEFINITIONS,
 		successMessage: () => {
 			return `Tile Definition Created`
@@ -53,7 +51,7 @@ const CreateTileDefinitionPage = () => {
 					control={control}
 					field={f}
 					register={register}
-					errorMessage={errors[f.name]?.message}
+					errorMessage={get(errors, f.name)?.message}
 				/>
 			))}
 		</CreateFormLayout>
