@@ -7,6 +7,15 @@ export interface SaveResponse {
 
 export type StoredDoc<TData> = TData & { _id: string; updated_at: string }
 
+// Mirrors the backend's list params. Filters are equality matches; an array
+// means "any of". Omit limit to get everything.
+export interface CollectionQuery {
+	filter?: Record<string, string | string[]>
+	sort?: string // 'name' ascending, '-name' descending
+	limit?: number
+	offset?: number
+}
+
 interface CollectionService {
 	create: <TData extends object>(
 		collectionName: string,
@@ -15,6 +24,7 @@ interface CollectionService {
 	delete: (collectionName: string, id: string) => Promise<void>
 	fetch: <TData extends object>(
 		collectionName: string,
+		query?: CollectionQuery,
 	) => Promise<StoredDoc<TData>[]>
 	get: <TData extends object>(
 		collectionName: string,
@@ -43,9 +53,22 @@ export const collectionService: CollectionService = {
 	},
 	fetch: async <TData extends object>(
 		collectionName: string,
+		query?: CollectionQuery,
 	): Promise<StoredDoc<TData>[]> => {
 		const res = await client.get<StoredDoc<TData>[]>(
 			`/collection/${collectionName}`,
+			{
+				// Filter fields become top-level params. Axios skips undefined values.
+				params: {
+					...query?.filter,
+					sort: query?.sort,
+					limit: query?.limit,
+					offset: query?.offset,
+				},
+				// Axios would send arrays as kind[]=a&kind[]=b; the backend wants
+				// the param repeated: kind=a&kind=b.
+				paramsSerializer: { indexes: null },
+			},
 		)
 		return res.data
 	},
