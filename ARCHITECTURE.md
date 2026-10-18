@@ -69,13 +69,30 @@ All entity access goes through one generic route group:
 
 | Method | Path                            | Handler | Result                             |
 | ------ | ------------------------------- | ------- | ---------------------------------- |
-| GET    | `/collection/{collection}`      | GetAll  | `200` array of documents           |
+| GET    | `/collection/{collection}`      | GetAll  | `200` array of documents, or `400` |
 | POST   | `/collection/{collection}`      | Post    | `201` the created document         |
 | GET    | `/collection/{collection}/{id}` | GetByID | `200` document, `404`, or `400`    |
 | PUT    | `/collection/{collection}/{id}` | Put     | `200` the replaced document, `404` |
 | DELETE | `/collection/{collection}/{id}` | Delete  | `204` no body, `404`               |
 
 `{collection}` must be in the allow-list in `collection/middleware.go`; otherwise `404`. **This list is the one backend change needed for each new entity type.**
+
+#### List query params (`GET /collection/{collection}`)
+
+With no params it returns the whole collection, as before. The response body is always a plain JSON array; the number of documents matching the filter (ignoring `limit`/`offset`) is in the `X-Total-Count` header (exposed through CORS).
+
+| Param               | Meaning                                                                                                                                 |
+| ------------------- | --------------------------------------------------------------------------------------------------------------------------------------- |
+| any other `field=v` | Equality match on that field. `?kind=object`. Repeat the param for "any of": `?kind=object&kind=portal`.                                |
+| `sort=name`         | Sort ascending; `sort=-name` descending. One field. Default is `_id` ascending, which is also used as a tiebreaker so paging is stable. |
+| `limit=n`           | Integer 1 to 1000. If omitted there is **no limit**, so existing callers are unchanged.                                                 |
+| `offset=n`          | Integer >= 0.                                                                                                                           |
+
+- Filter values are always strings straight from the URL, so they can never carry a Mongo operator. `?isWalkable=true` will **not** match a boolean field; typed matching is added when something needs it.
+- Field names (filter and sort) must match `^[A-Za-z_][A-Za-z0-9_.]*$` (dotted paths allowed, no `$`).
+- `_id` is the exception: its values must be valid ObjectID hex and are converted, since they are stored as ObjectIDs.
+- `sort`, `limit` and `offset` are reserved, so a document field with one of those names can't be filtered on.
+- Bad params return `400` with `{"error": "invalid query: ..."}`.
 
 ### 3.2 Document identity
 

@@ -16,11 +16,14 @@ var (
 	ErrDuplicate = errors.New("duplicate key")
 	ErrNotFound  = errors.New("not found")
 	ErrInvalidID = errors.New("invalid id")
+	// Bad list query params; the message says which one.
+	ErrInvalidQuery = errors.New("invalid query")
 )
 
 type Repository interface {
 	Create(ctx context.Context, colName string, doc bson.M) (bson.M, error)
-	GetAll(ctx context.Context, collName string) ([]bson.M, error)
+	GetAll(ctx context.Context, collName string, opts ListOptions) ([]bson.M, error)
+	Count(ctx context.Context, collName string, filter bson.M) (int64, error)
 	GetByID(ctx context.Context, collName, id string) (bson.M, error)
 	Replace(ctx context.Context, collName, id string, doc bson.M) (bson.M, error)
 	Delete(ctx context.Context, collName, id string) error
@@ -54,13 +57,27 @@ func (r *repository) Create(ctx context.Context, collName string, doc bson.M) (b
 		return nil, fmt.Errorf("create in %s: %w", collName, err)
 	}
 
-	doc["_id"] = res.InsertedID 
+	doc["_id"] = res.InsertedID
 
 	return doc, nil
 }
 
-func (r *repository) GetAll(ctx context.Context, collName string) ([]bson.M, error) {
-	cursor, err := r.db.Collection(collName).Find(ctx, bson.M{})
+func (r *repository) Count(ctx context.Context, collName string, filter bson.M) (int64, error) {
+	n, err := r.db.Collection(collName).CountDocuments(ctx, filter)
+	if err != nil {
+		return 0, fmt.Errorf("failed to count collection %s: %w", collName, err)
+	}
+	return n, nil
+}
+
+func (r *repository) GetAll(ctx context.Context, collName string, opts ListOptions) ([]bson.M, error) {
+	// A zero limit or skip means "none" to the driver, so they can be set as-is.
+	findOpts := options.Find().
+		SetSort(opts.Sort).
+		SetLimit(opts.Limit).
+		SetSkip(opts.Offset)
+
+	cursor, err := r.db.Collection(collName).Find(ctx, opts.Filter, findOpts)
 	if err != nil {
 		return nil, fmt.Errorf("failed to query collection %s: %w", collName, err)
 	}
@@ -82,7 +99,7 @@ func (r *repository) GetByID(ctx context.Context, collName, id string) (bson.M, 
 
 	var result bson.M
 	err = r.db.Collection(collName).FindOne(ctx, bson.M{"_id": oid}).Decode(&result)
-	
+
 	if errors.Is(err, mongo.ErrNoDocuments) {
 		return nil, ErrNotFound
 	}

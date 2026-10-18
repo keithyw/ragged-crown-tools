@@ -20,6 +20,7 @@ func NewServer(store database.Mongo, log *slog.Logger) http.Handler {
 		AllowedOrigins:   []string{"http://localhost:3000", "http://127.0.0.1:3000"}, // probably need to move this into config
 		AllowedMethods:   []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"},
 		AllowedHeaders:   []string{"Accept", "Authorization", "Content-Type"},
+		ExposedHeaders:   []string{"X-Total-Count"}, // so the browser can read the paging total
 		AllowCredentials: true,
 		MaxAge:           300,
 	}))
