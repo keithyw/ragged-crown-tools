@@ -18,7 +18,7 @@ This is a first draft. Sections marked **Open question** or listed under **Known
 
 - **Frontend** (`/frontend`): Next.js 16 (App Router, all client components), React 19, TypeScript, Tailwind v4, react-hook-form + zod, Axios, Zustand (installed, not yet used for app state).
 - **Backend** (`/backend`): Go, chi router, official MongoDB driver. It is deliberately a _dumb document store_: it does not know what a tile is.
-- **Database**: MongoDB. One collection per entity type (`tile_defs`, `items`, `entities`, `events`, `zones`, `maps`).
+- **Database**: MongoDB. A few collections (`tile_defs`, `items`, `entities`, `zones`, plus the reserved `events`); several kinds of definition share a collection and are told apart by `kind` (see the collection table in section 3.1 and `DATA-MODEL.md`).
 - **Consumer**: the game (`ragged-crown`) loads the documents this tool produces.
 
 The core design decision: **the backend is generic; the frontend owns all domain knowledge** (shape, validation, defaults, UI). Adding a new entity should mean
@@ -76,6 +76,16 @@ All entity access goes through one generic route group:
 | DELETE | `/collection/{collection}/{id}` | Delete  | `204` no body, `404`               |
 
 `{collection}` must be in the allow-list in `collection/middleware.go`; otherwise `404`. **This list is the one backend change needed for each new entity type.**
+
+The allow-list matches `DATA-MODEL.md`. The backend stays schema-less: it doesn't validate document contents and doesn't know what `kind` means.
+
+| Collection  | Holds                                                                                  |
+| ----------- | -------------------------------------------------------------------------------------- |
+| `tile_defs` | Terrain definitions (`kind: 'terrain'`)                                                |
+| `items`     | Item definitions (`kind: 'item'`)                                                      |
+| `entities`  | Object, creature and portal definitions, told apart by `kind`; list with `?kind=`      |
+| `zones`     | Zones (terrain grid, placements, exits)                                                |
+| `events`    | **Reserved, unused.** Kept only in case reusable interaction templates are ever saved. |
 
 #### List query params (`GET /collection/{collection}`)
 
@@ -250,7 +260,7 @@ Verification: use `pnpm exec tsc --noEmit` in `frontend/` as the source of truth
 
 ## 7. Adding a new entity (checklist)
 
-1. Backend: confirm the collection is in `validCollections` (`collection/middleware.go`).
+1. Backend: decide the collection. A new kind of definition (a new `kind`) belongs in `tile_defs`, `items` or `entities`, so nothing changes in the backend. Only a genuinely new top-level type needs a new collection: add it to `validCollections` (`collection/middleware.go`) and to the collection table in section 3.1.
 2. Mongo: create a unique index on the user-facing `id`, if the entity has one.
 3. Add the type to `lib/types` (keep it in sync with the game).
 4. Add `schemas/<entity>Schema.ts` and export it.
