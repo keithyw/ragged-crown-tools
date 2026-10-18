@@ -9,6 +9,7 @@ import { collectionService } from '@/lib/services'
 import { TileDef } from '@/lib/types'
 import { tileDefinitionSchema, type TileDefinitionFormData } from '@/schemas'
 import { fields } from '@/app/tile-definitions/fields'
+import { toTileDef, toTileForm } from '@/app/tile-definitions/toTileDef'
 
 const EditTileDefinitionPage = () => {
 	const params = useParams()
@@ -24,28 +25,15 @@ const EditTileDefinitionPage = () => {
 			bg: '',
 			moveCost: 1,
 			isWalkable: true,
-			isConsumable: false,
 			description: '',
 		},
 		getData: collectionService.get,
-		updateData: collectionService.put,
+		updateData: (collectionName, id, data) =>
+			collectionService.put(collectionName, id, toTileDef(data)),
 		errorLoadingMessage: '',
 		redirectUrl: '',
 		schema: tileDefinitionSchema,
-		handleFetchCallback: useCallback((t: TileDef) => {
-			return {
-				id: t.id,
-				symbol: t.symbol,
-				color: t.color,
-				name: t.name,
-				bg: t.bg,
-				moveCost: t.moveCost,
-				isWalkable: t.isWalkable,
-				isConsumable: t.isConsumable,
-				description: t.description,
-				encounterRate: t.encounterRate,
-			}
-		}, []),
+		handleFetchCallback: useCallback((t: TileDef) => toTileForm(t), []),
 		transformData: async (data: TileDefinitionFormData) => {
 			return data
 		},
@@ -53,7 +41,10 @@ const EditTileDefinitionPage = () => {
 
 	return (
 		<EditFormLayout
-			item={editController.data as TileDef}
+			item={
+				(editController.data &&
+					toTileForm(editController.data as TileDef)) as TileDefinitionFormData
+			}
 			title='Edit Tile Definition'
 			fields={fields}
 			isLoading={editController.isLoading}

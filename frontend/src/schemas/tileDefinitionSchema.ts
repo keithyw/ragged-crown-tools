@@ -37,7 +37,6 @@ export const tileDefinitionSchema = z.object({
 		.regex(/^bg-\S+$/, 'Must be a Tailwind bg-* class'),
 	moveCost: requiredNumber('Move cost').min(0, 'Cannot be negative'),
 	isWalkable: z.boolean().optional(),
-	isConsumable: z.boolean().optional(),
 	description: optionalText,
 	encounterRate: z.number().optional(),
 	// encounterRate: z.number().min(0).max(1, 'Must be between 0 and 1').optional(),

@@ -6,6 +6,7 @@ import { URLS } from '@/lib/constants'
 import { collectionService } from '@/lib/services'
 import { tileDefinitionSchema } from '@/schemas'
 import { fields } from '@/app/tile-definitions/fields'
+import { toTileDef } from '@/app/tile-definitions/toTileDef'
 
 const CreateTileDefinitionPage = () => {
 	const {
@@ -24,10 +25,10 @@ const CreateTileDefinitionPage = () => {
 			bg: '',
 			moveCost: 1,
 			isWalkable: true,
-			isConsumable: false,
 			description: '',
 		},
-		createFn: collectionService.create,
+		createFn: (collectionName, data) =>
+			collectionService.create(collectionName, toTileDef(data)),
 		redirectUrl: URLS.TILE_DEFINITIONS,
 		successMessage: () => {
 			return `Tile Definition Created`

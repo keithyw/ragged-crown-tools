@@ -51,12 +51,6 @@ export const fields: FormField<TileDefinitionFormData>[] = [
 		type: 'checkbox',
 	},
 	{
-		name: 'isConsumable',
-		label: 'Is Consumable',
-		placeholder: 'Enter Is Consumable',
-		type: 'checkbox',
-	},
-	{
 		name: 'description',
 		label: 'Description',
 		placeholder: 'Enter Description',

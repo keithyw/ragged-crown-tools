@@ -17,11 +17,11 @@ export const TileGlyph = ({ tile, className = '' }: TileGlyphProps) => (
 		<span
 			className={cn(
 				'flex h-full w-full items-center justify-center rounded font-mono text-2xl',
-				tile.bg,
-				tile.color,
+				tile.glyph.bg,
+				tile.glyph.color,
 			)}
 		>
-			{tile.symbol}
+			{tile.glyph.symbol}
 		</span>
 	</span>
 )

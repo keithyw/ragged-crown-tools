@@ -19,11 +19,11 @@ export const TileCell = ({ tile, className, ...rest }: TileCellProps) => (
 		<span
 			className={cn(
 				'flex h-full w-full items-center justify-center font-mono text-xl',
-				tile?.bg ?? 'bg-red-950/60',
-				tile?.color ?? 'text-red-400',
+				tile?.glyph.bg ?? 'bg-red-950/60',
+				tile?.glyph.color ?? 'text-red-400',
 			)}
 		>
-			{tile ? tile.symbol : '?'}
+			{tile ? tile.glyph.symbol : '?'}
 		</span>
 	</span>
 )

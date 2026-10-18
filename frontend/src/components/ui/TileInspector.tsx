@@ -39,11 +39,10 @@ export const TileInspector = ({
 	// encounterRate?: number
 	// encounterTableKey?: string
 	const details = [
-		{ key: 'Color', val: tile.color },
-		{ key: 'Background', val: tile.bg },
+		{ key: 'Color', val: tile.glyph.color },
+		{ key: 'Background', val: tile.glyph.bg },
 		{ key: 'Move Cost', val: tile.moveCost.toString() },
 		{ key: 'Walkable', val: tile.isWalkable ? 'Yes' : 'No' },
-		{ key: 'Consumable', val: tile.isConsumable ? 'Yes' : 'No' },
 		{ key: 'Description', val: tile.description },
 		{ key: 'Encounter Rate', val: tile.encounterRate?.toString() ?? '-' },
 	]

@@ -4,7 +4,7 @@ import { useRef } from 'react'
 import { TileCell } from '@/components'
 import { type StoredDoc } from '@/lib/services'
 import { type Position, type TileDef } from '@/lib/types'
-import { cn, type ZoneGrid } from '@/lib/utils'
+import { cellKey, cn, type ZoneGrid } from '@/lib/utils'
 
 const CELL_REM = 2.75
 
@@ -37,8 +37,7 @@ export const ZoneMapGrid = ({
 	const paintAt = (e: React.PointerEvent<HTMLElement>) => {
 		const cell = cellAt(e)
 		if (!cell || !onCellAction) return
-		// probably need to extract this into some util function to keep things consistent
-		const key = `${cell.x},${cell.y}`
+		const key = cellKey(cell.x, cell.y)
 		if (key === lastCell.current) return
 		lastCell.current = key
 		onCellAction(cell.x, cell.y)
@@ -74,7 +73,7 @@ export const ZoneMapGrid = ({
 				{grid.flatMap((row, y) =>
 					row.map((tileId, x) => (
 						<TileCell
-							key={`${x},${y}`}
+							key={cellKey(x, y)}
 							data-x={x}
 							data-y={y}
 							tile={tilesById.get(tileId)}
