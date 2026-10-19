@@ -1,0 +1,20 @@
+{
+  "permissions": {
+    "ask": [
+      "Bash(rm *)",
+      "Bash(rmdir *)",
+      "Bash(git rm *)",
+      "Bash(git clean *)",
+      "Bash(git reset --hard *)"
+    ],
+    "deny": [
+      "Bash(rm -rf*)",
+      "Bash(rm -fr*)",
+      "Bash(rm -Rf*)",
+      "Bash(rm -fR*)",
+      "Bash(rm -r -f*)",
+      "Bash(rm -f -r*)",
+      "Bash(rm --recursive*)"
+    ]
+  }
+}
