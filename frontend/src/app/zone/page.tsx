@@ -1,5 +1,6 @@
 'use client'
 
+import { useRouter } from 'next/navigation'
 import {
 	Breadcrumbs,
 	ConfirmationModal,
@@ -29,6 +30,7 @@ const ZONE_COLUMNS: TableColumn<StoredZone>[] = [
 ]
 
 const ZonePage = () => {
+	const router = useRouter()
 	const {
 		items: zones,
 		isLoading,
@@ -43,8 +45,12 @@ const ZonePage = () => {
 		itemNameProp: 'name',
 	})
 
-	// Edit joins this list with the edit route (Tools 8, phase 3).
 	const actions: TableRowAction<StoredZone>[] = [
+		{
+			label: 'Edit',
+			onClick: (z) => router.push(`${URLS.ZONE}/${z._id}/edit`),
+			actionType: 'edit',
+		},
 		{
 			label: 'Delete',
 			onClick: deleteController.openDeleteModal,

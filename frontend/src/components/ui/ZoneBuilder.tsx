@@ -41,13 +41,17 @@ type Tool = 'paint' | 'start'
 interface ZoneBuilderProps {
 	breadcrumbs: Crumb[]
 	cancelUrl: string
-	// Saves the assembled zone: Create POSTs it. A thrown error is shown on the form.
+	// Edit passes the saved zone to start from; Create passes nothing.
+	initialZone?: Zone
+	// Saves the assembled zone: Create POSTs it, Edit PUTs it. A thrown error is
+	// shown on the form.
 	onSave: (zone: Zone) => Promise<void>
 }
 
 export const ZoneBuilder = ({
 	breadcrumbs,
 	cancelUrl,
+	initialZone,
 	onSave,
 }: ZoneBuilderProps) => {
 	const {
@@ -57,13 +61,21 @@ export const ZoneBuilder = ({
 		formState: { errors, isSubmitting },
 	} = useForm<ZoneDetailsFormData>({
 		resolver: zodResolver(zoneDetailsSchema),
-		defaultValues: { id: '', name: '', dangerLevel: 0 },
+		defaultValues: {
+			id: initialZone?.id ?? '',
+			name: initialZone?.name ?? '',
+			dangerLevel: initialZone?.dangerLevel ?? 0,
+		},
 	})
 	const [triedToSave, setTriedToSave] = useState(false)
 	const [tool, setTool] = useState<Tool | null>(null)
 	const [activeTileId, setActiveTileId] = useState<string | null>(null)
-	const [startingPosition, setStartingPosition] = useState<Position>()
-	const [grid, setGrid] = useState<ZoneGrid | null>(null)
+	const [startingPosition, setStartingPosition] = useState<
+		Position | undefined
+	>(initialZone?.startingPosition)
+	const [grid, setGrid] = useState<ZoneGrid | null>(
+		initialZone?.terrain ?? null,
+	)
 	const [isModalOpen, setIsModalOpen] = useState(false)
 	const [isPickerOpen, setIsPickerOpen] = useState(false)
 	const { items: tiles, isLoading, error } = useCollection<TileDef>('tile_defs')
