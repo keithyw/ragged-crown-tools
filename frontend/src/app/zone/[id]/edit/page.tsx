@@ -45,11 +45,13 @@ const EditZonePage = () => {
 			initialZone={zone}
 			onSave={async (edited) => {
 				// PUT replaces the whole document, so start from the loaded one and
-				// overwrite only what the builder owns. placements, edgeExits and any
-				// other fields survive.
+				// overwrite only what the builder owns. edgeExits and any other fields
+				// survive. placements is sent explicitly: a plain spread can't remove
+				// a key the builder left out.
 				await collectionService.put<Zone>('zones', zone._id, {
 					...zone,
 					...edited,
+					placements: edited.placements,
 				})
 				toast.success('Zone updated')
 				router.push(URLS.ZONE)

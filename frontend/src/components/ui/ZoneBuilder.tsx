@@ -126,6 +126,8 @@ export const ZoneBuilder = ({
 			...details,
 			terrain: grid,
 			startingPosition,
+			// Carried through unchanged until the place tool exists (Tools 9, phase 3).
+			placements: initialZone?.placements,
 		})
 		if (!parsed.success) {
 			toast.error(parsed.error.issues[0].message)
@@ -157,14 +159,6 @@ export const ZoneBuilder = ({
 			<Breadcrumbs items={breadcrumbs} />
 			<div className='grid items-start gap-6 lg:grid-cols-[1fr_20rem]'>
 				<section>
-					<Button
-						type='button'
-						actionType='submit'
-						onClick={() => setIsModalOpen(true)}
-						className='mb-6'
-					>
-						{grid ? 'Redraw Map' : 'Draw Map'}
-					</Button>
 					{grid ? (
 						<ZoneMapGrid
 							grid={grid}
@@ -173,13 +167,37 @@ export const ZoneBuilder = ({
 							onCellAction={tool ? handleCell : undefined}
 						/>
 					) : (
-						<div className='rounded border border-dashed border-gray-300 p-12 text-center text-sm text-gray-500'>
-							Draw a base map to get started. You choose the size and a default
-							tile.
+						<div className='rounded border border-dashed border-gray-300 p-16 text-center text-xl font-medium text-gray-700'>
+							Use Draw Map in the panel on the right to get started. You choose
+							the size and a default tile.
 						</div>
 					)}
 				</section>
 				<aside className='sticky top-4 space-y-4 rounded border border-gray-200 bg-white p-4 text-gray-900 shadow'>
+					<section>
+						<h3 className='mb-2 text-sm font-bold text-gray-700'>Map</h3>
+						<Button
+							type='button'
+							actionType='submit'
+							onClick={() => setIsModalOpen(true)}
+						>
+							{grid ? 'Redraw Map' : 'Draw Map'}
+						</Button>
+						{sz ? (
+							<dl className='mt-3 text-sm'>
+								<div className='flex justify-between'>
+									<dt className='text-gray-500'>Size</dt>
+									<dd>
+										{sz.width} x {sz.height}
+									</dd>
+								</div>
+							</dl>
+						) : (
+							<p className='mt-2 text-base font-medium text-gray-700'>
+								Start here: choose a size and a default tile.
+							</p>
+						)}
+					</section>
 					<section>
 						<h3 className='mb-2 text-sm font-bold text-gray-700'>Details</h3>
 						{detailFields.map((field) => (
@@ -243,7 +261,7 @@ export const ZoneBuilder = ({
 								)
 							)}
 						</div>
-						<p className='mt-2 text-xs text-gray-500'>
+						<p className='mt-2 text-sm text-gray-500'>
 							{tool === 'paint'
 								? 'Click or drag on the map to paint. Esc to stop.'
 								: !grid
@@ -285,21 +303,11 @@ export const ZoneBuilder = ({
 							</Button>
 						)}
 						{tool === 'start' && (
-							<p className='mt-2 text-xs text-gray-500'>
+							<p className='mt-2 text-sm text-gray-500'>
 								Click a tile on the map to set the start. Esc to cancel.
 							</p>
 						)}
 					</section>
-					{sz && (
-						<dl className='text-sm'>
-							<div className='flex justify-between'>
-								<dt className='text-gray-500'>Size</dt>
-								<dd>
-									{sz.width} x {sz.height}
-								</dd>
-							</div>
-						</dl>
-					)}
 					<section>
 						<div className='flex flex-col items-start gap-2'>
 							<Button
@@ -316,12 +324,12 @@ export const ZoneBuilder = ({
 							<CancelSubmitButton cancelUrl={cancelUrl} />
 						</div>
 						{triedToSave && grid && !startingPosition && (
-							<p className='mt-2 text-xs text-red-600'>
+							<p className='mt-2 text-sm text-red-600'>
 								Choose a start position.
 							</p>
 						)}
 						{errors.root?.serverError && (
-							<p className='mt-2 text-xs text-red-600'>
+							<p className='mt-2 text-sm text-red-600'>
 								{errors.root.serverError.message}
 							</p>
 						)}

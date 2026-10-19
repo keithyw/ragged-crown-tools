@@ -1,10 +1,10 @@
 import { z } from 'zod'
 import type { Zone } from '@/lib/types'
-import { positionSchema } from './contentSchemas'
+import { placementSchema, positionSchema } from './contentSchemas'
 
-// The zone the builder saves: details, terrain and starting position.
-// `dimensions` is not stored (it is the terrain's size). `placements` and
-// `edgeExits` are not edited by the builder yet.
+// The zone the builder saves: details, terrain, starting position and
+// placements. `dimensions` is not stored (it is the terrain's size).
+// `edgeExits` is not edited by the builder yet.
 //
 // Kept free of object-level refinements so `.pick` works on it (zod 4 throws
 // when picking from an object that has them); the cross-field check is below.
@@ -29,6 +29,14 @@ const zoneBaseSchema = z.object({
 			'Every row of the map must be the same width',
 		),
 	startingPosition: positionSchema,
+	// Things placed on the terrain, keyed by "x,y" (see cellKey). Each cell's
+	// stack runs bottom to top, and a cell with nothing has no key at all.
+	placements: z
+		.record(
+			z.string().regex(/^\d+,\d+$/, 'A placement key must look like "x,y"'),
+			z.array(placementSchema).min(1, 'A cell with no placements has no key'),
+		)
+		.optional(),
 })
 
 export const zoneSchema = zoneBaseSchema.superRefine((zone, ctx) => {
@@ -41,6 +49,16 @@ export const zoneSchema = zoneBaseSchema.superRefine((zone, ctx) => {
 			path: ['startingPosition'],
 			message: 'The start position must be inside the map',
 		})
+	}
+	for (const key of Object.keys(zone.placements ?? {})) {
+		const [px, py] = key.split(',').map(Number)
+		if (px >= width || py >= height) {
+			ctx.addIssue({
+				code: 'custom',
+				path: ['placements', key],
+				message: `A placement at ${key} is outside the map`,
+			})
+		}
 	}
 }) satisfies z.ZodType<Zone>
 
