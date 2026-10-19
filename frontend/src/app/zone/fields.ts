@@ -1,8 +1,5 @@
-import type { FormField, Zone } from '@/lib/types'
-
-// No validation yet, so the form type comes straight from Zone.
-// Swap for a zod-inferred type once a zone schema exists.
-export type ZoneDetailsFormData = Pick<Zone, 'id' | 'name' | 'dangerLevel'>
+import type { FormField } from '@/lib/types'
+import type { ZoneDetailsFormData } from '@/schemas'
 
 export const detailFields: FormField<ZoneDetailsFormData>[] = [
 	{

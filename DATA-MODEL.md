@@ -286,4 +286,4 @@ Zone JSON is the **initial state only**. When a game starts, the player gets a r
   - Variants (sword vs long sword, chain mail vs elven chain mail +5) are extra attributes on an item, not an inheritance hierarchy. An armor item might carry a location (helmet, boots, ...) while staying in the armor category.
   - The item builder may grow one form per category, with shared fields (weight, sale value) in common.
   - Character skills (a "swords" skill covering all swords) come later; AD&D-style specialization is not decided.
-- **Gold.** Is gold an item that can sit on the map and be picked up, or only a counter changed by `GIVE_CURRENCY`? If it is an item it needs a way to be recognised as currency.
+- **Gold and currency.** Deferred. Undecided whether currency is a pooled resource, a per-character stat, or an inventory item with weight, and whether the party can split across locations. `GIVE_CURRENCY` is a placeholder action until then, and gold can be a plain stackable item meanwhile.

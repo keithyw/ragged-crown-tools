@@ -1,7 +1,10 @@
 'use client'
 
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import { useForm } from 'react-hook-form'
+import { useRouter } from 'next/navigation'
+import { get, useForm } from 'react-hook-form'
+import toast from 'react-hot-toast'
+import { zodResolver } from '@hookform/resolvers/zod'
 import {
 	Breadcrumbs,
 	Button,
@@ -16,23 +19,38 @@ import {
 } from '@/components'
 import { useCollection } from '@/hooks'
 import { URLS } from '@/lib/constants'
-import type { Position, TileDef } from '@/lib/types'
+import { collectionService } from '@/lib/services'
+import type { Position, TileDef, Zone } from '@/lib/types'
 import {
 	createGrid,
 	gridSize,
+	handleFormErrors,
 	hasPaintedContent,
 	paintCell,
 	type ZoneGrid,
 } from '@/lib/utils'
-import { detailFields, type ZoneDetailsFormData } from '@/app/zone/fields'
+import {
+	zoneDetailsSchema,
+	zoneSchema,
+	type ZoneDetailsFormData,
+} from '@/schemas'
+import { detailFields } from '@/app/zone/fields'
 
 // One tool at a time; a click on the map does exactly one thing.
 type Tool = 'paint' | 'start'
 
 const CreateZonePage = () => {
-	const { register } = useForm<ZoneDetailsFormData>({
-		defaultValues: { dangerLevel: 0 },
+	const router = useRouter()
+	const {
+		register,
+		handleSubmit,
+		setError,
+		formState: { errors, isSubmitting },
+	} = useForm<ZoneDetailsFormData>({
+		resolver: zodResolver(zoneDetailsSchema),
+		defaultValues: { id: '', name: '', dangerLevel: 0 },
 	})
+	const [triedToSave, setTriedToSave] = useState(false)
 	const [tool, setTool] = useState<Tool | null>(null)
 	const [activeTileId, setActiveTileId] = useState<string | null>(null)
 	const [startingPosition, setStartingPosition] = useState<Position>()
@@ -79,6 +97,32 @@ const CreateZonePage = () => {
 		setIsModalOpen(false)
 	}
 
+	// The details come validated from the form; the map and start position are
+	// checked here, then the assembled zone gets one last pass through zoneSchema.
+	const save = handleSubmit(async (details) => {
+		if (!grid || !startingPosition) return
+		const parsed = zoneSchema.safeParse({
+			...details,
+			terrain: grid,
+			startingPosition,
+		})
+		if (!parsed.success) {
+			toast.error(parsed.error.issues[0].message)
+			return
+		}
+		try {
+			await collectionService.create<Zone>('zones', parsed.data)
+			toast.success('Zone created')
+			router.push(URLS.ZONE)
+		} catch (e: unknown) {
+			handleFormErrors<ZoneDetailsFormData>(
+				e,
+				setError,
+				'Failed to save the zone.',
+			)
+		}
+	})
+
 	const sz = grid ? gridSize(grid) : null
 
 	if (isLoading) {
@@ -122,7 +166,12 @@ const CreateZonePage = () => {
 					<section>
 						<h3 className='mb-2 text-sm font-bold text-gray-700'>Details</h3>
 						{detailFields.map((field) => (
-							<FormInput key={field.name} field={field} register={register} />
+							<FormInput
+								key={field.name}
+								field={field}
+								register={register}
+								errorMessage={get(errors, field.name)?.message}
+							/>
 						))}
 					</section>
 					<section>
@@ -234,6 +283,29 @@ const CreateZonePage = () => {
 							</div>
 						</dl>
 					)}
+					<section>
+						<Button
+							type='button'
+							actionType='submit'
+							disabled={!grid || isSubmitting}
+							onClick={() => {
+								setTriedToSave(true)
+								void save()
+							}}
+						>
+							{isSubmitting ? 'Saving...' : 'Save Zone'}
+						</Button>
+						{triedToSave && grid && !startingPosition && (
+							<p className='mt-2 text-xs text-red-600'>
+								Choose a start position.
+							</p>
+						)}
+						{errors.root?.serverError && (
+							<p className='mt-2 text-xs text-red-600'>
+								{errors.root.serverError.message}
+							</p>
+						)}
+					</section>
 				</aside>
 			</div>
 			<TilePickerModal
