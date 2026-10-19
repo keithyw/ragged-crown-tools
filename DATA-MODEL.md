@@ -49,7 +49,7 @@ There is no separate "invisible" concept: a thing meant to go unnoticed uses a g
 
 **Sprites are deferred.** The eventual plan is a simple sprite editor with a limited palette (Ultima 3-5 / ACS style) that saves into one large sprite sheet; a sprite then replaces the glyph in the game and the editor. Until that work starts, the glyph is the only appearance.
 
-The legacy category types in `map.ts` (`TileType`, `TileType2`, `TerrainTile`, `BuildingTile`, `CreatureTile`, `InventoryItemTile`, `StationaryTile`) were glyph and category information mixed into `TileDef`. They are retired: appearance is the `glyph`, and the category is the `kind` (plus `category` on items).
+The legacy category types that used to be in `map.ts` (`TileType`, `TileType2`, `TerrainTile`, `BuildingTile`, `CreatureTile`, `InventoryItemTile`, `StationaryTile`) were glyph and category information mixed into `TileDef`. They are removed (still in git history and the game repo): appearance is the `glyph`, and the category is the `kind` (item categories come later, see Open questions).
 
 ### 1.3 Kinds
 
@@ -57,13 +57,13 @@ The legacy category types in `map.ts` (`TileType`, `TileType2`, `TerrainTile`, `
 | ---------- | ----------- | ------------------------------------------------------------------------------------ |
 | `terrain`  | `tile_defs` | Today's `TileDef` fields minus the glyph and `isConsumable`: `moveCost`, `isWalkable?`, `encounterRate?`, `encounterTableKey?` |
 | `object`   | `entities`  | `isSolid`, `moveCost?` (spaces only, default 1), `numberOfUses?`, `container?`, `interactions?` |
-| `item`     | `items`     | `category`, `stackable`, `numberOfUses?`, `container?`, `interactions?` (on `USE`)   |
+| `item`     | `items`     | `stackable`, `numberOfUses?`, `container?`, `interactions?` (on `USE`). More as the inventory design settles; `category` is deferred |
 | `creature` | `entities`  | Stub for now. Used by random encounters, not placed on the map                       |
 | `portal`   | `entities`  | None beyond the base: always walkable; its destination is set per placement          |
 
 `entities` holds several kinds and is filtered by `kind` on the server ([Backend 2]).
 
-**Items** are things the player can pick up and keep in their inventory, which is what separates them from objects. Categories (provisional) include weapons, armor, and usable items such as torches, keys, maps and magic items. A usable item has a single **use** option, as in Baldur's Gate, Ultima 5-6, Wizardry 6 and The Bard's Tale: its behavior is an interaction `on: USE`. Prerequisites (a key needed to open a chest) are conditions, worked out later.
+**Items** are things the player can pick up and keep in their inventory, which is what separates them from objects. The expected groups are weapons, armor, and usable items such as torches, keys, maps and magic items, but the item model is deliberately minimal for now (see Open questions). A usable item has a single **use** option, as in Baldur's Gate, Ultima 5-6, Wizardry 6 and The Bard's Tale: its behavior is an interaction `on: USE`. Prerequisites (a key needed to open a chest) are conditions, worked out later.
 
 **Portals** are spaces with one specific job: moving the player to a `Destination`. They are their own kind because they are placed and validated differently from ordinary spaces.
 
@@ -139,8 +139,6 @@ interface Zone {
 	terrain: string[][] // terrain def _ids, indexed [y][x]
 	placements?: Record<CellKey, Placement[]>
 	edgeExits?: Partial<Record<Direction, Destination>> // provisional, section 2.2
-	/** @deprecated removed once the game is migrated ([Game 4]) */
-	tileEvents?: Record<string, ActionPayload[]>
 }
 ```
 
@@ -282,3 +280,10 @@ Zone JSON is the **initial state only**. When a game starts, the player gets a r
 ## Open questions
 
 - **Content delivery.** Does the game fetch from the backend or load an export in `public/data`? Decided in [Game 1].
+- **Item category and the item model.** Deferred on purpose; expect the item schema to change often while the inventory is designed one item type at a time. Leanings so far:
+  - Categories live in the DB, not as a code enum, so adding one is data rather than a release. That would need a new allow-listed collection (the backend currently has no categories collection).
+  - No subcategories and no recursive category logic.
+  - Variants (sword vs long sword, chain mail vs elven chain mail +5) are extra attributes on an item, not an inheritance hierarchy. An armor item might carry a location (helmet, boots, ...) while staying in the armor category.
+  - The item builder may grow one form per category, with shared fields (weight, sale value) in common.
+  - Character skills (a "swords" skill covering all swords) come later; AD&D-style specialization is not decided.
+- **Gold.** Is gold an item that can sit on the map and be picked up, or only a counter changed by `GIVE_CURRENCY`? If it is an item it needs a way to be recognised as currency.

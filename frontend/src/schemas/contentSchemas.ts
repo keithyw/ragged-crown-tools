@@ -151,7 +151,6 @@ export const objectDefSchema = baseDefSchema.extend({
 
 export const itemDefSchema = baseDefSchema.extend({
 	kind: z.literal('item'),
-	category: z.string().trim().min(1, 'Category is required'),
 	stackable: z.boolean(),
 	numberOfUses: z.number().int().min(1).optional(),
 	container: containerSpecSchema.optional(),

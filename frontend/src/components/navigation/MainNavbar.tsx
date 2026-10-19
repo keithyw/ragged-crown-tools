@@ -7,6 +7,7 @@ const NAV_LINKS: NavLinkItem[] = [
 	{ label: 'Dashboard', href: URLS.DASHBOARD },
 	{ label: 'Tile Definitions', href: URLS.TILE_DEFINITIONS },
 	{ label: 'Object Definitions', href: URLS.OBJECT_DEFINITIONS },
+	{ label: 'Item Definitions', href: URLS.ITEM_DEFINITIONS },
 	{ label: 'Test', href: URLS.TEST },
 	{ label: 'Zone', href: URLS.ZONE },
 ]
