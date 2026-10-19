@@ -19,9 +19,10 @@ import {
 	type NewMapValues,
 } from '@/components'
 import { useCollection } from '@/hooks'
-import type { Position, TileDef, Zone } from '@/lib/types'
+import type { ObjectDef, Position, TileDef, Zone } from '@/lib/types'
 import {
 	createGrid,
+	defKey,
 	gridSize,
 	handleFormErrors,
 	hasPaintedContent,
@@ -78,11 +79,29 @@ export const ZoneBuilder = ({
 	)
 	const [isModalOpen, setIsModalOpen] = useState(false)
 	const [isPickerOpen, setIsPickerOpen] = useState(false)
-	const { items: tiles, isLoading, error } = useCollection<TileDef>('tile_defs')
+	const {
+		items: tiles,
+		isLoading: tilesLoading,
+		error: tilesError,
+	} = useCollection<TileDef>('tile_defs')
+	const {
+		items: objects,
+		isLoading: objectsLoading,
+		error: objectsError,
+	} = useCollection<ObjectDef>('entities', { filter: { kind: 'object' } })
+	const isLoading = tilesLoading || objectsLoading
+	const error = tilesError ?? objectsError
 
 	const tilesById = useMemo(
 		() => new Map(tiles.map((t) => [t._id, t])),
 		[tiles],
+	)
+
+	// Defs that can sit on the terrain, keyed like a Placement (kind + _id).
+	// Items join them in Tools 10.
+	const placedDefs = useMemo(
+		() => new Map(objects.map((o) => [defKey('object', o._id), o])),
+		[objects],
 	)
 
 	const activeTile = activeTileId ? tilesById.get(activeTileId) : undefined
@@ -147,7 +166,7 @@ export const ZoneBuilder = ({
 	const sz = grid ? gridSize(grid) : null
 
 	if (isLoading) {
-		return <SpinnerSection spinnerMessage='Loading Tiles' />
+		return <SpinnerSection spinnerMessage='Loading Tiles and Objects' />
 	}
 
 	if (error) {
@@ -163,6 +182,8 @@ export const ZoneBuilder = ({
 						<ZoneMapGrid
 							grid={grid}
 							tilesById={tilesById}
+							placements={initialZone?.placements}
+							placedDefs={placedDefs}
 							startingPosition={startingPosition}
 							onCellAction={tool ? handleCell : undefined}
 						/>

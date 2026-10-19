@@ -3,8 +3,8 @@
 import { useRef } from 'react'
 import { TileCell } from '@/components'
 import { type StoredDoc } from '@/lib/services'
-import { type Position, type TileDef } from '@/lib/types'
-import { cellKey, cn, type ZoneGrid } from '@/lib/utils'
+import { type Glyph, type Position, type TileDef, type Zone } from '@/lib/types'
+import { cellKey, cn, defKey, type ZoneGrid } from '@/lib/utils'
 
 const CELL_REM = 2.75
 
@@ -19,6 +19,9 @@ const cellAt = (e: React.PointerEvent<HTMLElement>) => {
 interface ZoneMapGridProps {
 	grid: ZoneGrid
 	tilesById: ReadonlyMap<string, StoredDoc<TileDef>>
+	// Things placed on the terrain, and the defs to draw them with (keyed by defKey).
+	placements?: Zone['placements']
+	placedDefs?: ReadonlyMap<string, { glyph: Glyph }>
 	startingPosition?: Position
 	onCellAction?: (x: number, y: number) => void
 }
@@ -26,6 +29,8 @@ interface ZoneMapGridProps {
 export const ZoneMapGrid = ({
 	grid,
 	tilesById,
+	placements,
+	placedDefs,
 	startingPosition,
 	onCellAction,
 }: ZoneMapGridProps) => {
@@ -41,6 +46,15 @@ export const ZoneMapGrid = ({
 		if (key === lastCell.current) return
 		lastCell.current = key
 		onCellAction(cell.x, cell.y)
+	}
+
+	// The topmost placement is what's drawn; a cell with none shows its terrain.
+	// A placement whose def is missing gives undefined, which TileCell draws as "?".
+	const drawnAt = (x: number, y: number, tileId: string) => {
+		const top = placements?.[cellKey(x, y)]?.at(-1)
+		return top
+			? placedDefs?.get(defKey(top.defKind, top.defId))
+			: tilesById.get(tileId)
 	}
 
 	const endStroke = () => {
@@ -76,7 +90,7 @@ export const ZoneMapGrid = ({
 							key={cellKey(x, y)}
 							data-x={x}
 							data-y={y}
-							tile={tilesById.get(tileId)}
+							tile={drawnAt(x, y, tileId)}
 							className={cn(
 								startingPosition?.x === x &&
 									startingPosition?.y === y &&

@@ -1,10 +1,13 @@
-import type { CellKey } from '@/lib/types'
+import type { CellKey, Kind } from '@/lib/types'
 
 // A zone's terrain: rows of tile _ids, indexed grid[y][x] (same as the game).
 export type ZoneGrid = string[][]
 
 // The one way to build a placements key, so "x, y" / "y,x" drift can't happen.
 export const cellKey = (x: number, y: number): CellKey => `${x},${y}`
+
+// Key for a placed def: kind and _id together, like Placement's composite key.
+export const defKey = (kind: Kind, id: string) => `${kind}:${id}`
 
 export const MIN_ZONE_SIZE = 1
 export const MAX_ZONE_SIZE = 16 // hard-coded for now; raise when it gets in the way

@@ -1,15 +1,15 @@
 'use client'
 
-import { type StoredDoc } from '@/lib/services'
-import { type TileDef } from '@/lib/types'
+import { type Glyph } from '@/lib/types'
 import { cn } from '@/lib/utils'
 
 interface TileCellProps extends React.HTMLAttributes<HTMLSpanElement> {
-	tile?: StoredDoc<TileDef>
+	// Anything with a glyph: a terrain tile, or an object or item placed on it.
+	tile?: { glyph: Glyph }
 }
 
-// One tile as the game draws it: symbol, color and background over a dark base.
-// A missing tile (deleted, or a bad _id in a saved zone) renders as a red "?".
+// One cell as the game draws it: symbol, color and background over a dark base.
+// A missing def (deleted, or a bad _id in a saved zone) renders as a red "?".
 export const TileCell = ({ tile, className, ...rest }: TileCellProps) => (
 	<span
 		aria-hidden='true'
