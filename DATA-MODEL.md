@@ -185,6 +185,8 @@ interface Placement {
 
 `uid` exists so runtime state (an interaction fired once, a placement removed) can refer to this instance without mutating zone data.
 
+A stack may hold the same **stackable item** more than once, each its own placement with its own `quantity` (for example 100 gold and 200 gold, which random amounts will produce). The tools place a stackable item with `quantity: 1` and change it afterwards in the stack manager, not while placing. Objects and spaces are different: the same def can't go directly on top of itself.
+
 ---
 
 ## 4. Interactions

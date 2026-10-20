@@ -1,5 +1,6 @@
 export * from './BaseModal'
 export * from './ConfirmationModal'
+export * from './DefPickerModal'
 export * from './NewMapModal'
 export * from './ObjectPickerModal'
 export * from './TilePickerModal'

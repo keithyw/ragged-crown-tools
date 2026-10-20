@@ -13,8 +13,8 @@ import {
 	ObjectPickerModal,
 	ServerErrorMessages,
 	SpinnerSection,
-	TileCell,
 	TilePickerModal,
+	ToolPickerSection,
 	ZoneMapGrid,
 	type Crumb,
 	type NewMapValues,
@@ -259,130 +259,38 @@ export const ZoneBuilder = ({
 							/>
 						))}
 					</section>
-					<section>
-						<h3 className='mb-2 text-sm font-bold text-gray-700'>Paint</h3>
-						<div className='flex items-center gap-3'>
-							{activeTile ? (
-								<TileCell tile={activeTile} />
-							) : (
-								<span className='h-11 w-11 shrink-0 rounded border border-dashed border-gray-300' />
-							)}
-							<div className='min-w-0 text-sm'>
-								{activeTile ? (
-									<>
-										<div className='truncate font-medium'>
-											{activeTile.name}
-										</div>
-										<div className='truncate text-xs text-gray-500'>
-											{activeTile.id}
-										</div>
-									</>
-								) : (
-									<span className='text-gray-500'>No tile selected</span>
-								)}
-							</div>
-						</div>
-						<div className='mt-3 flex gap-2'>
-							<Button
-								type='button'
-								actionType='submit'
-								disabled={!grid}
-								onClick={() => setIsPickerOpen(true)}
-							>
-								{activeTile ? 'Change tile' : 'Choose tile'}
-							</Button>
-							{tool === 'paint' ? (
-								<Button
-									type='button'
-									actionType='neutral'
-									onClick={() => setTool(null)}
-								>
-									Stop
-								</Button>
-							) : (
-								activeTile && (
-									<Button
-										type='button'
-										actionType='submit'
-										onClick={() => setTool('paint')}
-									>
-										Paint
-									</Button>
-								)
-							)}
-						</div>
-						<p className='mt-2 text-sm text-gray-500'>
-							{tool === 'paint'
-								? 'Click or drag on the map to paint. Esc to stop.'
-								: !grid
-									? 'Draw a map first.'
-									: activeTile
-										? 'Press Paint to continue with this tile.'
-										: 'Choose a tile to start painting.'}
-						</p>
-					</section>
-					<section>
-						<h3 className='mb-2 text-sm font-bold text-gray-700'>Object</h3>
-						<div className='flex items-center gap-3'>
-							{activeObject ? (
-								<TileCell tile={activeObject} />
-							) : (
-								<span className='h-11 w-11 shrink-0 rounded border border-dashed border-gray-300' />
-							)}
-							<div className='min-w-0 text-sm'>
-								{activeObject ? (
-									<>
-										<div className='truncate font-medium'>
-											{activeObject.name}
-										</div>
-										<div className='truncate text-xs text-gray-500'>
-											{activeObject.id}
-										</div>
-									</>
-								) : (
-									<span className='text-gray-500'>No object selected</span>
-								)}
-							</div>
-						</div>
-						<div className='mt-3 flex gap-2'>
-							<Button
-								type='button'
-								actionType='submit'
-								disabled={!grid}
-								onClick={() => setIsObjectPickerOpen(true)}
-							>
-								{activeObject ? 'Change object' : 'Choose object'}
-							</Button>
-							{tool === 'place' ? (
-								<Button
-									type='button'
-									actionType='neutral'
-									onClick={() => setTool(null)}
-								>
-									Stop
-								</Button>
-							) : (
-								activeObject && (
-									<Button
-										type='button'
-										actionType='submit'
-										onClick={() => setTool('place')}
-									>
-										Place
-									</Button>
-								)
-							)}
-						</div>
-						<p className='mt-2 text-sm text-gray-500'>
-							{tool === 'place'
-								? 'Click or drag on the map to place. Esc to stop.'
-								: !grid
-									? 'Draw a map first.'
-									: activeObject
-										? 'Press Place to continue with this object.'
-										: 'Choose an object to start placing.'}
-						</p>
-					</section>
+					<ToolPickerSection
+						title='Paint'
+						def={activeTile}
+						noneLabel='No tile selected'
+						chooseLabel='Choose tile'
+						changeLabel='Change tile'
+						startLabel='Paint'
+						hasMap={!!grid}
+						isActive={tool === 'paint'}
+						onChoose={() => setIsPickerOpen(true)}
+						onStart={() => setTool('paint')}
+						onStop={() => setTool(null)}
+						activeHint='Click or drag on the map to paint. Esc to stop.'
+						resumeHint='Press Paint to continue with this tile.'
+						chooseHint='Choose a tile to start painting.'
+					/>
+					<ToolPickerSection
+						title='Object'
+						def={activeObject}
+						noneLabel='No object selected'
+						chooseLabel='Choose object'
+						changeLabel='Change object'
+						startLabel='Place'
+						hasMap={!!grid}
+						isActive={tool === 'place'}
+						onChoose={() => setIsObjectPickerOpen(true)}
+						onStart={() => setTool('place')}
+						onStop={() => setTool(null)}
+						activeHint='Click or drag on the map to place. Esc to stop.'
+						resumeHint='Press Place to continue with this object.'
+						chooseHint='Choose an object to start placing.'
+					/>
 					<section>
 						<h3 className='mb-2 text-sm font-bold text-gray-700'>
 							Start Position
