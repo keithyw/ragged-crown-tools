@@ -1,3 +1,4 @@
+export * from './InteractionsEditor'
 export * from './ItemInspector'
 export * from './LoadingSpinner'
 export * from './ObjectInspector'

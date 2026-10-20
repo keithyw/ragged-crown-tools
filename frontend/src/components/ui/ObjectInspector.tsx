@@ -29,6 +29,12 @@ export const ObjectInspector = ({
 				? `Capacity ${object.container.capacity}, depth ${object.container.maxDepth ?? 0}`
 				: 'No',
 		},
+		{
+			key: 'Interactions',
+			val: object.interactions?.length
+				? String(object.interactions.length)
+				: 'None',
+		},
 		{ key: 'Description', val: object.description ?? '-' },
 	]
 	return (

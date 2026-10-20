@@ -1,6 +1,7 @@
 export * from './BaseModal'
 export * from './ConfirmationModal'
 export * from './DefPickerModal'
+export * from './InteractionModal'
 export * from './ItemPickerModal'
 export * from './NewMapModal'
 export * from './ObjectPickerModal'

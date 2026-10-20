@@ -72,9 +72,10 @@ const EditItemDefinitionPage = () => {
 			control={editController.control}
 			errors={editController.fieldErrors}
 		>
-			{/* TODO [Tools 6]: default interactions editor goes here (on USE) */}
+			{/* TODO: item use (for example a wand casting a spell) is a separate,
+			deferred design. See DATA-MODEL.md, open questions. */}
 			<p className='text-sm text-gray-500'>
-				Default interactions: coming with the interaction editor.
+				Item use (for example a wand casting a spell): coming later.
 			</p>
 		</EditFormLayout>
 	)

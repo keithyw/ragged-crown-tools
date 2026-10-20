@@ -2,7 +2,8 @@
 
 import { useCallback } from 'react'
 import { useParams } from 'next/navigation'
-import { EditFormLayout } from '@/components'
+import { Controller } from 'react-hook-form'
+import { EditFormLayout, InteractionsEditor } from '@/components'
 import { useEditRecord } from '@/hooks'
 import { URLS } from '@/lib/constants'
 import { collectionService } from '@/lib/services'
@@ -77,10 +78,13 @@ const EditObjectDefinitionPage = () => {
 			control={editController.control}
 			errors={editController.fieldErrors}
 		>
-			{/* TODO [Tools 6]: default interactions editor goes here */}
-			<p className='text-sm text-gray-500'>
-				Default interactions: coming with the interaction editor.
-			</p>
+			<Controller
+				name='interactions'
+				control={editController.control}
+				render={({ field }) => (
+					<InteractionsEditor value={field.value} onChange={field.onChange} />
+				)}
+			/>
 		</EditFormLayout>
 	)
 }

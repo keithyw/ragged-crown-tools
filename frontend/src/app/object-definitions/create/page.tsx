@@ -1,7 +1,7 @@
 'use client'
 
-import { get } from 'react-hook-form'
-import { CreateFormLayout, FormInput } from '@/components'
+import { Controller, get } from 'react-hook-form'
+import { CreateFormLayout, FormInput, InteractionsEditor } from '@/components'
 import { useCreateRecord } from '@/hooks'
 import { URLS } from '@/lib/constants'
 import { collectionService } from '@/lib/services'
@@ -55,10 +55,13 @@ const CreateObjectDefinitionPage = () => {
 					errorMessage={get(errors, f.name)?.message}
 				/>
 			))}
-			{/* TODO [Tools 6]: default interactions editor goes here */}
-			<p className='text-sm text-gray-500'>
-				Default interactions: coming with the interaction editor.
-			</p>
+			<Controller
+				name='interactions'
+				control={control}
+				render={({ field }) => (
+					<InteractionsEditor value={field.value} onChange={field.onChange} />
+				)}
+			/>
 		</CreateFormLayout>
 	)
 }

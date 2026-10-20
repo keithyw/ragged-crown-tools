@@ -57,13 +57,13 @@ The legacy category types that used to be in `map.ts` (`TileType`, `TileType2`, 
 | ---------- | ----------- | ------------------------------------------------------------------------------------ |
 | `terrain`  | `tile_defs` | Today's `TileDef` fields minus the glyph and `isConsumable`: `moveCost`, `isWalkable?`, `encounterRate?`, `encounterTableKey?` |
 | `object`   | `entities`  | `isSolid`, `moveCost?` (spaces only, default 1), `numberOfUses?`, `container?`, `interactions?` |
-| `item`     | `items`     | `stackable`, `numberOfUses?`, `container?`, `interactions?` (on `USE`). More as the inventory design settles; `category` is deferred |
+| `item`     | `items`     | `stackable`, `numberOfUses?`, `container?`, `interactions?` (reserved for item use, deferred). More as the inventory design settles; `category` is deferred |
 | `creature` | `entities`  | Stub for now. Used by random encounters, not placed on the map                       |
 | `portal`   | `entities`  | None beyond the base: always walkable; its destination is set per placement          |
 
 `entities` holds several kinds and is filtered by `kind` on the server ([Backend 2]).
 
-**Items** are things the player can pick up and keep in their inventory, which is what separates them from objects. The expected groups are weapons, armor, and usable items such as torches, keys, maps and magic items, but the item model is deliberately minimal for now (see Open questions). A usable item has a single **use** option, as in Baldur's Gate, Ultima 5-6, Wizardry 6 and The Bard's Tale: its behavior is an interaction `on: USE`. Prerequisites (a key needed to open a chest) are conditions, worked out later.
+**Items** are things the player can pick up and keep in their inventory, which is what separates them from objects. The expected groups are weapons, armor, and usable items such as torches, keys, maps and magic items, but the item model is deliberately minimal for now (see Open questions). Nothing special happens to an item on the map: bumping into one picks it up if the player can carry it. That is engine behavior, not an interaction. A special **use** (a wand casting a spell, as with the single use option in Baldur's Gate, Ultima 5-6, Wizardry 6 and The Bard's Tale) is a separate piece of work that is deferred (see Open questions).
 
 **Portals** are spaces with one specific job: moving the player to a `Destination`. They are their own kind because they are placed and validated differently from ordinary spaces.
 
@@ -79,6 +79,7 @@ Entering a town, castle or dungeon normally lands the player on its `startingPos
 - **Entrances** sit on the world map with their own glyph, placed over the terrain: a cave mouth in the mountains, an elven village icon in the forest, a castle. The player enters by standing on one and pressing an **enter key** (`E`, as in Ultima 3-5), not by stepping onto it, so nobody walks into a town by accident. This is engine logic, not an interaction.
 - **Exits** inside that zone lead back the other way and need not look like the entrance: a door or a cave mouth.
 - Portals are for **narrow, explicit links** where one spot clearly leads to another: a dungeon entrance, a staircase, a trapdoor. Leaving across a zone's open edge is not a portal (section 2.2).
+- Walking into a portal has its **own rules** (one-way, needs an item, single use). They are designed with the portals ([Tools 11]), not with object interactions.
 - **The destination is per placement**, not per def. One "Staircase" def is placed many times, each placement with its own destination, instead of a def per staircase. As in Heroes of Might and Magic's editor, the tools **validate** the map and warn about any portal placement without a destination.
 
 **Creatures do not move on the map and do not chase the player** (unlike Ultima 3-5). They appear only in random encounters. A non-combat NPC, such as a townsperson or a friendly gold dragon quest giver, is not a creature: it is a solid **object** with interactions (dialog when bumped). An interaction can still turn it hostile, for example an action that replaces the object with an encounter.
@@ -96,7 +97,7 @@ Spaces and objects are one `kind: 'object'`, told apart by `isSolid`:
 - `isSolid: true` is an **object**: the player cannot occupy its cell (a wall, a bookshelf). The player bumps into it, which **costs no movement**.
 - `isSolid: false` is a **space**: the player can stand on it, and the player's icon is drawn on top (a carpet, fire, quicksand). Entering it costs the space's `moveCost`, which defaults to 1; a def overrides it when something special is needed (quicksand costs more to get out of). Ultima 4's fire in the Tinker's forge is the model: several fire spaces, each costing extra movement and burning the player on the way to the Rune of Sacrifice.
 - A **static effect** (fire burns N, a magic carpet that levitates the player) is an interaction on the def, triggered when the player enters the cell.
-- **"Custom" is not a separate type.** A custom object or space is a placement that carries its own overrides (section 3).
+- **"Custom" is not a separate type.** A custom object or space is a placement that carries its own overrides (section 3). A fountain's def can carry one fixed interaction (restore 10 stamina). A townsperson's def carries a generic greeting, and a custom NPC's placement adds the dynamic part: its own dialog.
 
 A cell is **blocked** if its terrain is not walkable or any placement in its stack is solid.
 
@@ -190,6 +191,8 @@ A stack may hold the same **stackable item** more than once, each its own placem
 ---
 
 ## 4. Interactions
+
+**Interactions belong to objects and spaces** (NPCs and chests included): on the def, and for the custom part on a placement. Terrain has none. Items have none on the map (bumping one picks it up). Special **item use** and **portal rules** are separate designs, deferred (see Open questions).
 
 `ActionPayload` is retired. Its replacement (names _provisional_):
 
@@ -289,3 +292,5 @@ Zone JSON is the **initial state only**. When a game starts, the player gets a r
   - The item builder may grow one form per category, with shared fields (weight, sale value) in common.
   - Character skills (a "swords" skill covering all swords) come later; AD&D-style specialization is not decided.
 - **Gold and currency.** Deferred. Undecided whether currency is a pooled resource, a per-character stat, or an inventory item with weight, and whether the party can split across locations. `GIVE_CURRENCY` is a placeholder action until then, and gold can be a plain stackable item meanwhile.
+- **Item use.** What using an item does (a wand casting a spell; thieves' tools used on an NPC to get gold) and how it is described. Probably the same Interaction shape with `on: USE`, with conditions (a pickpocket check against the character's skill percentage) and a limit on uses (99, or 1d100). That is why `ItemDef.interactions` stays. Deferred; not part of the object interactions work.
+- **Portal rules.** One-way, needs an item, single use, and where they live in the data. Designed with the portals ([Tools 11]) when the first interior building is built.

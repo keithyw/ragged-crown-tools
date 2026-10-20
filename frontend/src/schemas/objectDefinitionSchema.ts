@@ -12,6 +12,7 @@ const wholeNumber = (label: string) =>
 // The transform turns the form's shape back into the stored one:
 //   - capacity 0 means "not a container", so the container is left out
 //   - moveCost only applies to spaces, so a solid object doesn't keep one
+//   - an empty interactions list is left out
 export const objectDefinitionSchema = objectDefSchema
 	.extend({
 		id: z
@@ -26,11 +27,13 @@ export const objectDefinitionSchema = objectDefSchema
 			})
 			.optional(),
 	})
-	.transform(({ container, isSolid, moveCost, ...rest }) => ({
+	.transform(({ container, isSolid, moveCost, interactions, ...rest }) => ({
 		...rest,
 		isSolid,
 		moveCost: isSolid ? undefined : moveCost,
 		container: container && container.capacity > 0 ? container : undefined,
+		// No interactions is saved as no key, not an empty array.
+		interactions: interactions?.length ? interactions : undefined,
 	}))
 
 export type ObjectDefinitionFormData = z.infer<typeof objectDefinitionSchema>
