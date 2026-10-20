@@ -1,4 +1,4 @@
-import type { CellKey, Kind } from '@/lib/types'
+import type { CellKey, Kind, Placement } from '@/lib/types'
 
 // A zone's terrain: rows of tile _ids, indexed grid[y][x] (same as the game).
 export type ZoneGrid = string[][]
@@ -8,6 +8,29 @@ export const cellKey = (x: number, y: number): CellKey => `${x},${y}`
 
 // Key for a placed def: kind and _id together, like Placement's composite key.
 export const defKey = (kind: Kind, id: string) => `${kind}:${id}`
+
+// What a zone holds on top of its terrain: a stack per cell, bottom to top.
+export type Placements = Partial<Record<CellKey, Placement[]>>
+
+// The same def can't go directly on top of itself (no wall on a wall). A
+// different def can (a chest on a table), and there is no limit on height.
+export const canPlaceOnTop = (
+	placements: Placements | undefined,
+	key: CellKey,
+	defKind: Kind,
+	defId: string,
+) => {
+	const top = placements?.[key]?.at(-1)
+	return !(top && top.defKind === defKind && top.defId === defId)
+}
+
+// Returns new placements with `p` on top of the cell's stack. Only that cell's
+// array is copied.
+export const pushPlacement = (
+	placements: Placements | undefined,
+	key: CellKey,
+	p: Placement,
+): Placements => ({ ...placements, [key]: [...(placements?.[key] ?? []), p] })
 
 export const MIN_ZONE_SIZE = 1
 export const MAX_ZONE_SIZE = 16 // hard-coded for now; raise when it gets in the way

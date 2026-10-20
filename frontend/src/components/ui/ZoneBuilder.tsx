@@ -10,6 +10,7 @@ import {
 	CancelSubmitButton,
 	FormInput,
 	NewMapModal,
+	ObjectPickerModal,
 	ServerErrorMessages,
 	SpinnerSection,
 	TileCell,
@@ -21,12 +22,16 @@ import {
 import { useCollection } from '@/hooks'
 import type { ObjectDef, Position, TileDef, Zone } from '@/lib/types'
 import {
+	canPlaceOnTop,
+	cellKey,
 	createGrid,
 	defKey,
 	gridSize,
 	handleFormErrors,
 	hasPaintedContent,
 	paintCell,
+	pushPlacement,
+	type Placements,
 	type ZoneGrid,
 } from '@/lib/utils'
 import {
@@ -37,7 +42,7 @@ import {
 import { detailFields } from '@/app/zone/fields'
 
 // One tool at a time; a click on the map does exactly one thing.
-type Tool = 'paint' | 'start'
+type Tool = 'paint' | 'start' | 'place'
 
 interface ZoneBuilderProps {
 	breadcrumbs: Crumb[]
@@ -71,6 +76,10 @@ export const ZoneBuilder = ({
 	const [triedToSave, setTriedToSave] = useState(false)
 	const [tool, setTool] = useState<Tool | null>(null)
 	const [activeTileId, setActiveTileId] = useState<string | null>(null)
+	const [activeObjectId, setActiveObjectId] = useState<string | null>(null)
+	const [placements, setPlacements] = useState<Placements | undefined>(
+		initialZone?.placements,
+	)
 	const [startingPosition, setStartingPosition] = useState<
 		Position | undefined
 	>(initialZone?.startingPosition)
@@ -79,6 +88,7 @@ export const ZoneBuilder = ({
 	)
 	const [isModalOpen, setIsModalOpen] = useState(false)
 	const [isPickerOpen, setIsPickerOpen] = useState(false)
+	const [isObjectPickerOpen, setIsObjectPickerOpen] = useState(false)
 	const {
 		items: tiles,
 		isLoading: tilesLoading,
@@ -105,15 +115,16 @@ export const ZoneBuilder = ({
 	)
 
 	const activeTile = activeTileId ? tilesById.get(activeTileId) : undefined
+	const activeObject = objects.find((o) => o._id === activeObjectId)
 
 	useEffect(() => {
-		if (!tool || isPickerOpen) return
+		if (!tool || isPickerOpen || isObjectPickerOpen) return
 		const onKeyDown = (e: KeyboardEvent) => {
 			if (e.key === 'Escape') setTool(null)
 		}
 		window.addEventListener('keydown', onKeyDown)
 		return () => window.removeEventListener('keydown', onKeyDown)
-	}, [tool, isPickerOpen])
+	}, [tool, isPickerOpen, isObjectPickerOpen])
 
 	const handleCell = useCallback(
 		(x: number, y: number) => {
@@ -123,9 +134,25 @@ export const ZoneBuilder = ({
 				// One-shot: pick a tile, then the tool turns off.
 				setStartingPosition({ x, y })
 				setTool(null)
+			} else if (tool === 'place' && activeObject) {
+				const key = cellKey(x, y)
+				if (!canPlaceOnTop(placements, key, 'object', activeObject._id)) {
+					// A fixed id makes a repeat replace this toast instead of piling up.
+					toast.error(`${activeObject.name} is already on top of this cell.`, {
+						id: 'duplicate-placement',
+					})
+					return
+				}
+				setPlacements((prev) =>
+					pushPlacement(prev, key, {
+						uid: crypto.randomUUID(),
+						defKind: 'object',
+						defId: activeObject._id,
+					}),
+				)
 			}
 		},
-		[tool, activeTileId],
+		[tool, activeTileId, activeObject, placements],
 	)
 
 	const handleDraw = ({ width, height, tileId }: NewMapValues) => {
@@ -145,8 +172,7 @@ export const ZoneBuilder = ({
 			...details,
 			terrain: grid,
 			startingPosition,
-			// Carried through unchanged until the place tool exists (Tools 9, phase 3).
-			placements: initialZone?.placements,
+			placements,
 		})
 		if (!parsed.success) {
 			toast.error(parsed.error.issues[0].message)
@@ -182,7 +208,7 @@ export const ZoneBuilder = ({
 						<ZoneMapGrid
 							grid={grid}
 							tilesById={tilesById}
-							placements={initialZone?.placements}
+							placements={placements}
 							placedDefs={placedDefs}
 							startingPosition={startingPosition}
 							onCellAction={tool ? handleCell : undefined}
@@ -293,6 +319,68 @@ export const ZoneBuilder = ({
 						</p>
 					</section>
 					<section>
+						<h3 className='mb-2 text-sm font-bold text-gray-700'>Object</h3>
+						<div className='flex items-center gap-3'>
+							{activeObject ? (
+								<TileCell tile={activeObject} />
+							) : (
+								<span className='h-11 w-11 shrink-0 rounded border border-dashed border-gray-300' />
+							)}
+							<div className='min-w-0 text-sm'>
+								{activeObject ? (
+									<>
+										<div className='truncate font-medium'>
+											{activeObject.name}
+										</div>
+										<div className='truncate text-xs text-gray-500'>
+											{activeObject.id}
+										</div>
+									</>
+								) : (
+									<span className='text-gray-500'>No object selected</span>
+								)}
+							</div>
+						</div>
+						<div className='mt-3 flex gap-2'>
+							<Button
+								type='button'
+								actionType='submit'
+								disabled={!grid}
+								onClick={() => setIsObjectPickerOpen(true)}
+							>
+								{activeObject ? 'Change object' : 'Choose object'}
+							</Button>
+							{tool === 'place' ? (
+								<Button
+									type='button'
+									actionType='neutral'
+									onClick={() => setTool(null)}
+								>
+									Stop
+								</Button>
+							) : (
+								activeObject && (
+									<Button
+										type='button'
+										actionType='submit'
+										onClick={() => setTool('place')}
+									>
+										Place
+									</Button>
+								)
+							)}
+						</div>
+						<p className='mt-2 text-sm text-gray-500'>
+							{tool === 'place'
+								? 'Click or drag on the map to place. Esc to stop.'
+								: !grid
+									? 'Draw a map first.'
+									: activeObject
+										? 'Press Place to continue with this object.'
+										: 'Choose an object to start placing.'}
+						</p>
+					</section>
+					<section>
 						<h3 className='mb-2 text-sm font-bold text-gray-700'>
 							Start Position
 						</h3>
@@ -366,6 +454,18 @@ export const ZoneBuilder = ({
 					setActiveTileId(t._id)
 					setTool('paint')
 					setIsPickerOpen(false)
+				}}
+			/>
+
+			<ObjectPickerModal
+				isOpen={isObjectPickerOpen}
+				objects={objects}
+				selectedId={activeObjectId}
+				onClose={() => setIsObjectPickerOpen(false)}
+				onSelect={(o) => {
+					setActiveObjectId(o._id)
+					setTool('place')
+					setIsObjectPickerOpen(false)
 				}}
 			/>
 
