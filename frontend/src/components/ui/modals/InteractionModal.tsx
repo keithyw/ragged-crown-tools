@@ -9,16 +9,32 @@ import {
 	TextareaInput,
 	TextInput,
 } from '@/components'
-import type { Action, Interaction, InteractionType } from '@/lib/types'
+import type { PlaceableDef } from '@/hooks'
+import type { Action, Interaction, InteractionType, Kind } from '@/lib/types'
 import {
 	ACTION_TYPES,
 	INTERACTION_TRIGGERS,
+	parseNumberInput,
 	type ActionField,
 } from '@/lib/utils'
 import { interactionSchema } from '@/schemas'
 
+const KIND_LABELS: Partial<Record<Kind, string>> = {
+	item: 'Item',
+	object: 'Object',
+}
+
+// One select value for a def: its kind and _id together.
+const defKey = (kind: Kind, id: string) => `${kind}:${id}`
+
 // The editor's own wording for a zod problem.
 const issueText = (issue: { path: PropertyKey[]; message: string }) => {
+	if (issue.message.includes('expected number')) {
+		const field = issue.path[issue.path.length - 1]
+		return issue.path[0] === 'actions' && typeof issue.path[1] === 'number'
+			? `Action ${issue.path[1] + 1}: enter a number for ${String(field)}`
+			: 'Enter a number'
+	}
 	if (issue.path[0] === 'actions' && typeof issue.path[1] === 'number') {
 		return `Action ${issue.path[1] + 1}: ${issue.message}`
 	}
@@ -28,6 +44,8 @@ const issueText = (issue: { path: PropertyKey[]; message: string }) => {
 
 interface InteractionFormProps {
 	initial: Interaction
+	defs: PlaceableDef[]
+	defsLoading: boolean
 	onClose: () => void
 	onSave: (interaction: Interaction) => void
 }
@@ -37,6 +55,8 @@ interface InteractionFormProps {
 // form, and a nested form's submit would also submit that one.
 const InteractionForm = ({
 	initial,
+	defs,
+	defsLoading,
 	onClose,
 	onSave,
 }: InteractionFormProps) => {
@@ -48,11 +68,26 @@ const InteractionForm = ({
 	const setAction = (index: number, next: Action) =>
 		setActions((prev) => prev.map((a, i) => (i === index ? next : a)))
 
-	const setField = (index: number, field: ActionField, raw: string) =>
+	const setField = (index: number, field: ActionField, raw: string) => {
+		const next = { ...actions[index] } as Record<string, unknown>
+		if (field.input === 'number' && field.optional && raw.trim() === '') {
+			delete next[field.key]
+		} else {
+			next[field.key] = field.input === 'number' ? parseNumberInput(raw) : raw
+		}
+		setAction(index, next as unknown as Action)
+	}
+
+	// A def field sets both halves of the reference.
+	const setDef = (index: number, key: string) => {
+		const def = defs.find((d) => defKey(d.kind, d._id) === key)
+		if (!def) return
 		setAction(index, {
 			...actions[index],
-			[field.key]: field.input === 'number' ? Number(raw) : raw,
+			defKind: def.kind,
+			defId: def._id,
 		} as Action)
+	}
 
 	const handleSave = () => {
 		if (actions.length === 0) {
@@ -140,6 +175,24 @@ const InteractionForm = ({
 											: String(raw)
 										: String(raw ?? '')
 								const id = `action-${i}-${field.key}`
+								if (field.input === 'def') {
+									const a = action as { defKind: Kind; defId: string }
+									return (
+										<SelectDropdown
+											key={field.key}
+											id={id}
+											label={field.label}
+											placeholder={defsLoading ? 'Loading...' : 'Choose...'}
+											disabled={defsLoading}
+											options={defs.map((d) => ({
+												value: defKey(d.kind, d._id),
+												label: `${KIND_LABELS[d.kind] ?? d.kind}: ${d.name}`,
+											}))}
+											selectedValue={a.defId ? defKey(a.defKind, a.defId) : ''}
+											onSelect={(v) => v && setDef(i, String(v))}
+										/>
+									)
+								}
 								return field.input === 'textarea' ? (
 									<TextareaInput
 										key={field.key}
@@ -211,6 +264,8 @@ interface InteractionModalProps {
 	isOpen: boolean
 	// The interaction to edit, or a blank one when adding.
 	initial: Interaction | null
+	defs: PlaceableDef[]
+	defsLoading: boolean
 	onClose: () => void
 	onSave: (interaction: Interaction) => void
 }
@@ -218,12 +273,20 @@ interface InteractionModalProps {
 export const InteractionModal = ({
 	isOpen,
 	initial,
+	defs,
+	defsLoading,
 	onClose,
 	onSave,
 }: InteractionModalProps) => (
 	<BaseModal isOpen={isOpen} onClose={onClose} panelClassName='max-w-xl'>
 		{initial && (
-			<InteractionForm initial={initial} onClose={onClose} onSave={onSave} />
+			<InteractionForm
+				initial={initial}
+				defs={defs}
+				defsLoading={defsLoading}
+				onClose={onClose}
+				onSave={onSave}
+			/>
 		)}
 	</BaseModal>
 )

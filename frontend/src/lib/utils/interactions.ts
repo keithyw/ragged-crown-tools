@@ -1,4 +1,4 @@
-import type { Action, Interaction, InteractionType } from '@/lib/types'
+import type { Action, Interaction, InteractionType, Kind } from '@/lib/types'
 
 // What can start an interaction on an object or space. PICKUP and DROP are for
 // items, so they are not offered here.
@@ -15,9 +15,21 @@ export const INTERACTION_TRIGGERS: { value: InteractionType; label: string }[] =
 export interface ActionField {
 	key: string // the property on the action
 	label: string
-	input: 'text' | 'textarea' | 'number'
+	// 'def' picks an item or object and sets both defKind and defId (its key is
+	// defId).
+	input: 'text' | 'textarea' | 'number' | 'def'
 	placeholder?: string
+	// A blank value leaves the property out instead of storing it (numbers).
+	optional?: boolean
 }
+
+// What a summary needs to know beyond the action itself.
+export interface SummaryContext {
+	defName: (kind: Kind, id: string) => string
+}
+
+// For callers with no names to hand: show the id.
+export const NO_NAMES: SummaryContext = { defName: (_kind, id) => id }
 
 export interface ActionTypeConfig {
 	type: Action['type']
@@ -25,7 +37,7 @@ export interface ActionTypeConfig {
 	fields: ActionField[]
 	blank: () => Action
 	// A short phrase for the list ("change stamina by +10").
-	summary: (action: Action) => string
+	summary: (action: Action, ctx: SummaryContext) => string
 }
 
 // The action types the editor can author, config-as-code like the form fields.
@@ -69,22 +81,53 @@ export const ACTION_TYPES: ActionTypeConfig[] = [
 			return `show "${text.length > 40 ? `${text.slice(0, 40)}...` : text}"`
 		},
 	},
+	{
+		type: 'SPAWN',
+		label: 'Spawn (add to this cell)',
+		fields: [
+			{ key: 'defId', label: 'What to spawn', input: 'def' },
+			{
+				key: 'quantity',
+				label: 'Quantity (blank = none)',
+				input: 'number',
+				optional: true,
+			},
+		],
+		blank: () => ({ type: 'SPAWN', defKind: 'item', defId: '' }),
+		summary: (a, ctx) =>
+			a.type === 'SPAWN'
+				? `spawn ${ctx.defName(a.defKind, a.defId)}${a.quantity ? ` x${a.quantity}` : ''}`
+				: '',
+	},
 ]
 
-export const summarizeAction = (action: Action) =>
-	ACTION_TYPES.find((t) => t.type === action.type)?.summary(action) ||
+export const summarizeAction = (
+	action: Action,
+	ctx: SummaryContext = NO_NAMES,
+) =>
+	ACTION_TYPES.find((t) => t.type === action.type)?.summary(action, ctx) ||
 	action.type.toLowerCase().replaceAll('_', ' ')
 
 // "Bump: change stamina by +10", with the limit when there is one.
-export const summarizeInteraction = (i: Interaction) => {
+export const summarizeInteraction = (
+	i: Interaction,
+	ctx: SummaryContext = NO_NAMES,
+) => {
 	const trigger =
 		INTERACTION_TRIGGERS.find((t) => t.value === i.on)?.label ?? i.on
-	const what = i.actions.map(summarizeAction).join(', ') || 'nothing'
+	const what =
+		i.actions.map((a) => summarizeAction(a, ctx)).join(', ') || 'nothing'
 	const limit = i.limit
 		? ` (${i.limit === 1 ? 'once' : `up to ${i.limit} times`})`
 		: ''
 	return `${trigger}: ${what}${limit}`
 }
+
+// A number input's text as a number. A blank stays NaN and never becomes 0, so
+// that a lone "-" typed on the way to a negative number isn't rewritten as 0
+// (the browser reports "" until the number is complete).
+export const parseNumberInput = (raw: string) =>
+	raw.trim() === '' ? NaN : Number(raw)
 
 // A new interaction to start editing. Call it from an event handler, not
 // during render, since it generates an id.

@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import { Button, InteractionModal } from '@/components'
+import { usePlaceableDefs } from '@/hooks'
 import type { Interaction } from '@/lib/types'
 import { blankInteraction, summarizeInteraction } from '@/lib/utils'
 
@@ -18,6 +19,8 @@ export const InteractionsEditor = ({
 	onChange,
 }: InteractionsEditorProps) => {
 	const list = value ?? []
+	const { defs, isLoading, defName } = usePlaceableDefs()
+	const names = { defName }
 	// index is null while adding a new one.
 	const [editing, setEditing] = useState<{
 		index: number | null
@@ -36,7 +39,7 @@ export const InteractionsEditor = ({
 							key={it.id}
 							className='flex items-center justify-between gap-3 rounded border border-gray-200 p-3 text-sm text-gray-900'
 						>
-							<span className='min-w-0'>{summarizeInteraction(it)}</span>
+							<span className='min-w-0'>{summarizeInteraction(it, names)}</span>
 							<span className='flex shrink-0 gap-2'>
 								<Button
 									type='button'
@@ -70,6 +73,8 @@ export const InteractionsEditor = ({
 			<InteractionModal
 				isOpen={editing !== null}
 				initial={editing?.interaction ?? null}
+				defs={defs}
+				defsLoading={isLoading}
 				onClose={() => setEditing(null)}
 				onSave={(saved) => {
 					if (!editing) return
