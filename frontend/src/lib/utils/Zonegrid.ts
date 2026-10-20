@@ -24,6 +24,24 @@ export const canPlaceOnTop = (
 	return !(top && top.defKind === defKind && top.defId === defId)
 }
 
+// Placements whose cell is still inside a width x height map; the rest are
+// dropped. Returns the same object when nothing is dropped, and undefined when
+// nothing is left (a zone with no placements has no placements key at all).
+export const placementsWithin = (
+	placements: Placements | undefined,
+	width: number,
+	height: number,
+): Placements | undefined => {
+	const keys = Object.keys(placements ?? {}) as CellKey[]
+	const kept = keys.filter((key) => {
+		const [x, y] = key.split(',').map(Number)
+		return x < width && y < height
+	})
+	if (kept.length === 0) return undefined
+	if (kept.length === keys.length) return placements
+	return Object.fromEntries(kept.map((key) => [key, placements?.[key]]))
+}
+
 // Returns new placements with `p` on top of the cell's stack. Only that cell's
 // array is copied.
 export const pushPlacement = (

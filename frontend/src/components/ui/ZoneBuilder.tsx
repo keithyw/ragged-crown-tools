@@ -30,6 +30,7 @@ import {
 	handleFormErrors,
 	hasPaintedContent,
 	paintCell,
+	placementsWithin,
 	pushPlacement,
 	type Placements,
 	type ZoneGrid,
@@ -157,10 +158,12 @@ export const ZoneBuilder = ({
 
 	const handleDraw = ({ width, height, tileId }: NewMapValues) => {
 		setGrid(createGrid(width, height, tileId))
-		// Keep the start only if it still fits on the redrawn map.
+		// Keep the start and the placements only if they still fit on the redrawn
+		// map.
 		setStartingPosition((p) =>
 			p && p.x < width && p.y < height ? p : undefined,
 		)
+		setPlacements((p) => placementsWithin(p, width, height))
 		setIsModalOpen(false)
 	}
 
