@@ -50,6 +50,25 @@ export const ACTION_TYPES: ActionTypeConfig[] = [
 				? `change ${a.attribute || '?'} by ${a.amount > 0 ? '+' : ''}${a.amount}`
 				: '',
 	},
+	{
+		type: 'SHOW_DIALOG',
+		label: 'Show dialog',
+		fields: [
+			{
+				key: 'text',
+				label: 'Dialog text',
+				input: 'textarea',
+				placeholder: 'Hello and welcome to town!',
+			},
+		],
+		blank: () => ({ type: 'SHOW_DIALOG', text: '' }),
+		// The start of the text, on one line.
+		summary: (a) => {
+			if (a.type !== 'SHOW_DIALOG') return ''
+			const text = a.text.replace(/\s+/g, ' ').trim()
+			return `show "${text.length > 40 ? `${text.slice(0, 40)}...` : text}"`
+		},
+	},
 ]
 
 export const summarizeAction = (action: Action) =>
