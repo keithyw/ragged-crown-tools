@@ -281,7 +281,11 @@ Rules:
 - **Interacting with an object always tells the player something.** There is no "look" command yet, so at minimum the object's `name` and `description` go to the game log when the player interacts with it. This is game-side behavior, not authored per interaction.
 - **When an interaction's conditions fail, the player gets a message saying what is missing.** By default the engine builds it from the conditions ("The chest requires Rusty Key"). An interaction may carry an optional `hint` that **replaces** the default, so a puzzle doesn't give its answer away ("The lock has a dragon's head on it").
 - The tools only store `hint`. It is offered in the editor only when the interaction has conditions.
-- Not decided: which `hint` is shown when no interaction in the list passes (working assumption: the first failing interaction that has one, else the default for the first failing interaction). An unconditional fallback interaction (a "locked" dialog) makes the hint moot.
+- **Which message is shown when nothing passes:**
+  - If **one** conditional interaction applies and fails, the player sees its `hint`, else the default message. The default lists only the requirements still **missing** (a door that needs two ruby eyes, with one held, says it needs one).
+  - If **several** conditional interactions fail (the same locked door can be opened with a key or a crowbar), the engine does not pick one. It shows the object's `description` and ignores their hints. The author uses the description to say what is needed, or to hint at it ("A dragon's head is carved above the lock").
+  - An unconditional fallback interaction (a "locked" dialog) makes all of this moot.
+- **Not designed, on purpose:** evolving flavor text (the door's text changes after one of two gems is inserted) and per-object interfaces (Wizardry 6's door and chest menus, where the player picks a method). Both are more than the current milestones need. Evolving text would probably become a kind of interaction later.
 
 ---
 
@@ -328,4 +332,4 @@ Zone JSON is the **initial state only**. When a game starts, the player gets a r
   - Much of "either/or" is already covered by precedence (section 4.1): a first interaction that needs the thing, then a fallback. A toll-bridge troll that takes 5000 gold, otherwise fights, is that: pay (conditions: has gold) then a fallback that spawns an encounter.
   - What is not covered is a **player's choice** (Wizardry 6's troll asks "pay or fight?"). That needs dialog with choices, which is a tree. No trees for now.
   - A quest giver with several quests, each unlocking the next, is the same class of problem. The first quest giver is a single happy path.
-- **Skill checks.** A locked chest opened by a character's lock picking (a thief's skill percentage) is a different object from one that needs a specific key (the dragon's key), though they look alike. It needs a condition type that reads a character skill, so it waits for character skills (deferred). Probably a new condition type, not a variant of `HAS_ITEM`.
+- **Skill checks.** A locked chest opened by a character's lock picking (a thief's skill percentage) is a different object from one that needs a specific key (the dragon's key), though they look alike. It needs a condition type that reads a character skill, so it waits for character skills (deferred). Probably a new condition type, not a variant of `HAS_ITEM`. Bashing a door (a strength check) and a Knock spell are the same kind of thing. In Wizardry 6 these are methods the player picks from a menu on the door; here, until there is such a menu, each method would be a separate interaction (section 4.7 covers what the player sees when all of them fail).
