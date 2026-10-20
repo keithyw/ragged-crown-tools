@@ -24,6 +24,9 @@ interface ZoneMapGridProps {
 	placedDefs?: ReadonlyMap<string, { glyph: Glyph }>
 	startingPosition?: Position
 	onCellAction?: (x: number, y: number) => void
+	// Dragging applies the action to each cell crossed. When false, only the
+	// cell that was clicked gets it.
+	dragToApply?: boolean
 }
 
 export const ZoneMapGrid = ({
@@ -33,6 +36,7 @@ export const ZoneMapGrid = ({
 	placedDefs,
 	startingPosition,
 	onCellAction,
+	dragToApply = true,
 }: ZoneMapGridProps) => {
 	const width = grid[0]?.length ?? 0
 	// this is cool. huh huh. shutup beavis!
@@ -78,7 +82,7 @@ export const ZoneMapGrid = ({
 					paintAt(e)
 				}}
 				onPointerMove={(e) => {
-					if (isStroking.current) paintAt(e)
+					if (isStroking.current && dragToApply) paintAt(e)
 				}}
 				onPointerUp={endStroke}
 				onPointerLeave={endStroke}

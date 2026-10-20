@@ -22,7 +22,8 @@ interface DefPickerModalProps<T extends PickableDef> {
 	selectedId: string | null
 	onClose: () => void
 	onSelect: (def: T) => void
-	// An extra short line under the id, such as "Solid" or "Space".
+	// An extra short line under the id, such as "Solid" or "Space". Nothing is
+	// shown when it returns an empty string.
 	tag?: (def: T) => string
 }
 
@@ -73,7 +74,7 @@ export const DefPickerModal = <T extends PickableDef>({
 							<span className='w-full truncate text-center text-xs text-gray-500'>
 								{d.id}
 							</span>
-							{tag && (
+							{tag?.(d) && (
 								<span className='w-full truncate text-center text-xs text-gray-500'>
 									{tag(d)}
 								</span>

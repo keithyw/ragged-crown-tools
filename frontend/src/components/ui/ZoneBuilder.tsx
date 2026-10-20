@@ -9,6 +9,7 @@ import {
 	Button,
 	CancelSubmitButton,
 	FormInput,
+	ItemPickerModal,
 	NewMapModal,
 	ObjectPickerModal,
 	ServerErrorMessages,
@@ -20,7 +21,14 @@ import {
 	type NewMapValues,
 } from '@/components'
 import { useCollection } from '@/hooks'
-import type { ObjectDef, Position, TileDef, Zone } from '@/lib/types'
+import type {
+	Glyph,
+	ItemDef,
+	ObjectDef,
+	Position,
+	TileDef,
+	Zone,
+} from '@/lib/types'
 import {
 	canPlaceOnTop,
 	cellKey,
@@ -43,7 +51,7 @@ import {
 import { detailFields } from '@/app/zone/fields'
 
 // One tool at a time; a click on the map does exactly one thing.
-type Tool = 'paint' | 'start' | 'place'
+type Tool = 'paint' | 'start' | 'object' | 'item'
 
 interface ZoneBuilderProps {
 	breadcrumbs: Crumb[]
@@ -78,6 +86,7 @@ export const ZoneBuilder = ({
 	const [tool, setTool] = useState<Tool | null>(null)
 	const [activeTileId, setActiveTileId] = useState<string | null>(null)
 	const [activeObjectId, setActiveObjectId] = useState<string | null>(null)
+	const [activeItemId, setActiveItemId] = useState<string | null>(null)
 	const [placements, setPlacements] = useState<Placements | undefined>(
 		initialZone?.placements,
 	)
@@ -90,6 +99,7 @@ export const ZoneBuilder = ({
 	const [isModalOpen, setIsModalOpen] = useState(false)
 	const [isPickerOpen, setIsPickerOpen] = useState(false)
 	const [isObjectPickerOpen, setIsObjectPickerOpen] = useState(false)
+	const [isItemPickerOpen, setIsItemPickerOpen] = useState(false)
 	const {
 		items: tiles,
 		isLoading: tilesLoading,
@@ -100,8 +110,13 @@ export const ZoneBuilder = ({
 		isLoading: objectsLoading,
 		error: objectsError,
 	} = useCollection<ObjectDef>('entities', { filter: { kind: 'object' } })
-	const isLoading = tilesLoading || objectsLoading
-	const error = tilesError ?? objectsError
+	const {
+		items,
+		isLoading: itemsLoading,
+		error: itemsError,
+	} = useCollection<ItemDef>('items')
+	const isLoading = tilesLoading || objectsLoading || itemsLoading
+	const error = tilesError ?? objectsError ?? itemsError
 
 	const tilesById = useMemo(
 		() => new Map(tiles.map((t) => [t._id, t])),
@@ -109,23 +124,27 @@ export const ZoneBuilder = ({
 	)
 
 	// Defs that can sit on the terrain, keyed like a Placement (kind + _id).
-	// Items join them in Tools 10.
 	const placedDefs = useMemo(
-		() => new Map(objects.map((o) => [defKey('object', o._id), o])),
-		[objects],
+		() =>
+			new Map<string, { glyph: Glyph }>([
+				...objects.map((o) => [defKey('object', o._id), o] as const),
+				...items.map((i) => [defKey('item', i._id), i] as const),
+			]),
+		[objects, items],
 	)
 
 	const activeTile = activeTileId ? tilesById.get(activeTileId) : undefined
 	const activeObject = objects.find((o) => o._id === activeObjectId)
+	const activeItem = items.find((i) => i._id === activeItemId)
 
 	useEffect(() => {
-		if (!tool || isPickerOpen || isObjectPickerOpen) return
+		if (!tool || isPickerOpen || isObjectPickerOpen || isItemPickerOpen) return
 		const onKeyDown = (e: KeyboardEvent) => {
 			if (e.key === 'Escape') setTool(null)
 		}
 		window.addEventListener('keydown', onKeyDown)
 		return () => window.removeEventListener('keydown', onKeyDown)
-	}, [tool, isPickerOpen, isObjectPickerOpen])
+	}, [tool, isPickerOpen, isObjectPickerOpen, isItemPickerOpen])
 
 	const handleCell = useCallback(
 		(x: number, y: number) => {
@@ -135,7 +154,7 @@ export const ZoneBuilder = ({
 				// One-shot: pick a tile, then the tool turns off.
 				setStartingPosition({ x, y })
 				setTool(null)
-			} else if (tool === 'place' && activeObject) {
+			} else if (tool === 'object' && activeObject) {
 				const key = cellKey(x, y)
 				if (!canPlaceOnTop(placements, key, 'object', activeObject._id)) {
 					// A fixed id makes a repeat replace this toast instead of piling up.
@@ -151,9 +170,21 @@ export const ZoneBuilder = ({
 						defId: activeObject._id,
 					}),
 				)
+			} else if (tool === 'item' && activeItem) {
+				// No duplicate check for items: the same item can go on a stack more
+				// than once (100 gold and 200 gold). A stackable item starts at
+				// quantity 1; changing it is for the stack manager (Tools 12).
+				setPlacements((prev) =>
+					pushPlacement(prev, cellKey(x, y), {
+						uid: crypto.randomUUID(),
+						defKind: 'item',
+						defId: activeItem._id,
+						...(activeItem.stackable ? { quantity: 1 } : {}),
+					}),
+				)
 			}
 		},
-		[tool, activeTileId, activeObject, placements],
+		[tool, activeTileId, activeObject, activeItem, placements],
 	)
 
 	const handleDraw = ({ width, height, tileId }: NewMapValues) => {
@@ -195,7 +226,7 @@ export const ZoneBuilder = ({
 	const sz = grid ? gridSize(grid) : null
 
 	if (isLoading) {
-		return <SpinnerSection spinnerMessage='Loading Tiles and Objects' />
+		return <SpinnerSection spinnerMessage='Loading Tiles, Objects and Items' />
 	}
 
 	if (error) {
@@ -215,6 +246,7 @@ export const ZoneBuilder = ({
 							placedDefs={placedDefs}
 							startingPosition={startingPosition}
 							onCellAction={tool ? handleCell : undefined}
+							dragToApply={tool !== 'item'}
 						/>
 					) : (
 						<div className='rounded border border-dashed border-gray-300 p-16 text-center text-xl font-medium text-gray-700'>
@@ -283,13 +315,29 @@ export const ZoneBuilder = ({
 						changeLabel='Change object'
 						startLabel='Place'
 						hasMap={!!grid}
-						isActive={tool === 'place'}
+						isActive={tool === 'object'}
 						onChoose={() => setIsObjectPickerOpen(true)}
-						onStart={() => setTool('place')}
+						onStart={() => setTool('object')}
 						onStop={() => setTool(null)}
 						activeHint='Click or drag on the map to place. Esc to stop.'
 						resumeHint='Press Place to continue with this object.'
 						chooseHint='Choose an object to start placing.'
+					/>
+					<ToolPickerSection
+						title='Item'
+						def={activeItem}
+						noneLabel='No item selected'
+						chooseLabel='Choose item'
+						changeLabel='Change item'
+						startLabel='Place'
+						hasMap={!!grid}
+						isActive={tool === 'item'}
+						onChoose={() => setIsItemPickerOpen(true)}
+						onStart={() => setTool('item')}
+						onStop={() => setTool(null)}
+						activeHint='Click a cell to place the item. Esc to stop.'
+						resumeHint='Press Place to continue with this item.'
+						chooseHint='Choose an item to start placing.'
 					/>
 					<section>
 						<h3 className='mb-2 text-sm font-bold text-gray-700'>
@@ -375,8 +423,20 @@ export const ZoneBuilder = ({
 				onClose={() => setIsObjectPickerOpen(false)}
 				onSelect={(o) => {
 					setActiveObjectId(o._id)
-					setTool('place')
+					setTool('object')
 					setIsObjectPickerOpen(false)
+				}}
+			/>
+
+			<ItemPickerModal
+				isOpen={isItemPickerOpen}
+				items={items}
+				selectedId={activeItemId}
+				onClose={() => setIsItemPickerOpen(false)}
+				onSelect={(i) => {
+					setActiveItemId(i._id)
+					setTool('item')
+					setIsItemPickerOpen(false)
 				}}
 			/>
 
