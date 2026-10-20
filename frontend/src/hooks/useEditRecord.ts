@@ -1,6 +1,6 @@
 'use client'
 
-import { useCallback, useEffect, useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useForm, DefaultValues, FieldValues } from 'react-hook-form'
 import { useRouter } from 'next/navigation'
 import toast from 'react-hot-toast'
@@ -39,8 +39,13 @@ export function useEditRecord<T extends z.ZodType<{ id: string }>, TResponse>({
 }: UseEditRecordProps<T, TResponse>) {
 	type TFieldValues = z.infer<T> & FieldValues
 	const router = useRouter()
-	const [isLoading, setIsLoading] = useState(false)
-	const [loadingError, setLoadingError] = useState<string | null>(null)
+	// Which record has finished loading (or failed to). "Loading" is simply "that
+	// isn't the record we're editing yet", so the effect never has to call
+	// setState before it awaits.
+	const [loaded, setLoaded] = useState<{
+		id: string
+		error: string | null
+	} | null>(null)
 	// const [items, setItems] = useState<StoredDoc<TData>[]>([])
 	const [data, setData] = useState<TResponse | null>(null)
 
@@ -68,25 +73,32 @@ export function useEditRecord<T extends z.ZodType<{ id: string }>, TResponse>({
 		}
 	}
 
-	const fetchItem = useCallback(async () => {
-		setIsLoading(true)
-		setLoadingError(null)
-		try {
-			const res = await getData(collectionName, id)
-			if (res) {
-				setData(res)
-				const vals = handleFetchCallback(res)
-				reset(vals as DefaultValues<TFieldValues>)
-			}
-		} catch (e: unknown) {
-			if (e instanceof Error) {
-				setLoadingError(errorLoadingMessage)
-				toast.error(errorLoadingMessage)
-				console.error(e.message)
-				router.push(redirectUrl)
-			}
-		} finally {
-			setIsLoading(false)
+	useEffect(() => {
+		let cancelled = false
+		getData(collectionName, id).then(
+			(res) => {
+				if (cancelled) return
+				if (res) {
+					setData(res)
+					reset(handleFetchCallback(res) as DefaultValues<TFieldValues>)
+				}
+				setLoaded({ id, error: null })
+			},
+			(e: unknown) => {
+				if (cancelled) return
+				if (e instanceof Error) {
+					toast.error(errorLoadingMessage)
+					console.error(e.message)
+					router.push(redirectUrl)
+				}
+				setLoaded({
+					id,
+					error: e instanceof Error ? errorLoadingMessage : null,
+				})
+			},
+		)
+		return () => {
+			cancelled = true
 		}
 	}, [
 		collectionName,
@@ -99,16 +111,14 @@ export function useEditRecord<T extends z.ZodType<{ id: string }>, TResponse>({
 		router,
 	])
 
-	useEffect(() => {
-		void fetchItem()
-	}, [fetchItem])
+	const isCurrent = loaded?.id === id
 
 	return {
 		data,
-		isLoading,
+		isLoading: !isCurrent,
 		fieldErrors: formMethods.formState.errors,
 		isSubmitting: formMethods.formState.isSubmitting,
-		loadingError,
+		loadingError: isCurrent ? loaded.error : null,
 		register: formMethods.register,
 		control: formMethods.control,
 		reset,
