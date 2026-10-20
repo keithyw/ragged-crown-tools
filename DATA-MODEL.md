@@ -201,6 +201,7 @@ interface Interaction {
 	id: string
 	on: InteractionType // was ActionPayload.triggerOn
 	conditions?: Condition[]
+	hint?: string // shown when the conditions fail (section 4.7)
 	actions: Action[]
 	limit?: number // times it can fire; absent = unlimited, 1 = once
 }
@@ -238,6 +239,10 @@ Interactions can be **unlimited** (a generic NPC's "Hello and welcome to town X"
 | `FLAG_SET`     | `flag`             |
 | `FLAG_NOT_SET` | `flag`             |
 
+- **All of an interaction's conditions must pass.** There is no "or" yet (see Open questions).
+- `HAS_ITEM` only **checks**: the item stays with the player. A reusable password item that several guards ask for uses `HAS_ITEM` alone. A key that is used up pairs it with a `TAKE_ITEM` action.
+- `amount` defaults to 1. The editor only offers it when the chosen item is `stackable` (keys, arrows, torches), since a non-stackable item is always 1.
+
 ### 4.4 Initial actions
 
 `SHOW_DIALOG`, `GIVE_ITEM`, `TAKE_ITEM`, `GIVE_XP`, `GIVE_CURRENCY`, `SET_FLAG`, `SPAWN { defKind, defId, quantity? }` (adds to this cell's stack at runtime), `REMOVE_SELF`, `TELEPORT { destination }`, `PLAY_SOUND`, `MODIFY_ATTRIBUTE`.
@@ -270,6 +275,13 @@ Rules:
 - **Only some action types can be custom:** `SHOW_DIALOG` and `SPAWN` so far. A type opts in with `customizable` in the editor's action registry (`lib/utils/interactions.ts`).
 - **The def only says "a value goes here."** The value itself is set on the placement, in the zone editor's stack manager ([Tools 12]). A placement's interaction carries the real value, normally as the same action type with its value filled in and no `custom` flag.
 - **Not decided yet:** how the stack manager lists the custom slots of a def and how a placement fills them; whether the map validation warns about a placement that leaves a custom slot empty (as it does for a portal with no destination); and what the engine does at runtime when a custom action reaches it with no value (the working assumption is that it skips it).
+
+### 4.7 Feedback (engine behavior and hints)
+
+- **Interacting with an object always tells the player something.** There is no "look" command yet, so at minimum the object's `name` and `description` go to the game log when the player interacts with it. This is game-side behavior, not authored per interaction.
+- **When an interaction's conditions fail, the player gets a message saying what is missing.** By default the engine builds it from the conditions ("The chest requires Rusty Key"). An interaction may carry an optional `hint` that **replaces** the default, so a puzzle doesn't give its answer away ("The lock has a dragon's head on it").
+- The tools only store `hint`. It is offered in the editor only when the interaction has conditions.
+- Not decided: which `hint` is shown when no interaction in the list passes (working assumption: the first failing interaction that has one, else the default for the first failing interaction). An unconditional fallback interaction (a "locked" dialog) makes the hint moot.
 
 ---
 
@@ -311,3 +323,9 @@ Zone JSON is the **initial state only**. When a game starts, the player gets a r
 - **Gold and currency.** Deferred. Undecided whether currency is a pooled resource, a per-character stat, or an inventory item with weight, and whether the party can split across locations. `GIVE_CURRENCY` is a placeholder action until then, and gold can be a plain stackable item meanwhile.
 - **Item use.** What using an item does (a wand casting a spell; thieves' tools used on an NPC to get gold) and how it is described. Probably the same Interaction shape with `on: USE`, with conditions (a pickpocket check against the character's skill percentage) and a limit on uses (99, or 1d100). That is why `ItemDef.interactions` stays. Deferred; not part of the object interactions work.
 - **Portal rules.** One-way, needs an item, single use, and where they live in the data. Designed with the portals ([Tools 11]) when the first interior building is built.
+- **Boolean logic and branching in conditions.** Today all conditions must pass (AND). Out of scope for the current milestones, so nothing is implemented:
+  - A simple `or`/`and` grouping is the likeliest first step if it's needed.
+  - Much of "either/or" is already covered by precedence (section 4.1): a first interaction that needs the thing, then a fallback. A toll-bridge troll that takes 5000 gold, otherwise fights, is that: pay (conditions: has gold) then a fallback that spawns an encounter.
+  - What is not covered is a **player's choice** (Wizardry 6's troll asks "pay or fight?"). That needs dialog with choices, which is a tree. No trees for now.
+  - A quest giver with several quests, each unlocking the next, is the same class of problem. The first quest giver is a single happy path.
+- **Skill checks.** A locked chest opened by a character's lock picking (a thief's skill percentage) is a different object from one that needs a specific key (the dragon's key), though they look alike. It needs a condition type that reads a character skill, so it waits for character skills (deferred). Probably a new condition type, not a variant of `HAS_ITEM`.
