@@ -5,6 +5,7 @@ import { DialogTitle } from '@headlessui/react'
 import {
 	BaseModal,
 	Button,
+	CheckboxInput,
 	SelectDropdown,
 	TextareaInput,
 	TextInput,
@@ -16,6 +17,7 @@ import {
 	INTERACTION_TRIGGERS,
 	parseNumberInput,
 	type ActionField,
+	type ActionTypeConfig,
 } from '@/lib/utils'
 import { interactionSchema } from '@/schemas'
 
@@ -77,6 +79,18 @@ const InteractionForm = ({
 		}
 		setAction(index, next as unknown as Action)
 	}
+
+	// A custom action keeps no value (it is left to each placement), so
+	// checking it drops the value and unchecking starts from a blank one.
+	const setCustom = (
+		index: number,
+		config: ActionTypeConfig,
+		custom: boolean,
+	) =>
+		setAction(
+			index,
+			custom ? ({ type: config.type, custom: true } as Action) : config.blank(),
+		)
 
 	// A def field sets both halves of the reference.
 	const setDef = (index: number, key: string) => {
@@ -164,57 +178,68 @@ const InteractionForm = ({
 									if (next) setAction(i, next.blank())
 								}}
 							/>
-							{config?.fields.map((field) => {
-								const raw = (action as unknown as Record<string, unknown>)[
-									field.key
-								]
-								const value =
-									typeof raw === 'number'
-										? Number.isNaN(raw)
-											? ''
-											: String(raw)
-										: String(raw ?? '')
-								const id = `action-${i}-${field.key}`
-								if (field.input === 'def') {
-									const a = action as { defKind: Kind; defId: string }
-									return (
-										<SelectDropdown
+							{!('custom' in action && action.custom) &&
+								config?.fields.map((field) => {
+									const raw = (action as unknown as Record<string, unknown>)[
+										field.key
+									]
+									const value =
+										typeof raw === 'number'
+											? Number.isNaN(raw)
+												? ''
+												: String(raw)
+											: String(raw ?? '')
+									const id = `action-${i}-${field.key}`
+									if (field.input === 'def') {
+										const a = action as { defKind: Kind; defId: string }
+										return (
+											<SelectDropdown
+												key={field.key}
+												id={id}
+												label={field.label}
+												placeholder={defsLoading ? 'Loading...' : 'Choose...'}
+												disabled={defsLoading}
+												options={defs.map((d) => ({
+													value: defKey(d.kind, d._id),
+													label: `${KIND_LABELS[d.kind] ?? d.kind}: ${d.name}`,
+												}))}
+												selectedValue={
+													a.defId ? defKey(a.defKind, a.defId) : ''
+												}
+												onSelect={(v) => v && setDef(i, String(v))}
+											/>
+										)
+									}
+									return field.input === 'textarea' ? (
+										<TextareaInput
 											key={field.key}
 											id={id}
 											label={field.label}
-											placeholder={defsLoading ? 'Loading...' : 'Choose...'}
-											disabled={defsLoading}
-											options={defs.map((d) => ({
-												value: defKey(d.kind, d._id),
-												label: `${KIND_LABELS[d.kind] ?? d.kind}: ${d.name}`,
-											}))}
-											selectedValue={a.defId ? defKey(a.defKind, a.defId) : ''}
-											onSelect={(v) => v && setDef(i, String(v))}
+											placeholder={field.placeholder}
+											rows={3}
+											value={value}
+											onChange={(e) => setField(i, field, e.target.value)}
+										/>
+									) : (
+										<TextInput
+											key={field.key}
+											id={id}
+											label={field.label}
+											type={field.input}
+											placeholder={field.placeholder}
+											value={value}
+											onChange={(e) => setField(i, field, e.target.value)}
 										/>
 									)
-								}
-								return field.input === 'textarea' ? (
-									<TextareaInput
-										key={field.key}
-										id={id}
-										label={field.label}
-										placeholder={field.placeholder}
-										rows={3}
-										value={value}
-										onChange={(e) => setField(i, field, e.target.value)}
-									/>
-								) : (
-									<TextInput
-										key={field.key}
-										id={id}
-										label={field.label}
-										type={field.input}
-										placeholder={field.placeholder}
-										value={value}
-										onChange={(e) => setField(i, field, e.target.value)}
-									/>
-								)
-							})}
+								})}
+							{config?.customizable && (
+								<CheckboxInput
+									id={`action-${i}-custom`}
+									label='Set per placement (custom value)'
+									checked={'custom' in action && !!action.custom}
+									onChange={(e) => setCustom(i, config, e.target.checked)}
+								/>
+							)}
 							<Button
 								type='button'
 								actionType='delete'

@@ -254,6 +254,23 @@ The engine implements them incrementally ([Game 2]). Fields not listed here are 
 
 The NPC never despawns.
 
+### 4.6 Custom values
+
+An action's value can be left for each placement to fill in, so one def serves many instances: a generic townsperson greets everyone the same way, while a custom NPC (or a chest) gets its own dialog (or contents) on its placement. The action is marked `custom: true`.
+
+```ts
+{ type: 'SHOW_DIALOG'; text: string } | { type: 'SHOW_DIALOG'; custom: true }
+{ type: 'SPAWN'; defKind; defId; quantity? } | { type: 'SPAWN'; custom: true }
+```
+
+Rules:
+
+- **A custom action carries no value.** `text`, or `defKind`/`defId`/`quantity`, are absent. The tools do not validate them and do not save them: checking the box in the interaction editor clears them, and the schema strips them if they arrive anyway.
+- **A non-custom action is unchanged:** its value is required and `custom` is not stored (never `custom: false`).
+- **Only some action types can be custom:** `SHOW_DIALOG` and `SPAWN` so far. A type opts in with `customizable` in the editor's action registry (`lib/utils/interactions.ts`).
+- **The def only says "a value goes here."** The value itself is set on the placement, in the zone editor's stack manager ([Tools 12]). A placement's interaction carries the real value, normally as the same action type with its value filled in and no `custom` flag.
+- **Not decided yet:** how the stack manager lists the custom slots of a def and how a placement fills them; whether the map validation warns about a placement that leaves a custom slot empty (as it does for a portal with no destination); and what the engine does at runtime when a custom action reaches it with no value (the working assumption is that it skips it).
+
 ---
 
 ## 5. Authored vs runtime

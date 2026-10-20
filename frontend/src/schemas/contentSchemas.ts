@@ -78,8 +78,60 @@ export const conditionSchema = z.discriminatedUnion('type', [
 	z.object({ type: z.literal('FLAG_NOT_SET'), flag: z.string().min(1) }),
 ]) satisfies z.ZodType<Condition>
 
+// A custom action leaves its value to each placement, so it is not validated
+// and nothing but the flag is kept (DATA-MODEL.md 4.6). Otherwise the value is
+// required and `custom` is dropped.
+const showDialogSchema = z
+	.object({
+		type: z.literal('SHOW_DIALOG'),
+		custom: z.boolean().optional(),
+		text: z.string().optional(),
+	})
+	.superRefine((a, ctx) => {
+		if (!a.custom && !a.text) {
+			ctx.addIssue({
+				code: 'custom',
+				path: ['text'],
+				message: 'Dialog text is required.',
+			})
+		}
+	})
+	.transform((a) =>
+		a.custom
+			? { type: a.type, custom: true as const }
+			: { type: a.type, text: a.text ?? '' },
+	)
+
+const spawnSchema = z
+	.object({
+		type: z.literal('SPAWN'),
+		custom: z.boolean().optional(),
+		defKind: kindSchema.optional(),
+		defId: z.string().optional(),
+		quantity: amount.optional(),
+	})
+	.superRefine((a, ctx) => {
+		if (!a.custom && (!a.defKind || !a.defId)) {
+			ctx.addIssue({
+				code: 'custom',
+				path: ['defId'],
+				message: 'Choose what to spawn.',
+			})
+		}
+	})
+	.transform((a) =>
+		a.custom
+			? { type: a.type, custom: true as const }
+			: {
+					type: a.type,
+					defKind: a.defKind ?? ('item' as const),
+					defId: a.defId ?? '',
+					quantity: a.quantity,
+				},
+	)
+
 export const actionSchema = z.discriminatedUnion('type', [
-	z.object({ type: z.literal('SHOW_DIALOG'), text: z.string().min(1) }),
+	showDialogSchema,
 	z.object({
 		type: z.literal('GIVE_ITEM'),
 		itemId: z.string().min(1),
@@ -93,12 +145,7 @@ export const actionSchema = z.discriminatedUnion('type', [
 	z.object({ type: z.literal('GIVE_XP'), amount }),
 	z.object({ type: z.literal('GIVE_CURRENCY'), amount }),
 	z.object({ type: z.literal('SET_FLAG'), flag: z.string().min(1) }),
-	z.object({
-		type: z.literal('SPAWN'),
-		defKind: kindSchema,
-		defId: z.string().min(1),
-		quantity: amount.optional(),
-	}),
+	spawnSchema,
 	z.object({ type: z.literal('REMOVE_SELF') }),
 	z.object({ type: z.literal('TELEPORT'), destination: destinationSchema }),
 	z.object({ type: z.literal('PLAY_SOUND'), sound: z.string().min(1) }),

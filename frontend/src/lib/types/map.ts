@@ -96,14 +96,25 @@ export type Condition =
 	| { type: 'FLAG_NOT_SET'; flag: string }
 
 // Fields beyond SPAWN and TELEPORT are provisional (DATA-MODEL.md 4.4).
+// `custom: true` means the value is left to each placement (a custom NPC's
+// dialog, a chest's contents), so the action carries no value fields at all
+// (DATA-MODEL.md 4.6).
 export type Action =
-	| { type: 'SHOW_DIALOG'; text: string }
+	| { type: 'SHOW_DIALOG'; text: string; custom?: never }
+	| { type: 'SHOW_DIALOG'; custom: true }
 	| { type: 'GIVE_ITEM'; itemId: string; amount?: number }
 	| { type: 'TAKE_ITEM'; itemId: string; amount?: number }
 	| { type: 'GIVE_XP'; amount: number }
 	| { type: 'GIVE_CURRENCY'; amount: number }
 	| { type: 'SET_FLAG'; flag: string }
-	| { type: 'SPAWN'; defKind: Kind; defId: string; quantity?: number }
+	| {
+			type: 'SPAWN'
+			defKind: Kind
+			defId: string
+			quantity?: number
+			custom?: never
+	  }
+	| { type: 'SPAWN'; custom: true }
 	| { type: 'REMOVE_SELF' }
 	| { type: 'TELEPORT'; destination: Destination }
 	| { type: 'PLAY_SOUND'; sound: string }

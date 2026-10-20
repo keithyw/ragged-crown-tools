@@ -35,6 +35,8 @@ export interface ActionTypeConfig {
 	type: Action['type']
 	label: string
 	fields: ActionField[]
+	// Offers the "set per placement" checkbox (stores `custom`).
+	customizable?: boolean
 	blank: () => Action
 	// A short phrase for the list ("change stamina by +10").
 	summary: (action: Action, ctx: SummaryContext) => string
@@ -65,6 +67,7 @@ export const ACTION_TYPES: ActionTypeConfig[] = [
 	{
 		type: 'SHOW_DIALOG',
 		label: 'Show dialog',
+		customizable: true,
 		fields: [
 			{
 				key: 'text',
@@ -77,6 +80,7 @@ export const ACTION_TYPES: ActionTypeConfig[] = [
 		// The start of the text, on one line.
 		summary: (a) => {
 			if (a.type !== 'SHOW_DIALOG') return ''
+			if (a.custom) return 'show dialog (set per placement)'
 			const text = a.text.replace(/\s+/g, ' ').trim()
 			return `show "${text.length > 40 ? `${text.slice(0, 40)}...` : text}"`
 		},
@@ -84,6 +88,7 @@ export const ACTION_TYPES: ActionTypeConfig[] = [
 	{
 		type: 'SPAWN',
 		label: 'Spawn (add to this cell)',
+		customizable: true,
 		fields: [
 			{ key: 'defId', label: 'What to spawn', input: 'def' },
 			{
@@ -95,9 +100,11 @@ export const ACTION_TYPES: ActionTypeConfig[] = [
 		],
 		blank: () => ({ type: 'SPAWN', defKind: 'item', defId: '' }),
 		summary: (a, ctx) =>
-			a.type === 'SPAWN'
-				? `spawn ${ctx.defName(a.defKind, a.defId)}${a.quantity ? ` x${a.quantity}` : ''}`
-				: '',
+			a.type === 'SPAWN' && a.custom
+				? 'spawn (set per placement)'
+				: a.type === 'SPAWN'
+					? `spawn ${ctx.defName(a.defKind, a.defId)}${a.quantity ? ` x${a.quantity}` : ''}`
+					: '',
 	},
 ]
 
