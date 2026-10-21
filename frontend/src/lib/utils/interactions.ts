@@ -192,6 +192,19 @@ export const ACTION_TYPES: ActionTypeConfig[] = [
 				: '',
 	},
 	{
+		type: 'GIVE_ITEM',
+		label: 'Give item (to the player)',
+		fields: [
+			{ key: 'itemId', label: 'Item', input: 'item' },
+			{ key: 'amount', label: 'Amount', input: 'number', stackableOnly: true },
+		],
+		blank: () => ({ type: 'GIVE_ITEM', itemId: '', amount: 1 }),
+		summary: (a, ctx) =>
+			a.type === 'GIVE_ITEM'
+				? `give ${ctx.defName('item', a.itemId)}${a.amount && a.amount > 1 ? ` x${a.amount}` : ''}`
+				: '',
+	},
+	{
 		type: 'REMOVE_SELF',
 		label: 'Remove this object',
 		fields: [],

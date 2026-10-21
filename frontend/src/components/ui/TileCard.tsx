@@ -29,7 +29,16 @@ export const TileCard = ({
 		)}
 	>
 		<TileGlyph tile={tile} />
-		<span className='truncate text-sm text-gray-500'>{tile.name}</span>
-		<span className='text-xs text-gray-500'>{tile.id}</span>
+		{/* max-w-full lets `truncate` apply: a flex item otherwise grows to fit
+		its text. The title shows the whole text on hover. */}
+		<span
+			className='max-w-full truncate text-sm text-gray-500'
+			title={tile.name}
+		>
+			{tile.name}
+		</span>
+		<span className='max-w-full truncate text-xs text-gray-500' title={tile.id}>
+			{tile.id}
+		</span>
 	</button>
 )
