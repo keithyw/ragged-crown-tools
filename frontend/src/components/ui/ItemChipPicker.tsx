@@ -12,6 +12,9 @@ import { Chip, TextInput } from '@/components'
 import type { PlaceableDef } from '@/hooks'
 import { parseNumberInput } from '@/lib/utils'
 
+// Rendering a long list would only slow the box down; typing narrows it.
+const MAX_SUGGESTIONS = 50
+
 export interface ItemAmount {
 	itemId: string
 	// NaN while the amount box is blank, so it never turns into 0 mid-edit.
@@ -57,7 +60,6 @@ export const ItemChipPicker = ({
 		<div>
 			<Combobox<PlaceableDef | null>
 				value={null}
-				immediate
 				onChange={(item) => {
 					if (item) onChange([...value, { itemId: item._id, amount: 1 }])
 				}}
@@ -83,15 +85,23 @@ export const ItemChipPicker = ({
 							No matching items
 						</div>
 					) : (
-						matches.map((item) => (
-							<ComboboxOption
-								key={item._id}
-								value={item}
-								className='cursor-pointer px-4 py-2 text-gray-700 data-focus:bg-blue-100'
-							>
-								{item.name}
-							</ComboboxOption>
-						))
+						<>
+							{matches.slice(0, MAX_SUGGESTIONS).map((item) => (
+								<ComboboxOption
+									key={item._id}
+									value={item}
+									className='cursor-pointer px-4 py-2 text-gray-700 data-focus:bg-blue-100'
+								>
+									{item.name}
+								</ComboboxOption>
+							))}
+							{matches.length > MAX_SUGGESTIONS && (
+								<div className='px-4 py-2 text-sm text-gray-500'>
+									{matches.length - MAX_SUGGESTIONS} more, keep typing to narrow
+									it down
+								</div>
+							)}
+						</>
 					)}
 				</ComboboxOptions>
 			</Combobox>

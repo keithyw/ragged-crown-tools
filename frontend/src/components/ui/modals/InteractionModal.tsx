@@ -6,7 +6,7 @@ import {
 	BaseModal,
 	Button,
 	CheckboxInput,
-	ItemChipPicker,
+	ItemCombobox,
 	SelectDropdown,
 	TextareaInput,
 	TextInput,
@@ -21,8 +21,10 @@ import type {
 } from '@/lib/types'
 import {
 	ACTION_TYPES,
+	CONDITION_TYPES,
 	INTERACTION_TRIGGERS,
 	parseNumberInput,
+	summarizeCondition,
 	type ActionField,
 	type ActionTypeConfig,
 } from '@/lib/utils'
@@ -39,7 +41,10 @@ const defKey = (kind: Kind, id: string) => `${kind}:${id}`
 // The editor's own wording for a zod problem.
 const issueText = (issue: { path: PropertyKey[]; message: string }) => {
 	if (issue.path[0] === 'conditions' && typeof issue.path[1] === 'number') {
-		return `Required item ${issue.path[1] + 1}: enter an amount of 1 or more`
+		const n = issue.path[1] + 1
+		return issue.path[2] === 'itemId'
+			? `Condition ${n}: choose an item`
+			: `Condition ${n}: enter an amount of 1 or more`
 	}
 	if (issue.message.includes('expected number')) {
 		const field = issue.path[issue.path.length - 1]
@@ -81,16 +86,10 @@ const InteractionForm = ({
 	const [hint, setHint] = useState(initial.hint ?? '')
 	const [problems, setProblems] = useState<string[]>([])
 
-	// Each chip is one HAS_ITEM condition. Any other condition type has no
-	// editor yet, so it is carried through as it is.
-	const requiredItems = conditions.flatMap((c) =>
-		c.type === 'HAS_ITEM' ? [{ itemId: c.itemId, amount: c.amount }] : [],
-	)
-	const setRequiredItems = (next: { itemId: string; amount: number }[]) =>
-		setConditions((prev) => [
-			...prev.filter((c) => c.type !== 'HAS_ITEM'),
-			...next.map((n): Condition => ({ type: 'HAS_ITEM', ...n })),
-		])
+	const setCondition = (index: number, next: Condition) =>
+		setConditions((prev) => prev.map((c, i) => (i === index ? next : c)))
+
+	const items = defs.filter((d) => d.kind === 'item')
 
 	const setAction = (index: number, next: Action) =>
 		setActions((prev) => prev.map((a, i) => (i === index ? next : a)))
@@ -184,14 +183,130 @@ const InteractionForm = ({
 			</div>
 
 			<h4 className='mb-2 text-sm font-bold text-gray-700'>Conditions</h4>
-			<ItemChipPicker
-				id='interaction-required-items'
-				label='Requires items (all must be carried)'
-				items={defs.filter((d) => d.kind === 'item')}
-				isLoading={defsLoading}
-				value={requiredItems}
-				onChange={setRequiredItems}
-			/>
+			<p className='mb-2 text-xs text-gray-500'>
+				All conditions must pass for the actions to run.
+			</p>
+			<div className='space-y-3'>
+				{conditions.map((condition, i) => {
+					const config = CONDITION_TYPES.find((t) => t.type === condition.type)
+					// A type with no editor yet (a flag): shown, kept, removable.
+					if (!config) {
+						return (
+							<div
+								key={i}
+								className='flex items-center justify-between gap-3 rounded border border-gray-200 bg-gray-50 p-3 text-sm text-gray-700'
+							>
+								<span>{summarizeCondition(condition)} (no editor yet)</span>
+								<Button
+									type='button'
+									actionType='delete'
+									onClick={() =>
+										setConditions((prev) => prev.filter((_, idx) => idx !== i))
+									}
+								>
+									Remove condition
+								</Button>
+							</div>
+						)
+					}
+					const selectedItem =
+						condition.type === 'HAS_ITEM'
+							? items.find((d) => d._id === condition.itemId)
+							: undefined
+					return (
+						<div
+							key={i}
+							className='rounded border border-gray-200 bg-gray-50 p-3'
+						>
+							<SelectDropdown
+								id={`condition-${i}-type`}
+								label={`Condition ${i + 1}`}
+								options={CONDITION_TYPES.map((t) => ({
+									value: t.type,
+									label: t.label,
+								}))}
+								selectedValue={condition.type}
+								onSelect={(v) => {
+									const next = CONDITION_TYPES.find((t) => t.type === v)
+									if (next && next.type !== condition.type) {
+										setCondition(i, next.blank())
+									}
+								}}
+							/>
+							{condition.type === 'HAS_ITEM' &&
+								config.fields.map((field) => {
+									const id = `condition-${i}-${field.key}`
+									if (field.input === 'item') {
+										return (
+											<ItemCombobox
+												key={field.key}
+												id={id}
+												label={field.label}
+												items={items}
+												isLoading={defsLoading}
+												selectedId={condition.itemId}
+												onSelect={(item) =>
+													setCondition(i, { ...condition, itemId: item._id })
+												}
+											/>
+										)
+									}
+									// Hidden unless it matters; a stored amount other than 1
+									// is always shown.
+									if (
+										field.stackableOnly &&
+										!selectedItem?.stackable &&
+										condition.amount === 1
+									) {
+										return null
+									}
+									return (
+										<TextInput
+											key={field.key}
+											id={id}
+											label={field.label}
+											type='number'
+											inputWidth='sm'
+											min={1}
+											step={1}
+											value={
+												Number.isNaN(condition.amount)
+													? ''
+													: String(condition.amount)
+											}
+											onChange={(e) =>
+												setCondition(i, {
+													...condition,
+													amount: parseNumberInput(e.target.value),
+												})
+											}
+										/>
+									)
+								})}
+							<Button
+								type='button'
+								actionType='delete'
+								onClick={() =>
+									setConditions((prev) => prev.filter((_, idx) => idx !== i))
+								}
+							>
+								Remove condition
+							</Button>
+						</div>
+					)
+				})}
+			</div>
+			<div className='mt-3 mb-4'>
+				<Button
+					type='button'
+					actionType='neutral'
+					onClick={() =>
+						setConditions((prev) => [...prev, CONDITION_TYPES[0].blank()])
+					}
+				>
+					Add condition
+				</Button>
+			</div>
 			{conditions.length > 0 && (
 				<TextareaInput
 					id='interaction-hint'

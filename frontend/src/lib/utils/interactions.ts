@@ -112,6 +112,44 @@ export const ACTION_TYPES: ActionTypeConfig[] = [
 					? `spawn ${ctx.defName(a.defKind, a.defId)}${a.quantity ? ` x${a.quantity}` : ''}`
 					: '',
 	},
+	{
+		type: 'REMOVE_SELF',
+		label: 'Remove this object',
+		fields: [],
+		blank: () => ({ type: 'REMOVE_SELF' }),
+		summary: () => 'remove this object',
+	},
+]
+
+export interface ConditionField {
+	key: string // the property on the condition
+	label: string
+	// 'item' picks an item by name and sets its _id.
+	input: 'item' | 'number'
+	// Shown only when the chosen item is stackable (or the stored amount isn't
+	// 1, so stored data is never hidden).
+	stackableOnly?: boolean
+}
+
+export interface ConditionTypeConfig {
+	type: Condition['type']
+	label: string
+	fields: ConditionField[]
+	blank: () => Condition
+}
+
+// The condition types the editor can author, like ACTION_TYPES. The flag
+// conditions aren't here yet: stored ones are kept as they are.
+export const CONDITION_TYPES: ConditionTypeConfig[] = [
+	{
+		type: 'HAS_ITEM',
+		label: 'Has item',
+		fields: [
+			{ key: 'itemId', label: 'Item', input: 'item' },
+			{ key: 'amount', label: 'Amount', input: 'number', stackableOnly: true },
+		],
+		blank: () => ({ type: 'HAS_ITEM', itemId: '', amount: 1 }),
+	},
 ]
 
 export const summarizeAction = (
