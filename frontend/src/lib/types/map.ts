@@ -124,6 +124,7 @@ export interface Interaction {
 	id: string
 	on: InteractionType
 	conditions?: Condition[]
+	hint?: string // shown when the conditions fail (DATA-MODEL.md 4.7)
 	actions: Action[]
 	limit?: number // times it can run; absent = unlimited, 1 = once
 }

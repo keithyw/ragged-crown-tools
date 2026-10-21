@@ -9,6 +9,7 @@ export interface PlaceableDef {
 	kind: Kind
 	_id: string
 	name: string
+	stackable?: boolean // items only
 }
 
 // Items and objects, with a lookup for names. Two small fetches.
@@ -25,6 +26,7 @@ export function usePlaceableDefs() {
 				kind: 'item' as const,
 				_id: d._id,
 				name: d.name,
+				stackable: d.stackable,
 			})),
 			...objects.items.map((d) => ({
 				kind: 'object' as const,

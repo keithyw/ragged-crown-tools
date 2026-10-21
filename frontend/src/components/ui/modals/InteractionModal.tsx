@@ -6,12 +6,19 @@ import {
 	BaseModal,
 	Button,
 	CheckboxInput,
+	ItemChipPicker,
 	SelectDropdown,
 	TextareaInput,
 	TextInput,
 } from '@/components'
 import type { PlaceableDef } from '@/hooks'
-import type { Action, Interaction, InteractionType, Kind } from '@/lib/types'
+import type {
+	Action,
+	Condition,
+	Interaction,
+	InteractionType,
+	Kind,
+} from '@/lib/types'
 import {
 	ACTION_TYPES,
 	INTERACTION_TRIGGERS,
@@ -31,6 +38,9 @@ const defKey = (kind: Kind, id: string) => `${kind}:${id}`
 
 // The editor's own wording for a zod problem.
 const issueText = (issue: { path: PropertyKey[]; message: string }) => {
+	if (issue.path[0] === 'conditions' && typeof issue.path[1] === 'number') {
+		return `Required item ${issue.path[1] + 1}: enter an amount of 1 or more`
+	}
 	if (issue.message.includes('expected number')) {
 		const field = issue.path[issue.path.length - 1]
 		return issue.path[0] === 'actions' && typeof issue.path[1] === 'number'
@@ -65,7 +75,22 @@ const InteractionForm = ({
 	const [on, setOn] = useState<InteractionType>(initial.on)
 	const [limit, setLimit] = useState(initial.limit ? String(initial.limit) : '')
 	const [actions, setActions] = useState<Action[]>(initial.actions)
+	const [conditions, setConditions] = useState<Condition[]>(
+		initial.conditions ?? [],
+	)
+	const [hint, setHint] = useState(initial.hint ?? '')
 	const [problems, setProblems] = useState<string[]>([])
+
+	// Each chip is one HAS_ITEM condition. Any other condition type has no
+	// editor yet, so it is carried through as it is.
+	const requiredItems = conditions.flatMap((c) =>
+		c.type === 'HAS_ITEM' ? [{ itemId: c.itemId, amount: c.amount }] : [],
+	)
+	const setRequiredItems = (next: { itemId: string; amount: number }[]) =>
+		setConditions((prev) => [
+			...prev.filter((c) => c.type !== 'HAS_ITEM'),
+			...next.map((n): Condition => ({ type: 'HAS_ITEM', ...n })),
+		])
 
 	const setAction = (index: number, next: Action) =>
 		setActions((prev) => prev.map((a, i) => (i === index ? next : a)))
@@ -108,11 +133,13 @@ const InteractionForm = ({
 			setProblems(['Add at least one action.'])
 			return
 		}
-		// `initial` carries the id and any conditions, which this editor keeps
-		// as they are.
+		// `initial` carries the id. A hint only means something next to
+		// conditions, so it goes with the last one.
 		const result = interactionSchema.safeParse({
 			...initial,
 			on,
+			conditions: conditions.length > 0 ? conditions : undefined,
+			hint: conditions.length > 0 ? hint : undefined,
 			actions,
 			limit: limit === '' ? undefined : Number(limit),
 		})
@@ -155,6 +182,26 @@ const InteractionForm = ({
 					/>
 				</div>
 			</div>
+
+			<h4 className='mb-2 text-sm font-bold text-gray-700'>Conditions</h4>
+			<ItemChipPicker
+				id='interaction-required-items'
+				label='Requires items (all must be carried)'
+				items={defs.filter((d) => d.kind === 'item')}
+				isLoading={defsLoading}
+				value={requiredItems}
+				onChange={setRequiredItems}
+			/>
+			{conditions.length > 0 && (
+				<TextareaInput
+					id='interaction-hint'
+					label='Hint (shown when the requirements are not met; blank = default)'
+					placeholder='Halt. Only those with the castle seal may pass.'
+					rows={2}
+					value={hint}
+					onChange={(e) => setHint(e.target.value)}
+				/>
+			)}
 
 			<h4 className='mb-2 text-sm font-bold text-gray-700'>Actions</h4>
 			<div className='space-y-3'>

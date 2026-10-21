@@ -160,6 +160,7 @@ export const interactionSchema = z.object({
 	id: z.string().min(1),
 	on: interactionTypeSchema,
 	conditions: z.array(conditionSchema).optional(),
+	hint: optionalText,
 	actions: z.array(actionSchema),
 	limit: z.number().int().min(1).optional(), // absent = unlimited
 }) satisfies z.ZodType<Interaction>

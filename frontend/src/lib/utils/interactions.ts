@@ -1,4 +1,10 @@
-import type { Action, Interaction, InteractionType, Kind } from '@/lib/types'
+import type {
+	Action,
+	Condition,
+	Interaction,
+	InteractionType,
+	Kind,
+} from '@/lib/types'
 
 // What can start an interaction on an object or space. PICKUP and DROP are for
 // items, so they are not offered here.
@@ -115,19 +121,37 @@ export const summarizeAction = (
 	ACTION_TYPES.find((t) => t.type === action.type)?.summary(action, ctx) ||
 	action.type.toLowerCase().replaceAll('_', ' ')
 
-// "Bump: change stamina by +10", with the limit when there is one.
+// "has Castle Seal", "has Arrow x5".
+export const summarizeCondition = (
+	condition: Condition,
+	ctx: SummaryContext = NO_NAMES,
+) => {
+	switch (condition.type) {
+		case 'HAS_ITEM':
+			return `has ${ctx.defName('item', condition.itemId)}${condition.amount > 1 ? ` x${condition.amount}` : ''}`
+		case 'FLAG_SET':
+			return `flag "${condition.flag}" is set`
+		case 'FLAG_NOT_SET':
+			return `flag "${condition.flag}" is not set`
+	}
+}
+
+// "Bump, if has Castle Seal: show dialog", with the limit when there is one.
 export const summarizeInteraction = (
 	i: Interaction,
 	ctx: SummaryContext = NO_NAMES,
 ) => {
 	const trigger =
 		INTERACTION_TRIGGERS.find((t) => t.value === i.on)?.label ?? i.on
+	const requires = i.conditions?.length
+		? `, if ${i.conditions.map((c) => summarizeCondition(c, ctx)).join(', ')}`
+		: ''
 	const what =
 		i.actions.map((a) => summarizeAction(a, ctx)).join(', ') || 'nothing'
 	const limit = i.limit
 		? ` (${i.limit === 1 ? 'once' : `up to ${i.limit} times`})`
 		: ''
-	return `${trigger}: ${what}${limit}`
+	return `${trigger}${requires}: ${what}${limit}`
 }
 
 // A number input's text as a number. A blank stays NaN and never becomes 0, so

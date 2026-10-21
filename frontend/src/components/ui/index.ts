@@ -1,4 +1,6 @@
+export * from './Chip'
 export * from './InteractionsEditor'
+export * from './ItemChipPicker'
 export * from './ItemInspector'
 export * from './LoadingSpinner'
 export * from './ObjectInspector'
