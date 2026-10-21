@@ -1,5 +1,6 @@
 import type {
 	Action,
+	CharacterStat,
 	Condition,
 	Interaction,
 	InteractionType,
@@ -24,14 +25,38 @@ export interface ActionField {
 	// 'def' picks an item or object and sets both defKind and defId (its key is
 	// defId).
 	// 'item' picks an item by name and sets its _id (its key is itemId).
-	input: 'text' | 'textarea' | 'number' | 'def' | 'item'
+	// 'select' is a fixed list (`options`).
+	input: 'text' | 'textarea' | 'number' | 'def' | 'item' | 'select'
 	placeholder?: string
 	// A blank value leaves the property out instead of storing it (numbers).
 	optional?: boolean
 	// Shown only when the chosen item is stackable (or the stored value isn't
 	// 1, so stored data is never hidden).
 	stackableOnly?: boolean
+	options?: { value: string; label: string }[] // 'select'
+	// What a select shows while the property is absent.
+	defaultValue?: string
+	// Hides the field for actions it doesn't apply to.
+	visibleWhen?: (action: Action) => boolean
 }
+
+// The stats a "change a stat" action can target, in the order they are listed.
+export const CHARACTER_STATS: { value: CharacterStat; label: string }[] = [
+	{ value: 'strength', label: 'Attribute: Strength' },
+	{ value: 'dexterity', label: 'Attribute: Dexterity' },
+	{ value: 'intelligence', label: 'Attribute: Intelligence' },
+	{ value: 'wisdom', label: 'Attribute: Wisdom' },
+	{ value: 'personality', label: 'Attribute: Personality' },
+	{ value: 'speed', label: 'Attribute: Speed' },
+	{ value: 'constitution', label: 'Attribute: Constitution' },
+	{ value: 'hp', label: 'Resource: HP' },
+	{ value: 'sp', label: 'Resource: SP' },
+	{ value: 'xp', label: 'Progress: XP' },
+	{ value: 'level', label: 'Progress: Level' },
+]
+
+// Only hp and sp are bars with a current and a max.
+const isBarStat = (stat: CharacterStat) => stat === 'hp' || stat === 'sp'
 
 // What a summary needs to know beyond the action itself.
 export interface SummaryContext {
@@ -48,7 +73,9 @@ export interface ActionTypeConfig {
 	// Offers the "set per placement" checkbox (stores `custom`).
 	customizable?: boolean
 	blank: () => Action
-	// A short phrase for the list ("change stamina by +10").
+	// Run after each edit to keep fields that depend on each other consistent.
+	normalize?: (action: Action) => Action
+	// A short phrase for the list ("change hp by +10").
 	summary: (action: Action, ctx: SummaryContext) => string
 }
 
@@ -58,20 +85,55 @@ export interface ActionTypeConfig {
 export const ACTION_TYPES: ActionTypeConfig[] = [
 	{
 		type: 'MODIFY_ATTRIBUTE',
-		label: 'Change an attribute',
+		label: 'Change a stat',
 		fields: [
 			{
 				key: 'attribute',
-				label: 'Attribute',
-				input: 'text',
-				placeholder: 'stamina',
+				label: 'Stat',
+				input: 'select',
+				options: CHARACTER_STATS,
 			},
 			{ key: 'amount', label: 'Amount (negative to reduce)', input: 'number' },
+			{
+				key: 'bar',
+				label: 'Changes',
+				input: 'select',
+				options: [
+					{ value: 'current', label: 'The current value (heal or damage)' },
+					{ value: 'max', label: 'The maximum (permanent)' },
+				],
+				defaultValue: 'current',
+				visibleWhen: (a) =>
+					a.type === 'MODIFY_ATTRIBUTE' && isBarStat(a.attribute),
+			},
+			{
+				key: 'target',
+				label: 'Applies to',
+				input: 'select',
+				options: [
+					{ value: 'character', label: 'One character' },
+					{ value: 'party', label: 'The whole party' },
+				],
+				defaultValue: 'character',
+			},
 		],
-		blank: () => ({ type: 'MODIFY_ATTRIBUTE', attribute: '', amount: 0 }),
+		blank: () => ({
+			type: 'MODIFY_ATTRIBUTE',
+			attribute: 'hp',
+			amount: 0,
+			bar: 'current',
+			target: 'character',
+		}),
+		// A bar only exists for hp and sp: add it when one is chosen, drop it
+		// otherwise.
+		normalize: (a) => {
+			if (a.type !== 'MODIFY_ATTRIBUTE') return a
+			const { bar, ...rest } = a
+			return isBarStat(a.attribute) ? { ...rest, bar: bar ?? 'current' } : rest
+		},
 		summary: (a) =>
 			a.type === 'MODIFY_ATTRIBUTE'
-				? `change ${a.attribute || '?'} by ${a.amount > 0 ? '+' : ''}${a.amount}`
+				? `change ${a.attribute}${a.bar === 'max' ? ' max' : ''} by ${a.amount > 0 ? '+' : ''}${a.amount}${a.target === 'party' ? ' (party)' : ''}`
 				: '',
 	},
 	{

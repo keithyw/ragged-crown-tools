@@ -1,6 +1,7 @@
 import { z } from 'zod'
 import type {
 	Action,
+	CharacterStat,
 	Condition,
 	ContainerSpec,
 	CreatureDef,
@@ -130,6 +131,34 @@ const spawnSchema = z
 				},
 	)
 
+export const characterStatSchema = z.enum([
+	'strength',
+	'dexterity',
+	'intelligence',
+	'wisdom',
+	'personality',
+	'speed',
+	'constitution',
+	'hp',
+	'sp',
+	'xp',
+	'level',
+]) satisfies z.ZodType<CharacterStat>
+
+// `bar` only means something for hp and sp, so it is dropped for any other
+// stat.
+const modifyAttributeSchema = z
+	.object({
+		type: z.literal('MODIFY_ATTRIBUTE'),
+		attribute: characterStatSchema,
+		amount: z.number().int(), // can be negative
+		bar: z.enum(['current', 'max']).optional(),
+		target: z.enum(['character', 'party']).optional(),
+	})
+	.transform(({ bar, ...a }) =>
+		a.attribute === 'hp' || a.attribute === 'sp' ? { ...a, bar } : a,
+	)
+
 export const actionSchema = z.discriminatedUnion('type', [
 	showDialogSchema,
 	z.object({
@@ -142,18 +171,13 @@ export const actionSchema = z.discriminatedUnion('type', [
 		itemId: z.string().min(1),
 		amount: amount.optional(),
 	}),
-	z.object({ type: z.literal('GIVE_XP'), amount }),
 	z.object({ type: z.literal('GIVE_CURRENCY'), amount }),
 	z.object({ type: z.literal('SET_FLAG'), flag: z.string().min(1) }),
 	spawnSchema,
 	z.object({ type: z.literal('REMOVE_SELF') }),
 	z.object({ type: z.literal('TELEPORT'), destination: destinationSchema }),
 	z.object({ type: z.literal('PLAY_SOUND'), sound: z.string().min(1) }),
-	z.object({
-		type: z.literal('MODIFY_ATTRIBUTE'),
-		attribute: z.string().min(1),
-		amount: z.number().int(), // can be negative
-	}),
+	modifyAttributeSchema,
 ]) satisfies z.ZodType<Action>
 
 export const interactionSchema = z.object({

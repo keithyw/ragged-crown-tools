@@ -95,6 +95,24 @@ export type Condition =
 	| { type: 'FLAG_SET'; flag: string }
 	| { type: 'FLAG_NOT_SET'; flag: string }
 
+// The numeric stats of a character that MODIFY_ATTRIBUTE can change
+// (DATA-MODEL.md 4.4). Mirrors the game's PlayerCharacter, plus xp, which the
+// game doesn't have yet.
+export type CharacterStat =
+	| 'strength'
+	| 'dexterity'
+	| 'intelligence'
+	| 'wisdom'
+	| 'personality'
+	| 'speed'
+	| 'constitution'
+	| 'hp'
+	| 'sp'
+	| 'xp'
+	| 'level'
+export type StatBar = 'current' | 'max'
+export type StatTarget = 'character' | 'party'
+
 // Fields beyond SPAWN and TELEPORT are provisional (DATA-MODEL.md 4.4).
 // `custom: true` means the value is left to each placement (a custom NPC's
 // dialog, a chest's contents), so the action carries no value fields at all
@@ -104,7 +122,6 @@ export type Action =
 	| { type: 'SHOW_DIALOG'; custom: true }
 	| { type: 'GIVE_ITEM'; itemId: string; amount?: number }
 	| { type: 'TAKE_ITEM'; itemId: string; amount?: number }
-	| { type: 'GIVE_XP'; amount: number }
 	| { type: 'GIVE_CURRENCY'; amount: number }
 	| { type: 'SET_FLAG'; flag: string }
 	| {
@@ -118,7 +135,13 @@ export type Action =
 	| { type: 'REMOVE_SELF' }
 	| { type: 'TELEPORT'; destination: Destination }
 	| { type: 'PLAY_SOUND'; sound: string }
-	| { type: 'MODIFY_ATTRIBUTE'; attribute: string; amount: number }
+	| {
+			type: 'MODIFY_ATTRIBUTE'
+			attribute: CharacterStat
+			amount: number // negative allowed
+			bar?: StatBar // hp and sp only; absent = current
+			target?: StatTarget // absent = character
+	  }
 
 export interface Interaction {
 	id: string

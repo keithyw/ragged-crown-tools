@@ -245,15 +245,35 @@ Interactions can be **unlimited** (a generic NPC's "Hello and welcome to town X"
 
 ### 4.4 Initial actions
 
-`SHOW_DIALOG`, `GIVE_ITEM`, `TAKE_ITEM`, `GIVE_XP`, `GIVE_CURRENCY`, `SET_FLAG`, `SPAWN { defKind, defId, quantity? }` (adds to this cell's stack at runtime), `REMOVE_SELF`, `TELEPORT { destination }`, `PLAY_SOUND`, `MODIFY_ATTRIBUTE`.
+`SHOW_DIALOG`, `GIVE_ITEM`, `TAKE_ITEM`, `GIVE_CURRENCY`, `SET_FLAG`, `SPAWN { defKind, defId, quantity? }` (adds to this cell's stack at runtime), `REMOVE_SELF`, `TELEPORT { destination }`, `PLAY_SOUND`, `MODIFY_ATTRIBUTE`.
 
 The engine implements them incrementally ([Game 2]). Fields not listed here are decided when each type is written.
+
+**Stat changes (`MODIFY_ATTRIBUTE`).** One action changes any numeric stat of a character. `GIVE_XP` is not a separate type: experience is just another stat.
+
+```ts
+{
+	type: 'MODIFY_ATTRIBUTE'
+	attribute: CharacterStat // 'strength' | 'dexterity' | 'intelligence' | 'wisdom' | 'personality' | 'speed' | 'constitution' | 'hp' | 'sp' | 'xp' | 'level'
+	amount: number // negative allowed
+	bar?: 'current' | 'max' // hp and sp only; absent = current
+	target?: 'character' | 'party' // absent = character
+}
+```
+
+- **Permanent changes only.** The amount changes the character's stored value. Timed buffs and penalties are not designed yet (see Open questions).
+- **`bar`** only means something for `hp` and `sp`, which are bars with a current and a max. `current` is healing or damage (a fountain, fire). `max` is a permanent boost (a Might and Magic barrel); the engine raises the current value by the same amount.
+- **`target`** is `character` or `party`. A fountain that cures poison is `character` (the engine asks the player which one); a quest reward or Lord British's party heal is `party`. Fire in Ultima 4 hurts everyone, so it is `party`. Who "the character" is when nobody chooses is the engine's decision.
+- **`xp`** is flat and additive. **`level`** grants (or, if negative, drains) levels, and the engine works out the XP that implies.
+- The name `MODIFY_ATTRIBUTE` and its `attribute` key are historical (they predate hp, sp and xp being included). The editor labels the action "Change a stat". Names are provisional.
+- Existing documents with no `bar` or `target` keep working (they read as `current` and `character`). An `attribute` value that is not in the list, such as the old free text "stamina", is shown as unknown in the editor until it is re-selected.
+- When an attribute rises or falls, the engine recomputes whatever depends on it (carry weight from strength, and so on). That is engine behavior, not authored.
 
 ### 4.5 Worked example: quest giver
 
 "Bring me 10 vulture bones." Three interactions on the NPC, all `on: TALK`:
 
-1. `limit: 1`, conditions `[HAS_ITEM bones x10]`, actions `[TAKE_ITEM bones x10, GIVE_XP 150, GIVE_CURRENCY 20 silver, GIVE_ITEM <reward>, SET_FLAG quest_done, SHOW_DIALOG "Thanks"]`.
+1. `limit: 1`, conditions `[HAS_ITEM bones x10]`, actions `[TAKE_ITEM bones x10, MODIFY_ATTRIBUTE xp +150 (party), GIVE_CURRENCY 20 silver, GIVE_ITEM <reward>, SET_FLAG quest_done, SHOW_DIALOG "Thanks"]`.
 2. Conditions `[FLAG_NOT_SET quest_done]`, actions `[SHOW_DIALOG "Bring me 10 bones"]`.
 3. No conditions, actions `[SHOW_DIALOG "Thanks again"]`.
 
@@ -333,4 +353,6 @@ Zone JSON is the **initial state only**. When a game starts, the player gets a r
   - Much of "either/or" is already covered by precedence (section 4.1): a first interaction that needs the thing, then a fallback. A toll-bridge troll that takes 5000 gold, otherwise fights, is that: pay (conditions: has gold) then a fallback that spawns an encounter.
   - What is not covered is a **player's choice** (Wizardry 6's troll asks "pay or fight?"). That needs dialog with choices, which is a tree. No trees for now.
   - A quest giver with several quests, each unlocking the next, is the same class of problem. The first quest giver is a single happy path.
+- **Temporary stat effects.** Timed buffs and penalties (a potion of strength for ten minutes, a curse that wears off) need a duration and a way to undo them. The use case exists but is not needed for the current milestones, so `MODIFY_ATTRIBUTE` only makes permanent changes for now.
+- **XP and level.** Which is the source of truth is the engine's decision: either the game knows the XP each level needs and XP decides the level, or the level decides and XP is derived. The tools allow both a flat `xp` grant and a `level` grant. Level drain by monsters (vampires, wraiths, as in AD&D, taking 1-2 levels a hit) is combat, not an interaction, but the engine will need to convert levels back to XP the same way.
 - **Skill checks.** A locked chest opened by a character's lock picking (a thief's skill percentage) is a different object from one that needs a specific key (the dragon's key), though they look alike. It needs a condition type that reads a character skill, so it waits for character skills (deferred). Probably a new condition type, not a variant of `HAS_ITEM`. Bashing a door (a strength check) and a Knock spell are the same kind of thing. In Wizardry 6 these are methods the player picks from a menu on the door; here, until there is such a menu, each method would be a separate interaction (section 4.7 covers what the player sees when all of them fail).

@@ -53,6 +53,13 @@ const issueText = (issue: { path: PropertyKey[]; message: string }) => {
 	) {
 		return `Action ${issue.path[1] + 1}: choose an item`
 	}
+	if (
+		issue.path[0] === 'actions' &&
+		typeof issue.path[1] === 'number' &&
+		issue.path[2] === 'attribute'
+	) {
+		return `Action ${issue.path[1] + 1}: choose a stat`
+	}
 	if (issue.message.includes('expected number')) {
 		const field = issue.path[issue.path.length - 1]
 		return issue.path[0] === 'actions' && typeof issue.path[1] === 'number'
@@ -108,7 +115,9 @@ const InteractionForm = ({
 		} else {
 			next[field.key] = field.input === 'number' ? parseNumberInput(raw) : raw
 		}
-		setAction(index, next as unknown as Action)
+		const config = ACTION_TYPES.find((t) => t.type === actions[index].type)
+		const edited = next as unknown as Action
+		setAction(index, config?.normalize ? config.normalize(edited) : edited)
 	}
 
 	// A custom action keeps no value (it is left to each placement), so
@@ -359,6 +368,26 @@ const InteractionForm = ({
 												: String(raw)
 											: String(raw ?? '')
 									const id = `action-${i}-${field.key}`
+									if (field.visibleWhen && !field.visibleWhen(action)) {
+										return null
+									}
+									if (field.input === 'select') {
+										const current = String(raw ?? field.defaultValue ?? '')
+										const known = field.options?.some(
+											(o) => o.value === current,
+										)
+										return (
+											<SelectDropdown
+												key={field.key}
+												id={id}
+												label={field.label}
+												placeholder='Choose...'
+												options={field.options ?? []}
+												selectedValue={known ? current : null}
+												onSelect={(v) => v && setField(i, field, String(v))}
+											/>
+										)
+									}
 									if (field.input === 'item') {
 										const a = action as { itemId: string }
 										return (
