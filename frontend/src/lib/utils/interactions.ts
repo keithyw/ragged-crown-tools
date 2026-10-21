@@ -23,10 +23,14 @@ export interface ActionField {
 	label: string
 	// 'def' picks an item or object and sets both defKind and defId (its key is
 	// defId).
-	input: 'text' | 'textarea' | 'number' | 'def'
+	// 'item' picks an item by name and sets its _id (its key is itemId).
+	input: 'text' | 'textarea' | 'number' | 'def' | 'item'
 	placeholder?: string
 	// A blank value leaves the property out instead of storing it (numbers).
 	optional?: boolean
+	// Shown only when the chosen item is stackable (or the stored value isn't
+	// 1, so stored data is never hidden).
+	stackableOnly?: boolean
 }
 
 // What a summary needs to know beyond the action itself.
@@ -111,6 +115,19 @@ export const ACTION_TYPES: ActionTypeConfig[] = [
 				: a.type === 'SPAWN'
 					? `spawn ${ctx.defName(a.defKind, a.defId)}${a.quantity ? ` x${a.quantity}` : ''}`
 					: '',
+	},
+	{
+		type: 'TAKE_ITEM',
+		label: 'Take item (from the player)',
+		fields: [
+			{ key: 'itemId', label: 'Item', input: 'item' },
+			{ key: 'amount', label: 'Amount', input: 'number', stackableOnly: true },
+		],
+		blank: () => ({ type: 'TAKE_ITEM', itemId: '', amount: 1 }),
+		summary: (a, ctx) =>
+			a.type === 'TAKE_ITEM'
+				? `take ${ctx.defName('item', a.itemId)}${a.amount && a.amount > 1 ? ` x${a.amount}` : ''}`
+				: '',
 	},
 	{
 		type: 'REMOVE_SELF',

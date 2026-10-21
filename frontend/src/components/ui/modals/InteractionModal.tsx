@@ -46,6 +46,13 @@ const issueText = (issue: { path: PropertyKey[]; message: string }) => {
 			? `Condition ${n}: choose an item`
 			: `Condition ${n}: enter an amount of 1 or more`
 	}
+	if (
+		issue.path[0] === 'actions' &&
+		typeof issue.path[1] === 'number' &&
+		issue.path[2] === 'itemId'
+	) {
+		return `Action ${issue.path[1] + 1}: choose an item`
+	}
 	if (issue.message.includes('expected number')) {
 		const field = issue.path[issue.path.length - 1]
 		return issue.path[0] === 'actions' && typeof issue.path[1] === 'number'
@@ -352,6 +359,36 @@ const InteractionForm = ({
 												: String(raw)
 											: String(raw ?? '')
 									const id = `action-${i}-${field.key}`
+									if (field.input === 'item') {
+										const a = action as { itemId: string }
+										return (
+											<ItemCombobox
+												key={field.key}
+												id={id}
+												label={field.label}
+												items={items}
+												isLoading={defsLoading}
+												selectedId={a.itemId}
+												onSelect={(item) =>
+													setAction(i, {
+														...action,
+														itemId: item._id,
+													} as Action)
+												}
+											/>
+										)
+									}
+									// Hidden unless it matters; a stored amount other than 1 is
+									// always shown.
+									if (
+										field.stackableOnly &&
+										raw === 1 &&
+										!items.find(
+											(d) => d._id === (action as { itemId?: string }).itemId,
+										)?.stackable
+									) {
+										return null
+									}
 									if (field.input === 'def') {
 										const a = action as { defKind: Kind; defId: string }
 										return (
