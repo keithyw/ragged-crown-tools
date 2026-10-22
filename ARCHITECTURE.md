@@ -256,6 +256,25 @@ pnpm dev          # http://localhost:3000, needs NEXT_PUBLIC_API_URL=http://loca
 
 Makefile targets: `build`, `docker-up`, `docker-down`, `docker-restart`, `rc-build`, `rc-down`, `rc-restart` (the `rc-*` ones act on the API container only).
 
+### 6.0 Sandbox stack
+
+A second, disposable API + MongoDB that runs alongside the real one, so generated or experimental data never touches real content. It is its own compose project in `docker-compose.sandbox.yml`; the real `docker-compose.yml` is untouched.
+
+| | Real | Sandbox |
+| --- | --- | --- |
+| Compose file | `docker-compose.yml` | `docker-compose.sandbox.yml` |
+| Project name | `ragged-crown-tools` | `ragged-crown-tools-sandbox` |
+| Containers | `rc_mongodb`, `rc_tools` | `rc_mongodb_sandbox`, `rc_tools_sandbox` |
+| API port | 8080 | 8081 |
+| Mongo host port | 27017 | none (reachable only from the API over the compose network) |
+| Volume | `rc_mongo_data` | `rc_mongo_data_sandbox` |
+| Env file | `.env` | `.env.sandbox` |
+
+- `.env.sandbox` is created by hand (copy `.env`, then change `MONGO_DATABASE` and the Mongo credentials; the host in `MONGODB_URI` resolves inside the sandbox's own network, so `mongodb` works, but `rc_mongodb_sandbox` is preferred because it fails loudly instead of reaching real data if the API is ever attached to the wrong network). It must be git-ignored and is never read or committed by Claude.
+- Targets: `make sandbox-up`, `sandbox-down`, `sandbox-restart`, `sandbox-rc-restart` (rebuild the sandbox API only) and `sandbox-reset`. **`sandbox-reset` deletes the sandbox database volume** (`down -v` on the sandbox project only; it cannot touch the real volume). Confirm before every run.
+- The sandbox starts empty. It has no unique index on `id` (Known gap 3; see [Infra 7]), so duplicate-`id` cases are not caught there.
+- **Pointing things at it:** the MCP uses `RC_API_URL=http://localhost:8081`. The frontend uses `NEXT_PUBLIC_API_URL=http://localhost:8081`, but CORS only allows `localhost:3000` (Known gap 6), so run `NEXT_PUBLIC_API_URL=http://localhost:8081 pnpm dev` in place of the normal dev server, not alongside it.
+
 Verification: use `pnpm exec tsc --noEmit` in `frontend/` as the source of truth for types. Editor squiggles in a monorepo can be stale TS-server project issues rather than real errors.
 
 ### 6.1 MCP server (`mcp/`)

@@ -1,0 +1,41 @@
+name: ragged-crown-tools-sandbox
+services:
+  mongodb:
+    container_name: rc_mongodb_sandbox
+    image: mongo:latest
+    restart: unless-stopped
+    env_file:
+      - .env.sandbox
+    networks:
+      - rc_network_sandbox
+    volumes:
+      - rc_mongo_data_sandbox:/data/db
+    healthcheck:
+      test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  rc_tools:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: rc_tools_sandbox
+    depends_on:
+      mongodb:
+        condition: service_healthy
+    ports:
+      - "8081:8080"
+    env_file:
+      - .env.sandbox
+    restart: on-failure
+    networks:
+      - rc_network_sandbox
+
+networks:
+  rc_network_sandbox:
+    driver: bridge
+
+volumes:
+  rc_mongo_data_sandbox:
+    driver: local
