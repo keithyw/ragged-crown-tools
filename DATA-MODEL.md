@@ -281,20 +281,26 @@ The NPC never despawns.
 
 ### 4.6 Custom values
 
-An action's value can be left for each placement to fill in, so one def serves many instances: a generic townsperson greets everyone the same way, while a custom NPC (or a chest) gets its own dialog (or contents) on its placement. The action is marked `custom: true`.
+An action's (or condition's) value can be left for each placement to fill in, so one def serves many instances: a generic townsperson greets everyone the same way, while a custom NPC (or a chest) gets its own dialog (or contents) on its placement, and one quest giver def asks for a different item on each NPC. It is marked `custom: true`.
+
+**The general rule: custom means the value, the amount and any other properties are decided at placement.**
 
 ```ts
 { type: 'SHOW_DIALOG'; text: string } | { type: 'SHOW_DIALOG'; custom: true }
 { type: 'SPAWN'; defKind; defId; quantity? } | { type: 'SPAWN'; custom: true }
+{ type: 'GIVE_ITEM'; itemId; amount? } | { type: 'GIVE_ITEM'; custom: true }
+{ type: 'TAKE_ITEM'; itemId; amount? } | { type: 'TAKE_ITEM'; custom: true }
+{ type: 'HAS_ITEM'; itemId; amount } | { type: 'HAS_ITEM'; custom: true } // a condition
 ```
 
 Rules:
 
-- **A custom action carries no value.** `text`, or `defKind`/`defId`/`quantity`, are absent. The tools do not validate them and do not save them: checking the box in the interaction editor clears them, and the schema strips them if they arrive anyway.
+- **A custom action or condition carries no value.** `text`, or `defKind`/`defId`/`quantity`, or `itemId`/`amount`, are absent. The tools do not validate them and do not save them: checking the box in the interaction editor clears them, and the schema strips them if they arrive anyway. A custom item reference's **amount** is set on the placement too.
 - **A non-custom action is unchanged:** its value is required and `custom` is not stored (never `custom: false`).
-- **Only some action types can be custom:** `SHOW_DIALOG` and `SPAWN` so far. A type opts in with `customizable` in the editor's action registry (`lib/utils/interactions.ts`).
+- **Only some types can be custom:** the actions `SHOW_DIALOG`, `SPAWN`, `GIVE_ITEM` and `TAKE_ITEM`, and the condition `HAS_ITEM`. Every item reference gets the checkbox. A type opts in with `customizable` in the editor's action or condition registry (`lib/utils/interactions.ts`).
 - **The def only says "a value goes here."** The value itself is set on the placement, in the zone editor's stack manager ([Tools 12]). A placement's interaction carries the real value, normally as the same action type with its value filled in and no `custom` flag.
-- **Not decided yet:** how the stack manager lists the custom slots of a def and how a placement fills them; whether the map validation warns about a placement that leaves a custom slot empty (as it does for a portal with no destination); and what the engine does at runtime when a custom action reaches it with no value (the working assumption is that it skips it).
+- **Not decided yet:** how the stack manager lists the custom slots of a def and how a placement fills them; and what the engine does at runtime when a custom value is still empty (the working assumption: a custom **action** is skipped; a custom **condition fails**, so the interaction doesn't run and the fallback takes over).
+- **Making sure placements fill custom values in.** When a zone is saved, the zone builder validates it (including empty custom values and portals with no destination). The zone is still saved, since the designer must not lose work, but it is marked as a draft, and the game does not treat a draft zone as complete or playable until it has been validated. The shape of that state is designed in [Tools 16].
 
 ### 4.7 Feedback (engine behavior and hints)
 

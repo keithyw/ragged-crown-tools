@@ -73,8 +73,40 @@ export const interactionTypeSchema = z.enum([
 
 const amount = z.number().int().min(1)
 
+// Like the custom actions below: a custom item check leaves the item and amount
+// to each placement, so nothing but the flag is kept (DATA-MODEL.md 4.6).
+const hasItemSchema = z
+	.object({
+		type: z.literal('HAS_ITEM'),
+		custom: z.boolean().optional(),
+		itemId: z.string().optional(),
+		amount: amount.optional(),
+	})
+	.superRefine((c, ctx) => {
+		if (c.custom) return
+		if (!c.itemId) {
+			ctx.addIssue({
+				code: 'custom',
+				path: ['itemId'],
+				message: 'Choose an item.',
+			})
+		}
+		if (c.amount === undefined) {
+			ctx.addIssue({
+				code: 'custom',
+				path: ['amount'],
+				message: 'Enter an amount.',
+			})
+		}
+	})
+	.transform((c) =>
+		c.custom
+			? { type: c.type, custom: true as const }
+			: { type: c.type, itemId: c.itemId ?? '', amount: c.amount ?? 1 },
+	)
+
 export const conditionSchema = z.discriminatedUnion('type', [
-	z.object({ type: z.literal('HAS_ITEM'), itemId: z.string().min(1), amount }),
+	hasItemSchema,
 	z.object({ type: z.literal('FLAG_SET'), flag: z.string().min(1) }),
 	z.object({ type: z.literal('FLAG_NOT_SET'), flag: z.string().min(1) }),
 ]) satisfies z.ZodType<Condition>
@@ -159,18 +191,34 @@ const modifyAttributeSchema = z
 		a.attribute === 'hp' || a.attribute === 'sp' ? { ...a, bar } : a,
 	)
 
+// GIVE_ITEM and TAKE_ITEM are the same shape; either can be custom.
+const itemActionSchema = <T extends 'GIVE_ITEM' | 'TAKE_ITEM'>(type: T) =>
+	z
+		.object({
+			type: z.literal(type),
+			custom: z.boolean().optional(),
+			itemId: z.string().optional(),
+			amount: amount.optional(),
+		})
+		.superRefine((a, ctx) => {
+			if (!a.custom && !a.itemId) {
+				ctx.addIssue({
+					code: 'custom',
+					path: ['itemId'],
+					message: 'Choose an item.',
+				})
+			}
+		})
+		.transform((a) =>
+			a.custom
+				? { type: a.type, custom: true as const }
+				: { type: a.type, itemId: a.itemId ?? '', amount: a.amount },
+		)
+
 export const actionSchema = z.discriminatedUnion('type', [
 	showDialogSchema,
-	z.object({
-		type: z.literal('GIVE_ITEM'),
-		itemId: z.string().min(1),
-		amount: amount.optional(),
-	}),
-	z.object({
-		type: z.literal('TAKE_ITEM'),
-		itemId: z.string().min(1),
-		amount: amount.optional(),
-	}),
+	itemActionSchema('GIVE_ITEM'),
+	itemActionSchema('TAKE_ITEM'),
 	z.object({ type: z.literal('GIVE_CURRENCY'), amount }),
 	z.object({ type: z.literal('SET_FLAG'), flag: z.string().min(1) }),
 	spawnSchema,

@@ -181,28 +181,32 @@ export const ACTION_TYPES: ActionTypeConfig[] = [
 	{
 		type: 'TAKE_ITEM',
 		label: 'Take item (from the player)',
+		customizable: true,
 		fields: [
 			{ key: 'itemId', label: 'Item', input: 'item' },
 			{ key: 'amount', label: 'Amount', input: 'number', stackableOnly: true },
 		],
 		blank: () => ({ type: 'TAKE_ITEM', itemId: '', amount: 1 }),
-		summary: (a, ctx) =>
-			a.type === 'TAKE_ITEM'
-				? `take ${ctx.defName('item', a.itemId)}${a.amount && a.amount > 1 ? ` x${a.amount}` : ''}`
-				: '',
+		summary: (a, ctx) => {
+			if (a.type !== 'TAKE_ITEM') return ''
+			if (a.custom) return 'take an item (set per placement)'
+			return `take ${ctx.defName('item', a.itemId)}${a.amount && a.amount > 1 ? ` x${a.amount}` : ''}`
+		},
 	},
 	{
 		type: 'GIVE_ITEM',
 		label: 'Give item (to the player)',
+		customizable: true,
 		fields: [
 			{ key: 'itemId', label: 'Item', input: 'item' },
 			{ key: 'amount', label: 'Amount', input: 'number', stackableOnly: true },
 		],
 		blank: () => ({ type: 'GIVE_ITEM', itemId: '', amount: 1 }),
-		summary: (a, ctx) =>
-			a.type === 'GIVE_ITEM'
-				? `give ${ctx.defName('item', a.itemId)}${a.amount && a.amount > 1 ? ` x${a.amount}` : ''}`
-				: '',
+		summary: (a, ctx) => {
+			if (a.type !== 'GIVE_ITEM') return ''
+			if (a.custom) return 'give an item (set per placement)'
+			return `give ${ctx.defName('item', a.itemId)}${a.amount && a.amount > 1 ? ` x${a.amount}` : ''}`
+		},
 	},
 	{
 		type: 'REMOVE_SELF',
@@ -227,6 +231,8 @@ export interface ConditionTypeConfig {
 	type: Condition['type']
 	label: string
 	fields: ConditionField[]
+	// Offers the "set per placement" checkbox (stores `custom`).
+	customizable?: boolean
 	blank: () => Condition
 }
 
@@ -236,6 +242,7 @@ export const CONDITION_TYPES: ConditionTypeConfig[] = [
 	{
 		type: 'HAS_ITEM',
 		label: 'Has item',
+		customizable: true,
 		fields: [
 			{ key: 'itemId', label: 'Item', input: 'item' },
 			{ key: 'amount', label: 'Amount', input: 'number', stackableOnly: true },
@@ -258,6 +265,7 @@ export const summarizeCondition = (
 ) => {
 	switch (condition.type) {
 		case 'HAS_ITEM':
+			if (condition.custom) return 'has an item (set per placement)'
 			return `has ${ctx.defName('item', condition.itemId)}${condition.amount > 1 ? ` x${condition.amount}` : ''}`
 		case 'FLAG_SET':
 			return `flag "${condition.flag}" is set`

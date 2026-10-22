@@ -91,7 +91,8 @@ export interface Placement {
 }
 
 export type Condition =
-	| { type: 'HAS_ITEM'; itemId: string; amount: number }
+	| { type: 'HAS_ITEM'; itemId: string; amount: number; custom?: never }
+	| { type: 'HAS_ITEM'; custom: true }
 	| { type: 'FLAG_SET'; flag: string }
 	| { type: 'FLAG_NOT_SET'; flag: string }
 
@@ -120,8 +121,10 @@ export type StatTarget = 'character' | 'party'
 export type Action =
 	| { type: 'SHOW_DIALOG'; text: string; custom?: never }
 	| { type: 'SHOW_DIALOG'; custom: true }
-	| { type: 'GIVE_ITEM'; itemId: string; amount?: number }
-	| { type: 'TAKE_ITEM'; itemId: string; amount?: number }
+	| { type: 'GIVE_ITEM'; itemId: string; amount?: number; custom?: never }
+	| { type: 'GIVE_ITEM'; custom: true }
+	| { type: 'TAKE_ITEM'; itemId: string; amount?: number; custom?: never }
+	| { type: 'TAKE_ITEM'; custom: true }
 	| { type: 'GIVE_CURRENCY'; amount: number }
 	| { type: 'SET_FLAG'; flag: string }
 	| {

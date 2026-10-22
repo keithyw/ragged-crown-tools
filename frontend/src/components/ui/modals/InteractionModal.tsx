@@ -226,7 +226,7 @@ const InteractionForm = ({
 						)
 					}
 					const selectedItem =
-						condition.type === 'HAS_ITEM'
+						condition.type === 'HAS_ITEM' && !condition.custom
 							? items.find((d) => d._id === condition.itemId)
 							: undefined
 					return (
@@ -250,6 +250,7 @@ const InteractionForm = ({
 								}}
 							/>
 							{condition.type === 'HAS_ITEM' &&
+								!condition.custom &&
 								config.fields.map((field) => {
 									const id = `condition-${i}-${field.key}`
 									if (field.input === 'item') {
@@ -299,6 +300,21 @@ const InteractionForm = ({
 										/>
 									)
 								})}
+							{config.customizable && (
+								<CheckboxInput
+									id={`condition-${i}-custom`}
+									label='Set per placement (custom value)'
+									checked={'custom' in condition && !!condition.custom}
+									onChange={(e) =>
+										setCondition(
+											i,
+											e.target.checked
+												? ({ type: config.type, custom: true } as Condition)
+												: config.blank(),
+										)
+									}
+								/>
+							)}
 							<Button
 								type='button'
 								actionType='delete'
