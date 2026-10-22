@@ -299,7 +299,7 @@ Rules:
 - **A non-custom action is unchanged:** its value is required and `custom` is not stored (never `custom: false`).
 - **Only some types can be custom:** the actions `SHOW_DIALOG`, `SPAWN`, `GIVE_ITEM` and `TAKE_ITEM`, and the condition `HAS_ITEM`. Every item reference gets the checkbox. A type opts in with `customizable` in the editor's action or condition registry (`lib/utils/interactions.ts`).
 - **The def only says "a value goes here."** The value itself is set on the placement, in the zone editor's stack manager ([Tools 12]). A placement's interaction carries the real value, normally as the same action type with its value filled in and no `custom` flag.
-- **Not decided yet:** how the stack manager lists the custom slots of a def and how a placement fills them; and what the engine does at runtime when a custom value is still empty (the working assumption: a custom **action** is skipped; a custom **condition fails**, so the interaction doesn't run and the fallback takes over).
+- **Not decided yet:** how the stack manager lists the custom slots of a def and how a placement fills them; and what the engine does at runtime when a custom value is still empty. That is the engine's decision, tracked in [Game 5] (the working assumption: a custom **action** is skipped; a custom **condition fails**, so the interaction doesn't run and the fallback takes over).
 - **Making sure placements fill custom values in.** When a zone is saved, the zone builder validates it (including empty custom values and portals with no destination). The zone is still saved, since the designer must not lose work, but it is marked as a draft, and the game does not treat a draft zone as complete or playable until it has been validated. The shape of that state is designed in [Tools 16].
 
 ### 4.7 Feedback (engine behavior and hints)
@@ -344,7 +344,7 @@ Zone JSON is the **initial state only**. When a game starts, the player gets a r
 ## Open questions
 
 - **Content delivery.** Does the game fetch from the backend or load an export in `public/data`? Decided in [Game 1].
-- **Item category and the item model.** Deferred on purpose; expect the item schema to change often while the inventory is designed one item type at a time. Leanings so far:
+- **Item category and the item model.** Deferred on purpose; expect the item schema to change often while the inventory is designed one item type at a time. The real design depends on combat, character classes, skills and races, so it can only be settled while the game side is developed alongside it; until then an item is a name, a glyph and the minimal fields above. Tracked by the parked epic [Inventory 1]. Leanings so far:
   - Categories live in the DB, not as a code enum, so adding one is data rather than a release. That would need a new allow-listed collection (the backend currently has no categories collection).
   - No subcategories and no recursive category logic.
   - Variants (sword vs long sword, chain mail vs elven chain mail +5) are extra attributes on an item, not an inheritance hierarchy. An armor item might carry a location (helmet, boots, ...) while staying in the armor category.
