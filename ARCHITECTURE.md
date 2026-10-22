@@ -139,8 +139,7 @@ All error bodies are JSON: `{"error": "..."}`.
 
 `ErrDuplicate` only fires if MongoDB has a **unique index** on the user-facing `id` for that collection. The code does not create indexes today (see Known gaps).
 
-Note: I did run a command to add an index but there is no base code to keep such a thing up to date in the way a migration file is used. At this point, I
-consider this adequate since the game isn't large.
+Note: I once added an index by hand on `tile_defs` only, and it is gone (the database has been flushed or recreated since). **No collection has an index on `id` today**, in the real database or the sandbox; `_id` is the real key and `id` is a legacy label filled in by hand. There is no base code to keep such a thing up to date in the way a migration file is used; a script to create the indexes is tracked as [Infra 7].
 
 ### 3.5 Other
 
@@ -254,7 +253,7 @@ pnpm install
 pnpm dev          # http://localhost:3000, needs NEXT_PUBLIC_API_URL=http://localhost:8080
 ```
 
-Makefile targets: `build`, `docker-up`, `docker-down`, `docker-restart`, `rc-build`, `rc-down`, `rc-restart` (the `rc-*` ones act on the API container only).
+Makefile targets: `build`, `docker-up`, `docker-down`, `docker-restart`, `rc-build`, `rc-down`, `rc-restart` (the `rc-*` ones act on the API container only), `db-backup` (section 6.2).
 
 ### 6.0 Sandbox stack
 
@@ -272,7 +271,7 @@ A second, disposable API + MongoDB that runs alongside the real one, so generate
 
 - `.env.sandbox` is created by hand (copy `.env`, then change `MONGO_DATABASE` and the Mongo credentials; the host in `MONGODB_URI` resolves inside the sandbox's own network, so `mongodb` works, but `rc_mongodb_sandbox` is preferred because it fails loudly instead of reaching real data if the API is ever attached to the wrong network). It must be git-ignored and is never read or committed by Claude.
 - Targets: `make sandbox-up`, `sandbox-down`, `sandbox-restart`, `sandbox-rc-restart` (rebuild the sandbox API only) and `sandbox-reset`. **`sandbox-reset` deletes the sandbox database volume** (`down -v` on the sandbox project only; it cannot touch the real volume). Confirm before every run.
-- The sandbox starts empty. It has no unique index on `id` (Known gap 3; see [Infra 7]), so duplicate-`id` cases are not caught there.
+- The sandbox starts empty. Neither stack has a unique index on `id` (Known gap 3; see [Infra 7]), so duplicate-`id` cases are not caught in either. A backup of the real database can be restored into it (section 6.2).
 - **Pointing things at it:** the MCP uses `RC_API_URL=http://localhost:8081`. The frontend uses `NEXT_PUBLIC_API_URL=http://localhost:8081`, but CORS only allows `localhost:3000` (Known gap 6), so run `NEXT_PUBLIC_API_URL=http://localhost:8081 pnpm dev` in place of the normal dev server, not alongside it.
 
 Verification: use `pnpm exec tsc --noEmit` in `frontend/` as the source of truth for types. Editor squiggles in a monorepo can be stale TS-server project issues rather than real errors.
@@ -300,6 +299,30 @@ pnpm start        # speaks MCP over stdio; normally launched by Claude Code, not
 ```
 
 Claude Code reads `.mcp.json` when a session starts and asks for approval of a project server the first time; `/mcp` shows its status. The API must be running (`make docker-up`) or the tools return "Cannot reach the API".
+
+### 6.2 Backup and restore
+
+```bash
+make db-backup    # real database -> ~/databases/ragged-crown-tools/rc-<date>-<time>.archive.gz
+```
+
+- It runs `mongodump --archive --gzip` inside `rc_mongodb` and writes a dated BSON archive on the host, **outside the repo and outside the Docker volume**, so `docker compose down -v` cannot take it along. Override the folder with `BACKUP_DIR=...`. The archive is written as `*.partial` and renamed only if the dump succeeds.
+- Every run adds a new file. Nothing is pruned; the dumps are tiny. Deleting old ones is manual.
+- It dumps every database on the instance, not just `MONGO_DATABASE`.
+- BSON keeps types exactly (the `float64` note in section 3.5 round-trips unchanged) and includes index definitions. There are currently no indexes beyond `_id` to include.
+- Backing up is read-only on the database. **Restoring is destructive; confirm every time**, and try it on the sandbox first, never first on real data.
+
+Restore into the sandbox (the sandbox must be up):
+
+```bash
+docker exec -i rc_mongodb_sandbox mongorestore --archive --gzip \
+  --nsFrom 'ragged_crown.*' --nsTo 'ragged_crown_sandbox.*' \
+  < ~/databases/ragged-crown-tools/rc-<date>-<time>.archive.gz
+```
+
+- **The `--nsFrom`/`--nsTo` remap is required.** An archive stores each collection under its original namespace (`ragged_crown.tile_defs`), and `mongorestore` puts it back under that name on whichever server you point it at. Without the remap the data lands in a stray `ragged_crown` database inside the sandbox's Mongo, while the sandbox API reads `ragged_crown_sandbox` and still looks empty. (This happened on the first test.)
+- The container name decides which server receives the data; the remap decides which database. Both must be right.
+- Restoring over existing documents with the same `_id` skips them by default; `--drop` would replace the collections, so only add it deliberately.
 
 ---
 

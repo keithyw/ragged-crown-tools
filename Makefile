@@ -21,6 +21,16 @@ rc-restart:
 	docker-compose build rc_tools
 	docker-compose up -d --no-deps rc_tools
 
+# Backup of the REAL database (BSON archive, includes index definitions).
+# Written outside the repo and outside the Docker volume. No pruning.
+BACKUP_DIR ?= $(HOME)/databases/ragged-crown-tools
+
+db-backup:
+	mkdir -p $(BACKUP_DIR)
+	f=$(BACKUP_DIR)/rc-$$(date +%Y%m%d-%H%M%S).archive.gz && \
+	docker exec rc_mongodb mongodump --archive --gzip > $$f.partial && \
+	mv $$f.partial $$f && echo "wrote $$f"
+
 # Sandbox stack: separate project, containers, volume and port (API on :8081)
 SANDBOX = docker-compose -f docker-compose.sandbox.yml
 
