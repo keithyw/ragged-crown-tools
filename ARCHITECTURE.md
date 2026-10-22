@@ -52,6 +52,8 @@ ragged-crown-tools/
 │       ├── hooks/                   generic CRUD hooks
 │       ├── schemas/                 zod schemas (one per entity)
 │       └── lib/                     services/, types/, constants/, utils/
+├── mcp/                             local MCP server (read-only view of the API for Claude), see section 6.1
+├── .mcp.json                        registers that server for Claude Code
 ├── Dockerfile                       builds the Go API only
 ├── docker-compose.yml               mongodb + rc_tools (API)
 └── Makefile                         docker-compose shortcuts
@@ -255,6 +257,30 @@ pnpm dev          # http://localhost:3000, needs NEXT_PUBLIC_API_URL=http://loca
 Makefile targets: `build`, `docker-up`, `docker-down`, `docker-restart`, `rc-build`, `rc-down`, `rc-restart` (the `rc-*` ones act on the API container only).
 
 Verification: use `pnpm exec tsc --noEmit` in `frontend/` as the source of truth for types. Editor squiggles in a monorepo can be stale TS-server project issues rather than real errors.
+
+### 6.1 MCP server (`mcp/`)
+
+A small local tool that lets Claude read the data in the database through the API. It is a client of the Go API over HTTP and never connects to MongoDB itself. It is **read-only by design**: GET only, no create, PUT or DELETE (PUT replaces whole documents, see Known gap 1). Tracked on the Trello list "Infrastructure" ([Infra 1] to [Infra 5]), including the planned sandbox stack, backups and integrity checks.
+
+| Tool              | Calls                                | Notes                                                                                                                                           |
+| ----------------- | ------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------- |
+| `list_collection` | `GET /collection/{collection}`       | Optional `filters` (string equality, array = "any of"), `sort`, `limit`, `offset`. Returns `total` (from `X-Total-Count`), `returned`, `items`. |
+| `get_doc`         | `GET /collection/{collection}/{_id}` | Takes the Mongo `_id` (24 hex characters), not the user-facing `id`.                                                                            |
+
+- Code is one file, `mcp/src/index.ts`. The collection names are a copy of the backend allow-list (`middleware.go`); add a new collection to both.
+- The API address comes from `RC_API_URL` (default `http://localhost:8080`). A future sandbox API would be another value here.
+- No build step: Node runs the `.ts` file directly with `--experimental-strip-types` (hence `erasableSyntaxOnly` in `tsconfig.json`: no enums or other non-erasable syntax). `.mcp.json` launches it with plain `node`, which is whichever Node is first on the PATH (22.6+ needed).
+- Formatting uses the frontend's Prettier config: `cd frontend && pnpm exec prettier --config .prettierrc.cjs --write ../mcp/src/index.ts`.
+- Local only. The API has no auth, so this must not be exposed beyond localhost (see section 10, "Before any deploy").
+
+```bash
+cd mcp
+pnpm install
+pnpm typecheck    # tsc --noEmit
+pnpm start        # speaks MCP over stdio; normally launched by Claude Code, not by hand
+```
+
+Claude Code reads `.mcp.json` when a session starts and asks for approval of a project server the first time; `/mcp` shows its status. The API must be running (`make docker-up`) or the tools return "Cannot reach the API".
 
 ---
 

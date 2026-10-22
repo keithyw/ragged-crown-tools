@@ -1,0 +1,18 @@
+{
+	"name": "ragged-crown-mcp",
+	"private": true,
+	"type": "module",
+	"packageManager": "pnpm@10.33.2",
+	"scripts": {
+		"start": "node --experimental-strip-types src/index.ts",
+		"typecheck": "tsc --noEmit"
+	},
+	"dependencies": {
+		"@modelcontextprotocol/sdk": "^1.32.1",
+		"zod": "^4.6.7"
+	},
+	"devDependencies": {
+		"@types/node": "^22.20.5",
+		"typescript": "^7.0.2"
+	}
+}
