@@ -31,6 +31,17 @@ db-backup:
 	docker exec rc_mongodb mongodump --archive --gzip > $$f.partial && \
 	mv $$f.partial $$f && echo "wrote $$f"
 
+# Unique index on `id` per collection (idempotent, safe to re-run).
+# Optional: COLLECTIONS="name1 name2" to run only those.
+REAL_DB ?= ragged_crown
+SANDBOX_DB ?= ragged_crown_sandbox
+
+db-indexes:
+	docker exec -i -e RC_COLLECTIONS="$(COLLECTIONS)" rc_mongodb mongosh --quiet $(REAL_DB) /dev/stdin < scripts/ensure-indexes.js
+
+sandbox-indexes:
+	docker exec -i -e RC_COLLECTIONS="$(COLLECTIONS)" rc_mongodb_sandbox mongosh --quiet $(SANDBOX_DB) /dev/stdin < scripts/ensure-indexes.js
+
 # Sandbox stack: separate project, containers, volume and port (API on :8081)
 SANDBOX = docker-compose -f docker-compose.sandbox.yml
 

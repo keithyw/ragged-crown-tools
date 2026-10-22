@@ -76,4 +76,4 @@ Verify changes with `tsc --noEmit` and `pnpm lint`. Editor squiggles are unrelia
 - Next doesn't always register a **new route folder** while `pnpm dev` is running. Restart the dev server after creating one.
 - Import specifiers are case-sensitive in the bundler even though macOS isn't. A wrong-case import like `from 'React'` produces a confusing "invalid hook call". Match file names exactly.
 - PUT replaces the whole document. Fields the form doesn't manage get dropped unless merged in (known gap).
-- The backend is a deliberately generic store. Domain knowledge (shape, validation, defaults) lives in the frontend. A new collection only needs adding to the allow-list in `backend/internal/collection/middleware.go`.
+- The backend is a deliberately generic store. Domain knowledge (shape, validation, defaults) lives in the frontend. A new collection needs adding to the allow-list in `backend/internal/collection/middleware.go`, and also to `scripts/ensure-indexes.js` and `mcp/src/index.ts`; then run `make db-indexes` and `make sandbox-indexes` (ARCHITECTURE.md section 6.3).

@@ -7,6 +7,9 @@ import (
 	"github.com/go-chi/chi/v5"
 )
 
+// Adding a collection here? Also add it to scripts/ensure-indexes.js and
+// mcp/src/index.ts, then run `make db-indexes` and `make sandbox-indexes`
+// (ARCHITECTURE.md sections 6.3 and 7).
 var validCollections = map[string]bool{
 	"tile_defs": true,
 	"items":     true,

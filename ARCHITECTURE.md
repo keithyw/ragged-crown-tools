@@ -54,6 +54,7 @@ ragged-crown-tools/
 │       └── lib/                     services/, types/, constants/, utils/
 ├── mcp/                             local MCP server (read-only view of the API for Claude), see section 6.1
 ├── .mcp.json                        registers that server for Claude Code
+├── scripts/ensure-indexes.js        mongosh script: unique index on `id` per collection, see section 6.3
 ├── Dockerfile                       builds the Go API only
 ├── docker-compose.yml               mongodb + rc_tools (API)
 └── Makefile                         docker-compose shortcuts
@@ -139,7 +140,7 @@ All error bodies are JSON: `{"error": "..."}`.
 
 `ErrDuplicate` only fires if MongoDB has a **unique index** on the user-facing `id` for that collection. The code does not create indexes today (see Known gaps).
 
-Note: I once added an index by hand on `tile_defs` only, and it is gone (the database has been flushed or recreated since). **No collection has an index on `id` today**, in the real database or the sandbox; `_id` is the real key and `id` is a legacy label filled in by hand. There is no base code to keep such a thing up to date in the way a migration file is used; a script to create the indexes is tracked as [Infra 7].
+Note: I once added an index by hand on `tile_defs` only, and it is gone (the database has been flushed or recreated since). **No collection has an index on `id` today**, in the real database or the sandbox; `_id` is the real key and `id` is a legacy label filled in by hand. There is no base code to keep such a thing up to date in the way a migration file is used; `make db-indexes` creates them (section 6.3, [Infra 7]).
 
 ### 3.5 Other
 
@@ -253,7 +254,7 @@ pnpm install
 pnpm dev          # http://localhost:3000, needs NEXT_PUBLIC_API_URL=http://localhost:8080
 ```
 
-Makefile targets: `build`, `docker-up`, `docker-down`, `docker-restart`, `rc-build`, `rc-down`, `rc-restart` (the `rc-*` ones act on the API container only), `db-backup` (section 6.2).
+Makefile targets: `build`, `docker-up`, `docker-down`, `docker-restart`, `rc-build`, `rc-down`, `rc-restart` (the `rc-*` ones act on the API container only), `db-backup` (section 6.2), `db-indexes` and `sandbox-indexes` (section 6.3).
 
 ### 6.0 Sandbox stack
 
@@ -324,12 +325,29 @@ docker exec -i rc_mongodb_sandbox mongorestore --archive --gzip \
 - The container name decides which server receives the data; the remap decides which database. Both must be right.
 - Restoring over existing documents with the same `_id` skips them by default; `--drop` would replace the collections, so only add it deliberately.
 
+### 6.3 Indexes
+
+```bash
+make db-indexes                          # real database
+make sandbox-indexes                     # sandbox
+make db-indexes COLLECTIONS="new_thing"  # only the named collection(s)
+```
+
+Both pipe `scripts/ensure-indexes.js` into `mongosh` inside the container (`ragged_crown` and `ragged_crown_sandbox`; override with `REAL_DB` / `SANDBOX_DB`). The backend does not create indexes, on purpose: it stays a dumb store and is often left running between changes, so it is not a good moment to hook this to.
+
+- **What it creates:** a unique index named `id_unique` on `id`, **per collection** (not per `kind`), for `tile_defs`, `items`, `entities` and `zones`. `events` is skipped: it is reserved and unused.
+- **Partial:** the index only covers documents whose `id` is a string. `id` is optional, and without this every document lacking one would count as `null` and collide with the others.
+- **Mongo lifecycle:** a collection comes into being on first insert or first `createIndex`, so there is no "table before index" order. The script can run on a brand-new empty database, and `ErrDuplicate` starts firing as soon as the index exists.
+- **Idempotent, and fails soft:** re-running does nothing. A failure on one collection (typically existing duplicate `id` values, which block building a unique index) is printed and the others still run; the exit code is 1 if anything failed. Changing an index definition later is a deliberate drop and recreate, not something the script does.
+- **When to run it:** after the sandbox is created or reset, after the real database is recreated, and after adding a collection. A restore from a backup brings the indexes back with it (section 6.2), so a restore alone doesn't need it.
+- **New collections:** the collection list in the script is another copy of `validCollections` (with `middleware.go` and `mcp/src/index.ts`). Adding a collection means adding it to all three; section 7 step 2 is the reminder. A shared list that all of them read (a JSON file, say) is a possible later cleanup and would touch the backend, the MCP and the script.
+
 ---
 
 ## 7. Adding a new entity (checklist)
 
 1. Backend: decide the collection. A new kind of definition (a new `kind`) belongs in `tile_defs`, `items` or `entities`, so nothing changes in the backend. Only a genuinely new top-level type needs a new collection: add it to `validCollections` (`collection/middleware.go`) and to the collection table in section 3.1.
-2. Mongo: create a unique index on the user-facing `id`, if the entity has one.
+2. Mongo: if you added a **new collection**, add its name to `scripts/ensure-indexes.js` (the third copy of the collection list, see section 6.3) and run `make db-indexes` and `make sandbox-indexes`. For a new `kind` in an existing collection there is nothing to do.
 3. Add the type to `lib/types` (keep it in sync with the game).
 4. Add `schemas/<entity>Schema.ts` and export it.
 5. Add `app/<entity>/` with `fields.ts`, `page.tsx`, `create/page.tsx`, `[id]/edit/page.tsx`, `layout.tsx`.
