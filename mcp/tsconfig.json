@@ -1,7 +1,9 @@
 {
 	"compilerOptions": {
 		"target": "es2022",
-		"module": "nodenext",
+		"module": "esnext",
+		"moduleResolution": "bundler",
+		"paths": { "@/lib/types": ["../frontend/src/lib/types/map.ts"] },
 		"strict": true,
 		"noEmit": true,
 		"skipLibCheck": true,

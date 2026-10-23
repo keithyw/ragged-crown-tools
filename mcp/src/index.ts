@@ -1,6 +1,11 @@
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js'
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js'
 import { z } from 'zod'
+// The frontend's schemas, imported as they are (run through tsx, see
+// ARCHITECTURE.md 6.1). Type-only `@/` imports inside them resolve via the
+// `paths` entry in tsconfig.json.
+import { defSchema } from '../../frontend/src/schemas/contentSchemas'
+import { zoneSchema } from '../../frontend/src/schemas/zoneSchema'
 
 const API_URL = process.env.RC_API_URL ?? 'http://localhost:8080'
 
@@ -27,6 +32,41 @@ const fail = (message: string): ToolResult => ({
 	content: [{ type: 'text', text: message }],
 	isError: true,
 })
+
+// Which `kind`s may be stored in each collection (DATA-MODEL.md 1.3).
+const KINDS_BY_COLLECTION: Partial<
+	Record<(typeof COLLECTIONS)[number], string[]>
+> = {
+	tile_defs: ['terrain'],
+	items: ['item'],
+	entities: ['object', 'creature', 'portal'],
+}
+
+// Checks a document against the frontend's schema for its collection and
+// returns the parsed copy, which is what gets sent: the same shape the
+// frontend would save. Unknown keys are stripped silently (zod's default),
+// which is a known boundary case. `events` is a placeholder with no schema.
+function validate(collection: (typeof COLLECTIONS)[number], doc: unknown) {
+	if (collection === 'events') return doc
+
+	const allowed = KINDS_BY_COLLECTION[collection]
+	const kind = (doc as { kind?: unknown } | null)?.kind
+	if (allowed && typeof kind === 'string' && !allowed.includes(kind)) {
+		throw new Error(
+			`Invalid document: kind '${kind}' does not belong in ${collection} ` +
+				`(expects ${allowed.join(', ')})`,
+		)
+	}
+
+	const result = (allowed ? defSchema : zoneSchema).safeParse(doc)
+	if (!result.success) {
+		const lines = result.error.issues.map(
+			(i) => `- ${i.path.join('.') || '(document)'}: ${i.message}`,
+		)
+		throw new Error(`Invalid document:\n${lines.join('\n')}`)
+	}
+	return result.data
+}
 
 // GET only. The API answers errors as {"error": "..."}.
 async function apiGet(path: string) {
@@ -166,7 +206,10 @@ server.registerTool(
 	},
 	async ({ collection, doc }) => {
 		try {
-			const res = await apiPost(`/collection/${collection}`, doc)
+			const res = await apiPost(
+				`/collection/${collection}`,
+				validate(collection, doc),
+			)
 			return ok(await res.json())
 		} catch (e) {
 			return fail((e as Error).message)
@@ -193,7 +236,10 @@ server.registerTool(
 	},
 	async ({ collection, _id, doc }) => {
 		try {
-			const res = await apiPut(`/collection/${collection}/${_id}`, doc)
+			const res = await apiPut(
+				`/collection/${collection}/${_id}`,
+				validate(collection, doc),
+			)
 			return ok(await res.json())
 		} catch (e) {
 			return fail((e as Error).message)
