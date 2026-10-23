@@ -43,6 +43,25 @@ async function apiGet(path: string) {
 	return res
 }
 
+// POST only, for create_doc. Same error shape as apiGet.
+async function apiPost(path: string, body: unknown) {
+	let res: Response
+	try {
+		res = await fetch(`${API_URL}${path}`, {
+			method: 'POST',
+			headers: { 'Content-Type': 'application/json' },
+			body: JSON.stringify(body),
+		})
+	} catch {
+		throw new Error(`Cannot reach the API at ${API_URL}. Is it running?`)
+	}
+	if (!res.ok) {
+		const err = await res.json().catch(() => null)
+		throw new Error(`API ${res.status}: ${err?.error ?? res.statusText}`)
+	}
+	return res
+}
+
 server.registerTool(
 	'list_collection',
 	{
@@ -103,6 +122,32 @@ server.registerTool(
 	async ({ collection, _id }) => {
 		try {
 			const res = await apiGet(`/collection/${collection}/${_id}`)
+			return ok(await res.json())
+		} catch (e) {
+			return fail((e as Error).message)
+		}
+	},
+)
+
+// Writes. Meant for the sandbox only: the dev server's copy of this tool is
+// blocked by a deny rule in .claude/settings.json, not by anything in here.
+server.registerTool(
+	'create_doc',
+	{
+		description:
+			'Create one document (POST /collection/{collection}). Create only: ' +
+			'it never changes an existing document. The server generates _id and ' +
+			'updated_at and ignores any _id in the body. The content is NOT ' +
+			'validated; the backend stores whatever it is given. Sandbox only.',
+		inputSchema: {
+			collection,
+			doc: z.record(z.string(), z.unknown()),
+		},
+		annotations: { readOnlyHint: false, destructiveHint: false },
+	},
+	async ({ collection, doc }) => {
+		try {
+			const res = await apiPost(`/collection/${collection}`, doc)
 			return ok(await res.json())
 		} catch (e) {
 			return fail((e as Error).message)
