@@ -62,6 +62,25 @@ async function apiPost(path: string, body: unknown) {
 	return res
 }
 
+// PUT only, for replace_doc. Same error shape as apiGet.
+async function apiPut(path: string, body: unknown) {
+	let res: Response
+	try {
+		res = await fetch(`${API_URL}${path}`, {
+			method: 'PUT',
+			headers: { 'Content-Type': 'application/json' },
+			body: JSON.stringify(body),
+		})
+	} catch {
+		throw new Error(`Cannot reach the API at ${API_URL}. Is it running?`)
+	}
+	if (!res.ok) {
+		const err = await res.json().catch(() => null)
+		throw new Error(`API ${res.status}: ${err?.error ?? res.statusText}`)
+	}
+	return res
+}
+
 server.registerTool(
 	'list_collection',
 	{
@@ -148,6 +167,33 @@ server.registerTool(
 	async ({ collection, doc }) => {
 		try {
 			const res = await apiPost(`/collection/${collection}`, doc)
+			return ok(await res.json())
+		} catch (e) {
+			return fail((e as Error).message)
+		}
+	},
+)
+
+// Replaces a whole document. Sandbox only, same deny-rule gate as create_doc.
+server.registerTool(
+	'replace_doc',
+	{
+		description:
+			'REPLACE a whole document (PUT /collection/{collection}/{_id}). Any ' +
+			'field missing from doc is removed, so send the complete document, ' +
+			'normally read with get_doc first and then edited. _id and updated_at ' +
+			'in the body are ignored; the server keeps the _id and restamps ' +
+			'updated_at. The content is NOT validated. Sandbox only.',
+		inputSchema: {
+			collection,
+			_id: z.string().regex(/^[0-9a-f]{24}$/i, 'Expected 24 hex characters'),
+			doc: z.record(z.string(), z.unknown()),
+		},
+		annotations: { readOnlyHint: false, destructiveHint: true },
+	},
+	async ({ collection, _id, doc }) => {
+		try {
+			const res = await apiPut(`/collection/${collection}/${_id}`, doc)
 			return ok(await res.json())
 		} catch (e) {
 			return fail((e as Error).message)

@@ -15,7 +15,8 @@
       "Bash(rm -r -f*)",
       "Bash(rm -f -r*)",
       "Bash(rm --recursive*)",
-      "mcp__ragged-crown__create_doc"
+      "mcp__ragged-crown__create_doc",
+      "mcp__ragged-crown__replace_doc"
     ]
   }
 }
