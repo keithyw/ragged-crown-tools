@@ -11,8 +11,9 @@ export const fields: FormField<SpriteFormData>[] = [
 	},
 	{
 		name: 'id',
-		label: 'ID (optional)',
+		label: 'ID',
 		placeholder: 'Enter ID',
+		required: true,
 	},
 	{
 		name: 'category',

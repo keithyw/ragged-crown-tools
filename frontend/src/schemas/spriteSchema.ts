@@ -15,11 +15,8 @@ const paletteIndex = z
 
 // A sprite as stored (DATA-MODEL.md 1.2). No tags, on purpose.
 export const spriteSchema = z.object({
-	id: z
-		.string()
-		.trim()
-		.transform((v) => v || undefined)
-		.optional(),
+	// Required, like the other defs: the edit hook needs one.
+	id: z.string().trim().min(1, 'ID is required'),
 	name: z.string().trim().min(1, 'Name is required'),
 	category: z.enum(SPRITE_CATEGORIES, { error: 'Pick a category' }),
 	background: z.union([z.literal('transparent'), paletteIndex]),
