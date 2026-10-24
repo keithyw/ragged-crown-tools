@@ -47,7 +47,13 @@ interface Glyph {
 
 There is no separate "invisible" concept: a thing meant to go unnoticed uses a glyph that blends in (section 2.1). Two defs may share the same glyph values: quicksand terrain and a deep-quicksand space look identical to the player.
 
-**Sprites are deferred.** The eventual plan is a simple sprite editor with a limited palette (Ultima 3-5 / ACS style) that saves into one large sprite sheet; a sprite then replaces the glyph in the game and the editor. Until that work starts, the glyph is the only appearance.
+**Sprites (in progress).** Sprites were first deferred, with the glyph as the only appearance. That changed on 2026-10-23: standard unicode characters turned out not to be enough to bring objects and other tiles to life, so the sprite builder moved into the current milestones (Trello epic [Sprite 1]). Not every def needs a sprite, but the tool and how sprites render must exist before more content is built.
+
+- A sprite is **16×16** pixels drawn with the **16 EGA colours**, in the style of Ultima 5 / Magic Candle, built in an editor modelled on Adventure Construction Set's. One sprite fills one tile; there are no multi-tile objects.
+- Sprites live in their own `sprites` collection (section 6): `{ _id, id?, name, category, background, pixels }`. `pixels` is 256 palette indices (`null` = empty), `background` is `'transparent'` (the default) or a palette index, and `category` is a def kind (terrain, object, item, portal; creature and portraits later). There are no tags.
+- **Planned:** a def references its sprite by the sprite's `_id`, not by sheet coordinates. A def **with a sprite draws the sprite instead of its glyph**. The glyph stays as the backfill for a def with no sprite (or a missing one), and its default is `??` in `text-white` on `bg-black`, saved into the data, so a def always has something to draw. The legacy `spriteCoords` is retired (no data uses it). Not built yet ([Tools 17], [Tools 18]).
+- Saving a sprite writes only its document. Making sprites available to the game (what "published" means, and the sheet image plus a manifest from `_id` to position) is separate and undecided ([Sprite 8], [Sprite 9]).
+- Built so far: the pixel editor ([Sprite 7]), including a text form for import/export (16 rows of 16 characters, `0`-`F` for the palette index and `.` for empty).
 
 The legacy category types that used to be in `map.ts` (`TileType`, `TileType2`, `TerrainTile`, `BuildingTile`, `CreatureTile`, `InventoryItemTile`, `StationaryTile`) were glyph and category information mixed into `TileDef`. They are removed (still in git history and the game repo): appearance is the `glyph`, and the category is the `kind` (item categories come later, see Open questions).
 
@@ -331,6 +337,7 @@ Zone JSON is the **initial state only**. When a game starts, the player gets a r
 | `items`     | Item defs                                                |
 | `entities`  | Object, creature and portal defs (by `kind`)             |
 | `zones`     | Zones                                                    |
+| `sprites`   | Sprite art (section 1.2); not yet allow-listed, see [Backend 6] |
 | `events`    | Reserved, unused (kept in case reusable interaction templates are ever saved) |
 
 `maps` is redundant with `zones` and is removed from the allow-list ([Backend 4]).
@@ -343,6 +350,7 @@ Zone JSON is the **initial state only**. When a game starts, the player gets a r
 
 ## Open questions
 
+- **Sprite details.** Still open: what "published" means and how the game receives sprites ([Sprite 8], [Sprite 9], [Game 6]); how defs pick a sprite and whether they can pick unpublished ones ([Tools 17], [Tools 18]); what happens to defs when their sprite is deleted (the glyph backfills; see [Integrity 1]); the palette and size for portraits ([Sprite 2]).
 - **Content delivery.** Does the game fetch from the backend or load an export in `public/data`? Decided in [Game 1].
 - **Item category and the item model.** Deferred on purpose; expect the item schema to change often while the inventory is designed one item type at a time. The real design depends on combat, character classes, skills and races, so it can only be settled while the game side is developed alongside it; until then an item is a name, a glyph and the minimal fields above. Tracked by the parked epic [Inventory 1]. Leanings so far:
   - Categories live in the DB, not as a code enum, so adding one is data rather than a release. That would need a new allow-listed collection (the backend currently has no categories collection).
