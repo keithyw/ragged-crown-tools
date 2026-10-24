@@ -94,9 +94,18 @@ const SpritePreview = ({ art, scale }: { art: SpriteArt; scale: number }) => {
 interface SpriteEditorProps {
 	value: SpriteArt
 	onChange: (value: SpriteArt) => void
+	// Shown at the top of the right-hand panel (the sprite's details form)...
+	details?: React.ReactNode
+	// ...and at the bottom (save and cancel).
+	footer?: React.ReactNode
 }
 
-export const SpriteEditor = ({ value, onChange }: SpriteEditorProps) => {
+export const SpriteEditor = ({
+	value,
+	onChange,
+	details,
+	footer,
+}: SpriteEditorProps) => {
 	// A palette index, or 'delete' to clear the cells painted over.
 	const [color, setColor] = useState<number | 'delete'>(0)
 	const [isClearOpen, setIsClearOpen] = useState(false)
@@ -194,7 +203,8 @@ export const SpriteEditor = ({ value, onChange }: SpriteEditorProps) => {
 				</div>
 			</div>
 
-			<div className='flex w-52 flex-col gap-6'>
+			<div className='flex w-64 flex-col gap-6'>
+				{details}
 				<div>
 					<div
 						role='tablist'
@@ -362,6 +372,7 @@ export const SpriteEditor = ({ value, onChange }: SpriteEditorProps) => {
 						</div>
 					)}
 				</div>
+				{footer}
 			</div>
 			<ConfirmationModal
 				isOpen={isClearOpen}

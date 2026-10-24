@@ -11,6 +11,7 @@ import (
 // mcp/src/index.ts, then run `make db-indexes` and `make sandbox-indexes`
 // (ARCHITECTURE.md sections 6.3 and 7).
 var validCollections = map[string]bool{
+	"sprites": true,
 	"tile_defs": true,
 	"items":     true,
 	"entities":  true,
