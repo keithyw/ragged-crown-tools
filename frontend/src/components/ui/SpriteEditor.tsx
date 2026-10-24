@@ -1,7 +1,12 @@
 'use client'
 
-import { useEffect, useRef, useState } from 'react'
-import { Button, ConfirmationModal } from '@/components'
+import { useRef, useState } from 'react'
+import {
+	Button,
+	CHECKERBOARD,
+	ConfirmationModal,
+	SpriteImage,
+} from '@/components'
 import {
 	EGA_PALETTE,
 	emptySpriteArt,
@@ -13,14 +18,6 @@ import {
 import { cn, parseSpritePixels, spritePixelsToText } from '@/lib/utils'
 
 const CELL_PX = 24
-
-// Shows through wherever the sprite is transparent.
-const CHECKERBOARD: React.CSSProperties = {
-	backgroundColor: '#ffffff',
-	backgroundImage:
-		'conic-gradient(#cbd5e1 25%, transparent 0 50%, #cbd5e1 0 75%, transparent 0)',
-	backgroundSize: '8px 8px',
-}
 
 const backgroundStyle = (bg: SpriteBackground): React.CSSProperties =>
 	bg === 'transparent' ? CHECKERBOARD : { backgroundColor: EGA_PALETTE[bg].hex }
@@ -57,39 +54,6 @@ const Swatch = ({
 		style={hex ? { backgroundColor: hex } : CHECKERBOARD}
 	/>
 )
-
-// Draws the sprite at its real size (one canvas pixel per cell).
-const SpritePreview = ({ art, scale }: { art: SpriteArt; scale: number }) => {
-	const canvas = useRef<HTMLCanvasElement>(null)
-
-	useEffect(() => {
-		const ctx = canvas.current?.getContext('2d')
-		if (!ctx) return
-		ctx.clearRect(0, 0, SPRITE_SIZE, SPRITE_SIZE)
-		art.pixels.forEach((p, i) => {
-			const index =
-				p ?? (art.background === 'transparent' ? null : art.background)
-			if (index === null) return
-			ctx.fillStyle = EGA_PALETTE[index].hex
-			ctx.fillRect(i % SPRITE_SIZE, Math.floor(i / SPRITE_SIZE), 1, 1)
-		})
-	}, [art])
-
-	return (
-		<canvas
-			ref={canvas}
-			width={SPRITE_SIZE}
-			height={SPRITE_SIZE}
-			aria-label='Sprite preview'
-			style={{
-				width: SPRITE_SIZE * scale,
-				height: SPRITE_SIZE * scale,
-				imageRendering: 'pixelated',
-			}}
-			className='border border-gray-400'
-		/>
-	)
-}
 
 interface SpriteEditorProps {
 	value: SpriteArt
@@ -197,9 +161,7 @@ export const SpriteEditor = ({
 
 				<div className='mt-6'>
 					<p className='mb-2 text-sm font-bold text-gray-700'>Preview</p>
-					<div className='w-fit' style={CHECKERBOARD}>
-						<SpritePreview art={value} scale={3} />
-					</div>
+					<SpriteImage art={value} scale={3} />
 				</div>
 			</div>
 

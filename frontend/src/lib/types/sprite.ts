@@ -46,3 +46,10 @@ export const emptySpriteArt = (): SpriteArt => ({
 	pixels: Array<number | null>(SPRITE_SIZE * SPRITE_SIZE).fill(null),
 	background: 'transparent',
 })
+
+// A sprite as stored in the `sprites` collection (DATA-MODEL.md 1.2).
+export interface Sprite extends SpriteArt {
+	id?: string
+	name: string
+	category: SpriteCategory
+}
