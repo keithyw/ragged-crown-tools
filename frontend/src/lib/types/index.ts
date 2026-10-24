@@ -1,4 +1,5 @@
 export * from './colorPalette'
 export * from './form'
 export * from './map'
+export * from './sprite'
 export * from './table'
