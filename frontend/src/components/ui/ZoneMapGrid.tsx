@@ -1,7 +1,7 @@
 'use client'
 
 import { useRef } from 'react'
-import { TileCell } from '@/components'
+import { TileGlyph } from '@/components'
 import { type StoredDoc } from '@/lib/services'
 import { type Glyph, type Position, type TileDef, type Zone } from '@/lib/types'
 import { cellKey, cn, defKey, type ZoneGrid } from '@/lib/utils'
@@ -53,7 +53,7 @@ export const ZoneMapGrid = ({
 	}
 
 	// The topmost placement is what's drawn; a cell with none shows its terrain.
-	// A placement whose def is missing gives undefined, which TileCell draws as "?".
+	// A placement whose def is missing gives undefined, which TileGlyph draws as "?".
 	const drawnAt = (x: number, y: number, tileId: string) => {
 		const top = placements?.[cellKey(x, y)]?.at(-1)
 		return top
@@ -90,7 +90,8 @@ export const ZoneMapGrid = ({
 			>
 				{grid.flatMap((row, y) =>
 					row.map((tileId, x) => (
-						<TileCell
+						<TileGlyph
+							variant='cell'
 							key={cellKey(x, y)}
 							data-x={x}
 							data-y={y}

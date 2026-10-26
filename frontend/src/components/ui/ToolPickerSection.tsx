@@ -1,6 +1,6 @@
 'use client'
 
-import { Button, TileCell } from '@/components'
+import { Button, TileGlyph } from '@/components'
 import { type Glyph } from '@/lib/types'
 
 interface ToolPickerSectionProps {
@@ -44,7 +44,7 @@ export const ToolPickerSection = ({
 		<h3 className='mb-2 text-sm font-bold text-gray-700'>{title}</h3>
 		<div className='flex items-center gap-3'>
 			{def ? (
-				<TileCell tile={def} />
+				<TileGlyph variant='cell' tile={def} />
 			) : (
 				<span className='h-11 w-11 shrink-0 rounded border border-dashed border-gray-300' />
 			)}

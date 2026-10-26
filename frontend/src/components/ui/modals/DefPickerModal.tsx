@@ -2,7 +2,7 @@
 
 import { useMemo } from 'react'
 import { DialogTitle } from '@headlessui/react'
-import { BaseModal, Button, TileCell } from '@/components'
+import { BaseModal, Button, TileGlyph } from '@/components'
 import { type Glyph } from '@/lib/types'
 import { cn } from '@/lib/utils'
 
@@ -67,7 +67,7 @@ export const DefPickerModal = <T extends PickableDef>({
 								d._id === selectedId && 'ring-2 ring-blue-500',
 							)}
 						>
-							<TileCell tile={d} />
+							<TileGlyph variant='cell' tile={d} />
 							<span className='w-full truncate text-center text-sm text-gray-700'>
 								{d.name}
 							</span>

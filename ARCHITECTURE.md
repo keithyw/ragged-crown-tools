@@ -374,7 +374,7 @@ Things the code currently does that are worth a decision. Verified against the r
 8. **Shared types are copied by hand** between the tools and the game.
 9. **Referential integrity.** Once zones reference tile `_id`s, deleting a tile that is in use will leave dangling references.
 10. **`useCollection` has no create/delete awareness**; the list page relies on `refresh` after deletes.
-11. **Two tile renderers.** `TileGlyph` (tile list and inspector) and `TileCell` (zone grid, tile picker) render the same symbol/bg/color stack separately and have drifted (base `bg-black` vs `bg-slate-950`, rounded vs square, `text-2xl` vs `text-xl`, only `TileCell` has a missing-tile fallback). Sprite support (section 4.5, Roadmap) would need changes in both.
+11. **Two tile renderers.** _Resolved ([Debt 1])._ `TileGlyph` is now the only renderer, with a `card` variant (tile list and inspectors) and a `cell` variant (zone grid, pickers); `TileCell` is gone. The `card` base is still `bg-black` and the `cell` base `bg-slate-950`, kept as they were. Sprite support (section 4.5, Roadmap) now has one place to change.
 
 Note from lead: This section is fine as-is for now. I did not want to overthink things nor get bogged down by rare conditions. As with any tech
 project, there will be tech debt that gets addressed (or quickly forgotten) over time.
