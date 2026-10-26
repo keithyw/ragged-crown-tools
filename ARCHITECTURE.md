@@ -219,7 +219,7 @@ fields.ts           shared field config for create and edit
 layout.tsx          wraps the section in CrudLayout (title bar)
 ```
 
-The list is a visual grid (`TileCard` + `TileGlyph`) rather than a data table, because tiles are visual. Interaction model: click selects, the right-hand inspector (`TileInspector`) shows details and Edit/Delete, double-click opens edit. The inspector column is reserved and `sticky`, so selecting never reflows the grid. `TileGlyph` is the single place that will change when sprites arrive.
+The list is a visual grid (`TileCard` + `TileGlyph`) rather than a data table, because tiles are visual. Interaction model: click selects, the right-hand inspector (`TileInspector`) shows details and Edit/Delete, double-click opens edit. The inspector column is reserved and `sticky`, so selecting never reflows the grid. `TileGlyph` is the single place that draws a def: its sprite when it has a `spriteId` that exists, otherwise its glyph. It finds sprites through `SpritesProvider` (root layout), which loads the `sprites` collection once and refetches on each route change.
 
 A text-heavy entity (e.g. characters) could reuse `useCollection` and the same create/edit pages with a table view instead of a grid.
 
@@ -386,7 +386,7 @@ project, there will be tech debt that gets addressed (or quickly forgotten) over
 - Map/Zone Builder: grid editor using tile definitions as a palette, with name, danger level (bounded), start position (x/y inputs or pick from grid), and placements.
 - Object and item definition builders, and the placements layer with interactions (see `DATA-MODEL.md`).
 - Tile `type` / category and an indoor-outdoor style environment setting to choose default base tiles.
-- Sprites in the tools: the builder is done (`sprites` collection, [Sprite 1]). Next, defs pick a sprite by `_id` and `TileGlyph` draws it ([Tools 17] terrain, [Tools 18] the rest). Publishing sprites to the game, and the game's own update to match, come much later ([Sprite 8], [Sprite 9], [Game 6]).
+- Sprites in the tools: done. The builder (`sprites` collection, [Sprite 1]), picking a sprite on terrain, object and item defs ([Tools 17], [Tools 18]; portals wait for the portal builder), and `TileGlyph` drawing it ([Sprite 10]). Publishing sprites to the game, and the game's own update to match, come much later ([Sprite 8], [Sprite 9], [Game 6]).
 
 ---
 
