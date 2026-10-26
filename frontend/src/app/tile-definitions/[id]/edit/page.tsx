@@ -39,6 +39,7 @@ const EditTileDefinitionPage = () => {
 				name: t.name,
 				description: t.description,
 				glyph: t.glyph,
+				spriteId: t.spriteId,
 				moveCost: t.moveCost,
 				isWalkable: t.isWalkable,
 				encounterRate: t.encounterRate,

@@ -250,6 +250,7 @@ const baseDefSchema = z.object({
 	name: z.string().trim().min(1, 'Name is required'),
 	description: optionalText,
 	glyph: glyphSchema,
+	spriteId: optionalText, // a sprite's _id
 })
 
 export const tileDefSchema = baseDefSchema.extend({

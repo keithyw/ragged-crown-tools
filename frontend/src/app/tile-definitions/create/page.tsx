@@ -21,7 +21,8 @@ const CreateTileDefinitionPage = () => {
 			kind: 'terrain', // not a visible field, but submitted with the form
 			id: '',
 			name: '',
-			glyph: { symbol: '', color: '', bg: '' },
+			// The backfill glyph, so a tile can be saved before it has a sprite.
+			glyph: { symbol: '??', color: 'text-white', bg: 'bg-black' },
 			moveCost: 1,
 			isWalkable: true,
 			description: '',

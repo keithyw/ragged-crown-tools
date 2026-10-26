@@ -1,7 +1,7 @@
 import type { InputHTMLAttributes, TextareaHTMLAttributes } from 'react'
 import type { Path } from 'react-hook-form'
 import type { InputWidth } from '@/components'
-import type { ColorKind } from '@/lib/types'
+import type { ColorKind, SpriteCategory } from '@/lib/types'
 
 export interface OptionType {
 	value: number | string
@@ -28,4 +28,5 @@ export interface FormField<T extends Record<string, any>> {
 		'id' | 'name' | 'type' | 'value' | 'defaultValue' | 'onChange' | 'onBlur'
 	>
 	colorKind?: ColorKind
+	spriteCategory?: SpriteCategory // for type 'sprite': which sprites to offer
 }

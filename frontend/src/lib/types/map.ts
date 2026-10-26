@@ -20,7 +20,8 @@ export interface BaseDef {
 	kind: Kind
 	name: string
 	description?: string
-	glyph: Glyph
+	glyph: Glyph // the backfill when there is no sprite
+	spriteId?: string // a sprite's _id; drawn instead of the glyph (DATA-MODEL.md 1.2)
 }
 
 export interface ContainerSpec {

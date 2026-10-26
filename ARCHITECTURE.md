@@ -386,7 +386,7 @@ project, there will be tech debt that gets addressed (or quickly forgotten) over
 - Map/Zone Builder: grid editor using tile definitions as a palette, with name, danger level (bounded), start position (x/y inputs or pick from grid), and placements.
 - Object and item definition builders, and the placements layer with interactions (see `DATA-MODEL.md`).
 - Tile `type` / category and an indoor-outdoor style environment setting to choose default base tiles.
-- Sprite support in `TileGlyph` (`spriteCoords`).
+- Sprites in the tools: the builder is done (`sprites` collection, [Sprite 1]). Next, defs pick a sprite by `_id` and `TileGlyph` draws it ([Tools 17] terrain, [Tools 18] the rest). Publishing sprites to the game, and the game's own update to match, come much later ([Sprite 8], [Sprite 9], [Game 6]).
 
 ---
 

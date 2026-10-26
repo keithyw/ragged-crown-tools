@@ -15,6 +15,12 @@ export const fields: FormField<TileDefinitionFormData>[] = [
 		placeholder: 'Enter Name',
 		required: true,
 	},
+	{
+		name: 'spriteId',
+		label: 'Sprite (replaces the glyph below when set)',
+		type: 'sprite',
+		spriteCategory: 'terrain',
+	},
 	...glyphFields<TileDefinitionFormData>(),
 	{
 		name: 'moveCost',

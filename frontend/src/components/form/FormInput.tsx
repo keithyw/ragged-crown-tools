@@ -6,6 +6,7 @@ import {
 	ColorPicker,
 	InputErrorMessage,
 	SelectDropdown,
+	SpritePicker,
 	TextareaInput,
 	TextInput,
 } from '@/components'
@@ -90,6 +91,28 @@ export const FormInput = <
 								value={cf.value as string | undefined}
 								onChange={cf.onChange}
 								onBlur={cf.onBlur}
+							/>
+							<InputErrorMessage errorMessage={errorMessage as string} />
+						</>
+					)}
+				/>
+			)
+		case 'sprite':
+			if (!control || !field.spriteCategory) {
+				console.error('Control and spriteCategory are required')
+				return null
+			}
+			return (
+				<Controller
+					name={field.name as Path<T>}
+					control={control}
+					render={({ field: cf }) => (
+						<>
+							<SpritePicker
+								label={field.label}
+								category={field.spriteCategory!}
+								value={cf.value as string | undefined}
+								onChange={cf.onChange}
 							/>
 							<InputErrorMessage errorMessage={errorMessage as string} />
 						</>
