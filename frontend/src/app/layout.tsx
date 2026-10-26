@@ -2,7 +2,7 @@
 
 import { Geist, Geist_Mono } from 'next/font/google'
 import { Toaster } from 'react-hot-toast'
-import { MainNavbar } from '@/components'
+import { MainNavbar, SpritesProvider } from '@/components'
 import './globals.css'
 
 const geistSans = Geist({
@@ -22,8 +22,10 @@ export default function RootLayout({ children }: LayoutProps<'/'>) {
 			className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
 		>
 			<body className='flex min-h-full flex-col'>
-				<MainNavbar />
-				<div>{children}</div>
+				<SpritesProvider>
+					<MainNavbar />
+					<div>{children}</div>
+				</SpritesProvider>
 				<Toaster position='bottom-right' />
 			</body>
 		</html>

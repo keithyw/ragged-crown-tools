@@ -11,15 +11,13 @@ export const CHECKERBOARD: React.CSSProperties = {
 	backgroundSize: '8px 8px',
 }
 
-interface SpriteImageProps {
-	art: SpriteArt
-	// Screen pixels per sprite pixel.
-	scale: number
-}
-
-// Draws a sprite on a canvas, one canvas pixel per sprite pixel, scaled up
-// crisp. Used by the editor's preview and the sprite list.
-export const SpriteImage = ({ art, scale }: SpriteImageProps) => {
+// Draws a sprite on a canvas, one canvas pixel per sprite pixel. The caller
+// sizes it (scaled up crisp). Transparent cells show whatever is behind.
+export const SpriteCanvas = ({
+	art,
+	style,
+	...rest
+}: { art: SpriteArt } & React.CanvasHTMLAttributes<HTMLCanvasElement>) => {
 	const canvas = useRef<HTMLCanvasElement>(null)
 
 	useEffect(() => {
@@ -36,19 +34,30 @@ export const SpriteImage = ({ art, scale }: SpriteImageProps) => {
 	}, [art])
 
 	return (
-		<div className='w-fit' style={CHECKERBOARD}>
-			<canvas
-				ref={canvas}
-				width={SPRITE_SIZE}
-				height={SPRITE_SIZE}
-				aria-label='Sprite'
-				style={{
-					width: SPRITE_SIZE * scale,
-					height: SPRITE_SIZE * scale,
-					imageRendering: 'pixelated',
-				}}
-				className='border border-gray-400'
-			/>
-		</div>
+		<canvas
+			ref={canvas}
+			width={SPRITE_SIZE}
+			height={SPRITE_SIZE}
+			style={{ imageRendering: 'pixelated', ...style }}
+			{...rest}
+		/>
 	)
 }
+
+interface SpriteImageProps {
+	art: SpriteArt
+	// Screen pixels per sprite pixel.
+	scale: number
+}
+
+// A sprite on a checkerboard, for the editor's preview and the sprite list.
+export const SpriteImage = ({ art, scale }: SpriteImageProps) => (
+	<div className='w-fit' style={CHECKERBOARD}>
+		<SpriteCanvas
+			art={art}
+			aria-label='Sprite'
+			style={{ width: SPRITE_SIZE * scale, height: SPRITE_SIZE * scale }}
+			className='border border-gray-400'
+		/>
+	</div>
+)

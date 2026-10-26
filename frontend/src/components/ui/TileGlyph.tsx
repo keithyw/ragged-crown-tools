@@ -1,6 +1,7 @@
 'use client'
 
 import { cva, type VariantProps } from 'class-variance-authority'
+import { SpriteCanvas, useSprites } from '@/components'
 import { type Glyph } from '@/lib/types'
 import { cn } from '@/lib/utils'
 
@@ -37,30 +38,38 @@ interface TileGlyphProps
 		VariantProps<typeof baseVariants> {
 	// Anything with a glyph: a terrain tile, or an object or item. A missing
 	// def (deleted, or a bad _id in a saved zone) renders as a red "?".
-	tile?: { glyph: Glyph }
+	tile?: { glyph: Glyph; spriteId?: string }
 }
 
-// How a def looks on screen. The one place that will change when sprites
-// arrive (DATA-MODEL.md 1.2).
+// How a def looks on screen: its sprite if it has one that still exists,
+// otherwise its glyph (DATA-MODEL.md 1.2).
 export const TileGlyph = ({
 	tile,
 	variant,
 	className,
 	...rest
-}: TileGlyphProps) => (
-	<span
-		aria-hidden='true'
-		className={cn(baseVariants({ variant }), className)}
-		{...rest}
-	>
+}: TileGlyphProps) => {
+	const sprite = useSprites().get(tile?.spriteId ?? '')
+
+	return (
 		<span
-			className={cn(
-				glyphVariants({ variant }),
-				tile?.glyph.bg ?? 'bg-red-950/60',
-				tile?.glyph.color ?? 'text-red-400',
-			)}
+			aria-hidden='true'
+			className={cn(baseVariants({ variant }), className)}
+			{...rest}
 		>
-			{tile ? tile.glyph.symbol : '?'}
+			{sprite ? (
+				<SpriteCanvas art={sprite} className='h-full w-full' />
+			) : (
+				<span
+					className={cn(
+						glyphVariants({ variant }),
+						tile?.glyph.bg ?? 'bg-red-950/60',
+						tile?.glyph.color ?? 'text-red-400',
+					)}
+				>
+					{tile ? tile.glyph.symbol : '?'}
+				</span>
+			)}
 		</span>
-	</span>
-)
+	)
+}
