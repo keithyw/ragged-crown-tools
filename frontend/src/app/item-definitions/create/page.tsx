@@ -21,7 +21,8 @@ const CreateItemDefinitionPage = () => {
 			kind: 'item', // not a visible field, but submitted with the form
 			id: '',
 			name: '',
-			glyph: { symbol: '', color: '', bg: '' },
+			// The backfill glyph, so a def can be saved before it has a sprite.
+			glyph: { symbol: '??', color: 'text-white', bg: 'bg-black' },
 			stackable: false,
 			container: { capacity: 0, maxDepth: 0 },
 			description: '',

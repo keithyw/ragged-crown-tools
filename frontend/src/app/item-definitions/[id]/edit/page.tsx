@@ -39,6 +39,7 @@ const EditItemDefinitionPage = () => {
 				name: i.name,
 				description: i.description,
 				glyph: i.glyph,
+				spriteId: i.spriteId,
 				stackable: i.stackable,
 				numberOfUses: i.numberOfUses,
 				container: {

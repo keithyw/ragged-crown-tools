@@ -44,6 +44,7 @@ const EditObjectDefinitionPage = () => {
 				name: o.name,
 				description: o.description,
 				glyph: o.glyph,
+				spriteId: o.spriteId,
 				isSolid: o.isSolid,
 				moveCost: o.moveCost ?? 1,
 				numberOfUses: o.numberOfUses,

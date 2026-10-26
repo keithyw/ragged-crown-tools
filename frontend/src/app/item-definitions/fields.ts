@@ -17,6 +17,12 @@ export const fields: FormField<ItemDefinitionFormData>[] = [
 		placeholder: 'Enter Name',
 		required: true,
 	},
+	{
+		name: 'spriteId',
+		label: 'Sprite (replaces the glyph below when set)',
+		type: 'sprite',
+		spriteCategory: 'item',
+	},
 	...glyphFields<ItemDefinitionFormData>(),
 	{
 		name: 'stackable',

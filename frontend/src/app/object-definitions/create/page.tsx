@@ -21,7 +21,8 @@ const CreateObjectDefinitionPage = () => {
 			kind: 'object', // not a visible field, but submitted with the form
 			id: '',
 			name: '',
-			glyph: { symbol: '', color: '', bg: '' },
+			// The backfill glyph, so a def can be saved before it has a sprite.
+			glyph: { symbol: '??', color: 'text-white', bg: 'bg-black' },
 			isSolid: true,
 			moveCost: 1,
 			container: { capacity: 0, maxDepth: 0 },
