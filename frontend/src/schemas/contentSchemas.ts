@@ -284,6 +284,8 @@ export const creatureDefSchema = baseDefSchema.extend({
 
 export const portalDefSchema = baseDefSchema.extend({
 	kind: z.literal('portal'),
+	twoWay: z.boolean(),
+	interactions: z.array(interactionSchema).optional(),
 }) satisfies z.ZodType<PortalDef>
 
 export const defSchema = z.discriminatedUnion('kind', [

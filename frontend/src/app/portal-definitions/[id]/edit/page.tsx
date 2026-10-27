@@ -2,7 +2,8 @@
 
 import { useCallback } from 'react'
 import { useParams } from 'next/navigation'
-import { EditFormLayout } from '@/components'
+import { Controller } from 'react-hook-form'
+import { EditFormLayout, InteractionsEditor } from '@/components'
 import { useEditRecord } from '@/hooks'
 import { URLS } from '@/lib/constants'
 import { collectionService } from '@/lib/services'
@@ -23,6 +24,7 @@ const EditPortalDefinitionPage = () => {
 			kind: 'portal',
 			id: '',
 			name: '',
+			twoWay: false,
 			glyph: { symbol: '', color: '', bg: '' },
 			description: '',
 		},
@@ -32,7 +34,7 @@ const EditPortalDefinitionPage = () => {
 		redirectUrl: URLS.PORTAL_DEFINITIONS,
 		schema: portalDefinitionSchema,
 		// Everything the doc holds except _id/updated_at, so the full-replace
-		// PUT keeps every field.
+		// PUT keeps fields the form doesn't show.
 		handleFetchCallback: useCallback(
 			(p: PortalDef) => ({
 				kind: 'portal' as const,
@@ -41,6 +43,8 @@ const EditPortalDefinitionPage = () => {
 				description: p.description,
 				glyph: p.glyph,
 				spriteId: p.spriteId,
+				twoWay: p.twoWay ?? false,
+				interactions: p.interactions,
 			}),
 			[],
 		),
@@ -66,7 +70,19 @@ const EditPortalDefinitionPage = () => {
 			register={editController.register}
 			control={editController.control}
 			errors={editController.fieldErrors}
-		/>
+		>
+			<Controller
+				name='interactions'
+				control={editController.control}
+				render={({ field }) => (
+					<InteractionsEditor
+						value={field.value}
+						onChange={field.onChange}
+						defaultTrigger='WALK'
+					/>
+				)}
+			/>
+		</EditFormLayout>
 	)
 }
 

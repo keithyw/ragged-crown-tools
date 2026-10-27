@@ -300,8 +300,10 @@ export const parseNumberInput = (raw: string) =>
 
 // A new interaction to start editing. Call it from an event handler, not
 // during render, since it generates an id.
-export const blankInteraction = (): Interaction => ({
+export const blankInteraction = (
+	on: InteractionType = 'BUMP_INTERACT',
+): Interaction => ({
 	id: crypto.randomUUID(),
-	on: 'BUMP_INTERACT',
+	on,
 	actions: [ACTION_TYPES[0].blank()],
 })

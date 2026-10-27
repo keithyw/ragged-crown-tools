@@ -7,6 +7,7 @@ import {
 	InputErrorMessage,
 	SelectDropdown,
 	SpritePicker,
+	SwitchInput,
 	TextareaInput,
 	TextInput,
 } from '@/components'
@@ -112,6 +113,30 @@ export const FormInput = <
 								label={field.label}
 								category={field.spriteCategory!}
 								value={cf.value as string | undefined}
+								onChange={cf.onChange}
+							/>
+							<InputErrorMessage errorMessage={errorMessage as string} />
+						</>
+					)}
+				/>
+			)
+		case 'switch':
+			if (!control || !field.switchLabels) {
+				console.error('Control and switchLabels are required')
+				return null
+			}
+			return (
+				<Controller
+					name={field.name as Path<T>}
+					control={control}
+					render={({ field: cf }) => (
+						<>
+							<SwitchInput
+								id={inputProps.id}
+								label={field.label}
+								offLabel={field.switchLabels![0]}
+								onLabel={field.switchLabels![1]}
+								value={!!cf.value}
 								onChange={cf.onChange}
 							/>
 							<InputErrorMessage errorMessage={errorMessage as string} />

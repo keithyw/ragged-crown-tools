@@ -29,4 +29,5 @@ export interface FormField<T extends Record<string, any>> {
 	>
 	colorKind?: ColorKind
 	spriteCategory?: SpriteCategory // for type 'sprite': which sprites to offer
+	switchLabels?: [off: string, on: string] // for type 'switch': a boolean as two buttons
 }

@@ -66,7 +66,7 @@ The legacy category types that used to be in `map.ts` (`TileType`, `TileType2`, 
 | `object`   | `entities`  | `isSolid`, `moveCost?` (spaces only, default 1), `numberOfUses?`, `container?`, `interactions?` |
 | `item`     | `items`     | `stackable`, `numberOfUses?`, `container?`, `interactions?` (reserved for item use, deferred). More as the inventory design settles; `category` is deferred |
 | `creature` | `entities`  | Stub for now. Used by random encounters, not placed on the map                       |
-| `portal`   | `entities`  | None beyond the base: always walkable; its destination is set per placement          |
+| `portal`   | `entities`  | `twoWay`, `interactions?`: always walkable; its destination is set per placement     |
 
 `entities` holds several kinds and is filtered by `kind` on the server ([Backend 2]).
 
@@ -86,7 +86,10 @@ Entering a town, castle or dungeon normally lands the player on its `startingPos
 - **Entrances** sit on the world map with their own glyph, placed over the terrain: a cave mouth in the mountains, an elven village icon in the forest, a castle. The player enters by standing on one and pressing an **enter key** (`E`, as in Ultima 3-5), not by stepping onto it, so nobody walks into a town by accident. This is engine logic, not an interaction.
 - **Exits** inside that zone lead back the other way and need not look like the entrance: a door or a cave mouth.
 - Portals are for **narrow, explicit links** where one spot clearly leads to another: a dungeon entrance, a staircase, a trapdoor. Leaving across a zone's open edge is not a portal (section 2.2).
-- Walking into a portal has its **own rules** (one-way, needs an item, single use). They are designed with the portals ([Tools 11]), not with object interactions.
+- **One way or two way** is `twoWay` on the def (a boolean, default `false`). It says how many destinations a placement needs: one for a one-way portal, two for a two-way one (there and back). The destinations themselves are set on the placement.
+- A portal may carry **interactions**, the same shape as an object's, normally `on: WALK` (the player walks into it like a door). A `HAS_ITEM` condition makes it need a key; actions can do something extra to the player. A def has **one** interaction list, also when it is two way. A requirement on the far side is built with an object placed there, with its own interaction that removes itself (`REMOVE_SELF`). Custom values wait for the placement, as for objects (4.6).
+- **Blocking the player** (keeping them on their previous cell with a message such as "you need the key") is not designed yet. It will be a tools card and a game engine card.
+- Other portal rules (single use, and so on) are designed with the portals, not with object interactions.
 - **The destination is per placement**, not per def. One "Staircase" def is placed many times, each placement with its own destination, instead of a def per staircase. As in Heroes of Might and Magic's editor, the tools **validate** the map and warn about any portal placement without a destination.
 
 **Creatures do not move on the map and do not chase the player** (unlike Ultima 3-5). They appear only in random encounters. A non-combat NPC, such as a townsperson or a friendly gold dragon quest giver, is not a creature: it is a solid **object** with interactions (dialog when bumped). An interaction can still turn it hostile, for example an action that replaces the object with an encounter.
@@ -199,7 +202,7 @@ A stack may hold the same **stackable item** more than once, each its own placem
 
 ## 4. Interactions
 
-**Interactions belong to objects and spaces** (NPCs and chests included): on the def, and for the custom part on a placement. Terrain has none. Items have none on the map (bumping one picks it up). Special **item use** and **portal rules** are separate designs, deferred (see Open questions).
+**Interactions belong to objects and spaces** (NPCs and chests included): on the def, and for the custom part on a placement. Portals are spaces and carry them too (section 1.3). Terrain has none. Items have none on the map (bumping one picks it up). Special **item use** is a separate design, deferred (see Open questions).
 
 `ActionPayload` is retired. Its replacement (names _provisional_):
 

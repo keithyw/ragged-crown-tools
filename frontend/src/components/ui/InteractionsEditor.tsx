@@ -3,12 +3,13 @@
 import { useState } from 'react'
 import { Button, InteractionModal } from '@/components'
 import { usePlaceableDefs } from '@/hooks'
-import type { Interaction } from '@/lib/types'
+import type { Interaction, InteractionType } from '@/lib/types'
 import { blankInteraction, summarizeInteraction } from '@/lib/utils'
 
 interface InteractionsEditorProps {
 	value: Interaction[] | undefined
 	onChange: (next: Interaction[]) => void
+	defaultTrigger?: InteractionType // what a new interaction starts on
 }
 
 // The list of an object's interactions, with a modal to add and edit one.
@@ -17,6 +18,7 @@ interface InteractionsEditorProps {
 export const InteractionsEditor = ({
 	value,
 	onChange,
+	defaultTrigger,
 }: InteractionsEditorProps) => {
 	const list = value ?? []
 	const { defs, isLoading, defName } = usePlaceableDefs()
@@ -64,7 +66,10 @@ export const InteractionsEditor = ({
 				type='button'
 				actionType='submit'
 				onClick={() =>
-					setEditing({ index: null, interaction: blankInteraction() })
+					setEditing({
+						index: null,
+						interaction: blankInteraction(defaultTrigger),
+					})
 				}
 			>
 				Add interaction

@@ -16,6 +16,12 @@ export const fields: FormField<PortalDefinitionFormData>[] = [
 		required: true,
 	},
 	{
+		name: 'twoWay',
+		label: 'Direction',
+		type: 'switch',
+		switchLabels: ['One way', 'Two way'],
+	},
+	{
 		name: 'spriteId',
 		label: 'Sprite (replaces the glyph below when set)',
 		type: 'sprite',

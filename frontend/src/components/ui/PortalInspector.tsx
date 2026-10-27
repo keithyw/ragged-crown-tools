@@ -15,8 +15,15 @@ export const PortalInspector = ({
 	onDelete,
 }: PortalInspectorProps) => {
 	const details = [
+		{ key: 'Direction', val: portal.twoWay ? 'Two way' : 'One way' },
 		{ key: 'Color', val: portal.glyph.color },
 		{ key: 'Background', val: portal.glyph.bg },
+		{
+			key: 'Interactions',
+			val: portal.interactions?.length
+				? String(portal.interactions.length)
+				: 'None',
+		},
 		{ key: 'Description', val: portal.description ?? '-' },
 	]
 	return (

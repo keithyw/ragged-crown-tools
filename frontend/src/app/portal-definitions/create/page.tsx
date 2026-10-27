@@ -1,7 +1,7 @@
 'use client'
 
-import { get } from 'react-hook-form'
-import { CreateFormLayout, FormInput } from '@/components'
+import { Controller, get } from 'react-hook-form'
+import { CreateFormLayout, FormInput, InteractionsEditor } from '@/components'
 import { useCreateRecord } from '@/hooks'
 import { URLS } from '@/lib/constants'
 import { collectionService } from '@/lib/services'
@@ -21,6 +21,7 @@ const CreatePortalDefinitionPage = () => {
 			kind: 'portal', // not a visible field, but submitted with the form
 			id: '',
 			name: '',
+			twoWay: false,
 			// The backfill glyph, so a def can be saved before it has a sprite.
 			glyph: { symbol: '??', color: 'text-white', bg: 'bg-black' },
 			description: '',
@@ -53,6 +54,17 @@ const CreatePortalDefinitionPage = () => {
 					errorMessage={get(errors, f.name)?.message}
 				/>
 			))}
+			<Controller
+				name='interactions'
+				control={control}
+				render={({ field }) => (
+					<InteractionsEditor
+						value={field.value}
+						onChange={field.onChange}
+						defaultTrigger='WALK'
+					/>
+				)}
+			/>
 		</CreateFormLayout>
 	)
 }
