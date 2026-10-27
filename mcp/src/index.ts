@@ -5,6 +5,7 @@ import { z } from 'zod'
 // ARCHITECTURE.md 6.1). Type-only `@/` imports inside them resolve via the
 // `paths` entry in tsconfig.json.
 import { defSchema } from '../../frontend/src/schemas/contentSchemas'
+import { spriteSchema } from '../../frontend/src/schemas/spriteSchema'
 import { zoneSchema } from '../../frontend/src/schemas/zoneSchema'
 
 const API_URL = process.env.RC_API_URL ?? 'http://localhost:8080'
@@ -15,6 +16,7 @@ const COLLECTIONS = [
 	'items',
 	'entities',
 	'zones',
+	'sprites',
 	'events',
 ] as const
 
@@ -58,7 +60,9 @@ function validate(collection: (typeof COLLECTIONS)[number], doc: unknown) {
 		)
 	}
 
-	const result = (allowed ? defSchema : zoneSchema).safeParse(doc)
+	const schema =
+		collection === 'sprites' ? spriteSchema : allowed ? defSchema : zoneSchema
+	const result = schema.safeParse(doc)
 	if (!result.success) {
 		const lines = result.error.issues.map(
 			(i) => `- ${i.path.join('.') || '(document)'}: ${i.message}`,

@@ -338,7 +338,7 @@ Zone JSON is the **initial state only**. When a game starts, the player gets a r
 | `items`     | Item defs                                                |
 | `entities`  | Object, creature and portal defs (by `kind`)             |
 | `zones`     | Zones                                                    |
-| `sprites`   | Sprite art (section 1.2); not yet allow-listed, see [Backend 6] |
+| `sprites`   | Sprite art (section 1.2)                                 |
 | `events`    | Reserved, unused (kept in case reusable interaction templates are ever saved) |
 
 `maps` is redundant with `zones` and is removed from the allow-list ([Backend 4]).

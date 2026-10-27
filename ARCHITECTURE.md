@@ -88,6 +88,7 @@ The allow-list matches `DATA-MODEL.md`. The backend stays schema-less: it doesn'
 | `items`     | Item definitions (`kind: 'item'`)                                                      |
 | `entities`  | Object, creature and portal definitions, told apart by `kind`; list with `?kind=`      |
 | `zones`     | Zones (terrain grid, placements, exits)                                                |
+| `sprites`   | Sprite art: 16×16 pixel sprites that defs reference by `_id` (`DATA-MODEL.md` 1.2)     |
 | `events`    | **Reserved, unused.** Kept only in case reusable interaction templates are ever saved. |
 
 #### List query params (`GET /collection/{collection}`)
@@ -290,7 +291,7 @@ A small local tool that lets Claude read the data in the database through the AP
 
 - Code is one file, `mcp/src/index.ts`. The collection names are a copy of the backend allow-list (`middleware.go`); add a new collection to both.
 - The API address comes from `RC_API_URL` (default `http://localhost:8080`). A future sandbox API would be another value here.
-- **Write validation.** `create_doc` and `replace_doc` check the document with the frontend's zod schemas (`frontend/src/schemas/contentSchemas.ts`, `zoneSchema.ts`), imported as they are, not copied. `tile_defs` takes `kind: terrain`, `items` takes `item`, `entities` takes `object`, `creature` or `portal`; a wrong `kind` is rejected first. `zones` uses `zoneSchema`. `events` is a placeholder and is not validated. What is sent is the parsed copy (the shape the frontend would save). **Boundary case, left as is:** zod strips unknown keys silently, so a misspelt field disappears instead of being reported; the returned stored document shows what was kept.
+- **Write validation.** `create_doc` and `replace_doc` check the document with the frontend's zod schemas (`frontend/src/schemas/contentSchemas.ts`, `zoneSchema.ts`), imported as they are, not copied. `tile_defs` takes `kind: terrain`, `items` takes `item`, `entities` takes `object`, `creature` or `portal`; a wrong `kind` is rejected first. `sprites` uses `spriteSchema`, and `zones` uses `zoneSchema`. `events` is a placeholder and is not validated. What is sent is the parsed copy (the shape the frontend would save). **Boundary case, left as is:** zod strips unknown keys silently, so a misspelt field disappears instead of being reported; the returned stored document shows what was kept.
 - **No build step, but it runs through `tsx`.** The frontend's schema files import each other without file extensions, which Node's own type stripping can't resolve, so the MCP is launched with `tsx` (a devDependency of `mcp/`). `.mcp.json` runs `node mcp/node_modules/tsx/dist/cli.mjs mcp/src/index.ts` from the repo root (that path is why it is spelled out), and `pnpm start` runs `tsx src/index.ts`. `node` is whichever Node is first on the PATH. `erasableSyntaxOnly` stays in `tsconfig.json` as a habit, no longer a requirement.
 - `mcp/tsconfig.json` uses `module: esnext` / `moduleResolution: bundler` (the frontend's extensionless imports need it) and one `paths` entry mapping `@/lib/types` to `frontend/src/lib/types/map.ts`. Mapping all of `@/*` would pull the whole UI into the MCP's typecheck through the types barrel. If a schema file ever gains a *runtime* `@/` import, `tsx` won't resolve it either.
 - Formatting uses the frontend's Prettier config: `cd frontend && pnpm exec prettier --config .prettierrc.cjs --write ../mcp/src/index.ts`.
@@ -339,7 +340,7 @@ make db-indexes COLLECTIONS="new_thing"  # only the named collection(s)
 
 Both pipe `scripts/ensure-indexes.js` into `mongosh` inside the container (`ragged_crown` and `ragged_crown_sandbox`; override with `REAL_DB` / `SANDBOX_DB`). The backend does not create indexes, on purpose: it stays a dumb store and is often left running between changes, so it is not a good moment to hook this to.
 
-- **What it creates:** a unique index named `id_unique` on `id`, **per collection** (not per `kind`), for `tile_defs`, `items`, `entities` and `zones`. `events` is skipped: it is reserved and unused.
+- **What it creates:** a unique index named `id_unique` on `id`, **per collection** (not per `kind`), for `tile_defs`, `items`, `entities`, `zones` and `sprites`. `events` is skipped: it is reserved and unused.
 - **Partial:** the index only covers documents whose `id` is a string. `id` is optional, and without this every document lacking one would count as `null` and collide with the others.
 - **Mongo lifecycle:** a collection comes into being on first insert or first `createIndex`, so there is no "table before index" order. The script can run on a brand-new empty database, and `ErrDuplicate` starts firing as soon as the index exists.
 - **Idempotent, and fails soft:** re-running does nothing. A failure on one collection (typically existing duplicate `id` values, which block building a unique index) is printed and the others still run; the exit code is 1 if anything failed. Changing an index definition later is a deliberate drop and recreate, not something the script does.
