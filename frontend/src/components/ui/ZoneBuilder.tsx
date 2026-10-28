@@ -21,6 +21,7 @@ import {
 	SelectDropdown,
 	ServerErrorMessages,
 	SpinnerSection,
+	StackDrawer,
 	TilePickerModal,
 	ToolPickerSection,
 	ZoneMapGrid,
@@ -58,9 +59,10 @@ import {
 import { detailFields } from '@/app/zone/fields'
 
 // One tool at a time; a click on the map does exactly one thing.
-type Tool = 'paint' | 'start' | 'object' | 'item'
-// The tools offered in the tool selector. Start stays its own section.
-type PlaceTool = Exclude<Tool, 'start'>
+type Tool = 'paint' | 'start' | 'object' | 'item' | 'stack'
+// The tools offered in the tool selector. Start and stack have their own
+// sections.
+type PlaceTool = Exclude<Tool, 'start' | 'stack'>
 
 const PLACE_TOOLS: { value: PlaceTool; label: string }[] = [
 	{ value: 'paint', label: 'Paint terrain' },
@@ -119,6 +121,9 @@ export const ZoneBuilder = ({
 	const [isPickerOpen, setIsPickerOpen] = useState(false)
 	const [isObjectPickerOpen, setIsObjectPickerOpen] = useState(false)
 	const [isItemPickerOpen, setIsItemPickerOpen] = useState(false)
+	// The cell whose stack is open in the drawer.
+	const [selectedCell, setSelectedCell] = useState<Position | null>(null)
+	const [isStackOpen, setIsStackOpen] = useState(false)
 	const {
 		items: tiles,
 		isLoading: tilesLoading,
@@ -145,7 +150,7 @@ export const ZoneBuilder = ({
 	// Defs that can sit on the terrain, keyed like a Placement (kind + _id).
 	const placedDefs = useMemo(
 		() =>
-			new Map<string, { glyph: Glyph }>([
+			new Map<string, { glyph: Glyph; name: string }>([
 				...objects.map((o) => [defKey('object', o._id), o] as const),
 				...items.map((i) => [defKey('item', i._id), i] as const),
 			]),
@@ -155,15 +160,26 @@ export const ZoneBuilder = ({
 	const activeTile = activeTileId ? tilesById.get(activeTileId) : undefined
 	const activeObject = objects.find((o) => o._id === activeObjectId)
 	const activeItem = items.find((i) => i._id === activeItemId)
+	const selectedStack = selectedCell
+		? (placements?.[cellKey(selectedCell.x, selectedCell.y)] ?? [])
+		: []
+	const hasPlacements = Object.keys(placements ?? {}).length > 0
 
 	useEffect(() => {
-		if (!tool || isPickerOpen || isObjectPickerOpen || isItemPickerOpen) return
+		if (
+			!tool ||
+			isPickerOpen ||
+			isObjectPickerOpen ||
+			isItemPickerOpen ||
+			isStackOpen
+		)
+			return
 		const onKeyDown = (e: KeyboardEvent) => {
 			if (e.key === 'Escape') setTool(null)
 		}
 		window.addEventListener('keydown', onKeyDown)
 		return () => window.removeEventListener('keydown', onKeyDown)
-	}, [tool, isPickerOpen, isObjectPickerOpen, isItemPickerOpen])
+	}, [tool, isPickerOpen, isObjectPickerOpen, isItemPickerOpen, isStackOpen])
 
 	const handleCell = useCallback(
 		(x: number, y: number) => {
@@ -201,6 +217,14 @@ export const ZoneBuilder = ({
 						...(activeItem.stackable ? { quantity: 1 } : {}),
 					}),
 				)
+			} else if (tool === 'stack') {
+				// Stays on after the drawer closes, so the next stack is one click away.
+				if (!placements?.[cellKey(x, y)]?.length) {
+					toast(`Nothing is placed at x ${x}, y ${y}.`, { id: 'empty-stack' })
+					return
+				}
+				setSelectedCell({ x, y })
+				setIsStackOpen(true)
 			}
 		},
 		[tool, activeTileId, activeObject, activeItem, placements],
@@ -269,6 +293,7 @@ export const ZoneBuilder = ({
 			p && p.x < width && p.y < height ? p : undefined,
 		)
 		setPlacements((p) => placementsWithin(p, width, height))
+		setSelectedCell(null)
 		setIsModalOpen(false)
 	}
 
@@ -319,8 +344,9 @@ export const ZoneBuilder = ({
 							placements={placements}
 							placedDefs={placedDefs}
 							startingPosition={startingPosition}
+							selectedCell={selectedCell}
 							onCellAction={tool ? handleCell : undefined}
-							dragToApply={tool !== 'item'}
+							dragToApply={tool === 'paint' || tool === 'object'}
 						/>
 					) : (
 						<div className='rounded border border-dashed border-gray-300 p-16 text-center text-xl font-medium text-gray-700'>
@@ -373,11 +399,38 @@ export const ZoneBuilder = ({
 							selectedValue={selectedTool}
 							onSelect={(v) => {
 								setSelectedTool(v as PlaceTool)
-								// Switching tools stops the one that was running.
-								if (tool !== 'start') setTool(null)
+								// Switching tools stops the one that was running. Start and
+								// stack are left alone.
+								if (tool !== 'start' && tool !== 'stack') setTool(null)
 							}}
 						/>
 						<ToolPickerSection {...toolSections[selectedTool]} />
+					</section>
+					<section>
+						<h3 className='mb-2 text-sm font-bold text-gray-700'>Stack</h3>
+						{tool === 'stack' ? (
+							<Button
+								type='button'
+								actionType='neutral'
+								onClick={() => setTool(null)}
+							>
+								Done
+							</Button>
+						) : (
+							<Button
+								type='button'
+								actionType='submit'
+								disabled={!hasPlacements}
+								onClick={() => setTool('stack')}
+							>
+								Manage stack
+							</Button>
+						)}
+						{tool === 'stack' && (
+							<p className='mt-2 text-sm text-gray-500'>
+								Click a cell with placements to open its stack. Esc to stop.
+							</p>
+						)}
 					</section>
 					<section>
 						<h3 className='mb-2 text-sm font-bold text-gray-700'>
@@ -477,6 +530,17 @@ export const ZoneBuilder = ({
 					setActiveItemId(i._id)
 					setTool('item')
 					setIsItemPickerOpen(false)
+				}}
+			/>
+
+			<StackDrawer
+				isOpen={isStackOpen}
+				cell={selectedCell}
+				stack={selectedStack}
+				placedDefs={placedDefs}
+				onClose={() => {
+					setIsStackOpen(false)
+					setSelectedCell(null)
 				}}
 			/>
 

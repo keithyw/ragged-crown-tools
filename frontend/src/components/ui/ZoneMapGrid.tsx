@@ -23,6 +23,8 @@ interface ZoneMapGridProps {
 	placements?: Zone['placements']
 	placedDefs?: ReadonlyMap<string, { glyph: Glyph }>
 	startingPosition?: Position
+	// The cell whose stack is open, outlined.
+	selectedCell?: Position | null
 	onCellAction?: (x: number, y: number) => void
 	// Dragging applies the action to each cell crossed. When false, only the
 	// cell that was clicked gets it.
@@ -35,6 +37,7 @@ export const ZoneMapGrid = ({
 	placements,
 	placedDefs,
 	startingPosition,
+	selectedCell,
 	onCellAction,
 	dragToApply = true,
 }: ZoneMapGridProps) => {
@@ -100,6 +103,9 @@ export const ZoneMapGrid = ({
 								startingPosition?.x === x &&
 									startingPosition?.y === y &&
 									'outline-2 -outline-offset-2 outline-sky-400',
+								selectedCell?.x === x &&
+									selectedCell?.y === y &&
+									'outline-2 -outline-offset-2 outline-fuchsia-400',
 								onCellAction &&
 									'hover:outline-2 hover:-outline-offset-2 hover:outline-amber-300',
 							)}
