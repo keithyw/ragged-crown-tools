@@ -48,6 +48,7 @@ import {
 	paintCell,
 	placementsWithin,
 	pushPlacement,
+	replaceStack,
 	type Placements,
 	type ZoneGrid,
 } from '@/lib/utils'
@@ -538,6 +539,17 @@ export const ZoneBuilder = ({
 				cell={selectedCell}
 				stack={selectedStack}
 				placedDefs={placedDefs}
+				onChange={(stack) => {
+					if (!selectedCell) return
+					setPlacements((prev) =>
+						replaceStack(prev, cellKey(selectedCell.x, selectedCell.y), stack),
+					)
+					// Deleting the last one empties the cell; there's nothing left to show.
+					if (stack.length === 0) {
+						setIsStackOpen(false)
+						setSelectedCell(null)
+					}
+				}}
 				onClose={() => {
 					setIsStackOpen(false)
 					setSelectedCell(null)

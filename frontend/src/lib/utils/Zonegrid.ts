@@ -50,6 +50,19 @@ export const pushPlacement = (
 	p: Placement,
 ): Placements => ({ ...placements, [key]: [...(placements?.[key] ?? []), p] })
 
+// Returns new placements with the cell's stack replaced (bottom to top). An
+// empty stack removes the cell's key, so no empty arrays are stored.
+export const replaceStack = (
+	placements: Placements | undefined,
+	key: CellKey,
+	stack: Placement[],
+): Placements => {
+	const next = { ...placements }
+	if (stack.length > 0) next[key] = stack
+	else delete next[key]
+	return next
+}
+
 export const MIN_ZONE_SIZE = 1
 export const MAX_ZONE_SIZE = 16 // hard-coded for now; raise when it gets in the way
 
