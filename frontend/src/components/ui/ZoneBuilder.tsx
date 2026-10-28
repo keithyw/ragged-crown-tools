@@ -1,6 +1,12 @@
 'use client'
 
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import {
+	useCallback,
+	useEffect,
+	useMemo,
+	useState,
+	type ComponentProps,
+} from 'react'
 import { get, useForm } from 'react-hook-form'
 import toast from 'react-hot-toast'
 import { zodResolver } from '@hookform/resolvers/zod'
@@ -12,6 +18,7 @@ import {
 	ItemPickerModal,
 	NewMapModal,
 	ObjectPickerModal,
+	SelectDropdown,
 	ServerErrorMessages,
 	SpinnerSection,
 	TilePickerModal,
@@ -52,6 +59,14 @@ import { detailFields } from '@/app/zone/fields'
 
 // One tool at a time; a click on the map does exactly one thing.
 type Tool = 'paint' | 'start' | 'object' | 'item'
+// The tools offered in the tool selector. Start stays its own section.
+type PlaceTool = Exclude<Tool, 'start'>
+
+const PLACE_TOOLS: { value: PlaceTool; label: string }[] = [
+	{ value: 'paint', label: 'Paint terrain' },
+	{ value: 'object', label: 'Place object' },
+	{ value: 'item', label: 'Place item' },
+]
 
 interface ZoneBuilderProps {
 	breadcrumbs: Crumb[]
@@ -84,6 +99,10 @@ export const ZoneBuilder = ({
 	})
 	const [triedToSave, setTriedToSave] = useState(false)
 	const [tool, setTool] = useState<Tool | null>(null)
+	// Which tool the selector shows. Always starts at the first one.
+	const [selectedTool, setSelectedTool] = useState<PlaceTool>(
+		PLACE_TOOLS[0].value,
+	)
 	const [activeTileId, setActiveTileId] = useState<string | null>(null)
 	const [activeObjectId, setActiveObjectId] = useState<string | null>(null)
 	const [activeItemId, setActiveItemId] = useState<string | null>(null)
@@ -186,6 +205,61 @@ export const ZoneBuilder = ({
 		},
 		[tool, activeTileId, activeObject, activeItem, placements],
 	)
+
+	// What the tool selector shows for each tool.
+	const toolSections: Record<
+		PlaceTool,
+		ComponentProps<typeof ToolPickerSection>
+	> = {
+		paint: {
+			title: 'Paint',
+			def: activeTile,
+			noneLabel: 'No tile selected',
+			chooseLabel: 'Choose tile',
+			changeLabel: 'Change tile',
+			startLabel: 'Paint',
+			hasMap: !!grid,
+			isActive: tool === 'paint',
+			onChoose: () => setIsPickerOpen(true),
+			onStart: () => setTool('paint'),
+			onStop: () => setTool(null),
+			activeHint: 'Click or drag on the map to paint. Esc to stop.',
+			resumeHint: 'Press Paint to continue with this tile.',
+			chooseHint: 'Choose a tile to start painting.',
+		},
+		object: {
+			title: 'Object',
+			def: activeObject,
+			noneLabel: 'No object selected',
+			chooseLabel: 'Choose object',
+			changeLabel: 'Change object',
+			startLabel: 'Place',
+			hasMap: !!grid,
+			isActive: tool === 'object',
+			onChoose: () => setIsObjectPickerOpen(true),
+			onStart: () => setTool('object'),
+			onStop: () => setTool(null),
+			activeHint: 'Click or drag on the map to place. Esc to stop.',
+			resumeHint: 'Press Place to continue with this object.',
+			chooseHint: 'Choose an object to start placing.',
+		},
+		item: {
+			title: 'Item',
+			def: activeItem,
+			noneLabel: 'No item selected',
+			chooseLabel: 'Choose item',
+			changeLabel: 'Change item',
+			startLabel: 'Place',
+			hasMap: !!grid,
+			isActive: tool === 'item',
+			onChoose: () => setIsItemPickerOpen(true),
+			onStart: () => setTool('item'),
+			onStop: () => setTool(null),
+			activeHint: 'Click a cell to place the item. Esc to stop.',
+			resumeHint: 'Press Place to continue with this item.',
+			chooseHint: 'Choose an item to start placing.',
+		},
+	}
 
 	const handleDraw = ({ width, height, tileId }: NewMapValues) => {
 		setGrid(createGrid(width, height, tileId))
@@ -291,54 +365,20 @@ export const ZoneBuilder = ({
 							/>
 						))}
 					</section>
-					<ToolPickerSection
-						title='Paint'
-						def={activeTile}
-						noneLabel='No tile selected'
-						chooseLabel='Choose tile'
-						changeLabel='Change tile'
-						startLabel='Paint'
-						hasMap={!!grid}
-						isActive={tool === 'paint'}
-						onChoose={() => setIsPickerOpen(true)}
-						onStart={() => setTool('paint')}
-						onStop={() => setTool(null)}
-						activeHint='Click or drag on the map to paint. Esc to stop.'
-						resumeHint='Press Paint to continue with this tile.'
-						chooseHint='Choose a tile to start painting.'
-					/>
-					<ToolPickerSection
-						title='Object'
-						def={activeObject}
-						noneLabel='No object selected'
-						chooseLabel='Choose object'
-						changeLabel='Change object'
-						startLabel='Place'
-						hasMap={!!grid}
-						isActive={tool === 'object'}
-						onChoose={() => setIsObjectPickerOpen(true)}
-						onStart={() => setTool('object')}
-						onStop={() => setTool(null)}
-						activeHint='Click or drag on the map to place. Esc to stop.'
-						resumeHint='Press Place to continue with this object.'
-						chooseHint='Choose an object to start placing.'
-					/>
-					<ToolPickerSection
-						title='Item'
-						def={activeItem}
-						noneLabel='No item selected'
-						chooseLabel='Choose item'
-						changeLabel='Change item'
-						startLabel='Place'
-						hasMap={!!grid}
-						isActive={tool === 'item'}
-						onChoose={() => setIsItemPickerOpen(true)}
-						onStart={() => setTool('item')}
-						onStop={() => setTool(null)}
-						activeHint='Click a cell to place the item. Esc to stop.'
-						resumeHint='Press Place to continue with this item.'
-						chooseHint='Choose an item to start placing.'
-					/>
+					<section>
+						<SelectDropdown
+							id='tool'
+							label='Tool'
+							options={PLACE_TOOLS}
+							selectedValue={selectedTool}
+							onSelect={(v) => {
+								setSelectedTool(v as PlaceTool)
+								// Switching tools stops the one that was running.
+								if (tool !== 'start') setTool(null)
+							}}
+						/>
+						<ToolPickerSection {...toolSections[selectedTool]} />
+					</section>
 					<section>
 						<h3 className='mb-2 text-sm font-bold text-gray-700'>
 							Start Position
