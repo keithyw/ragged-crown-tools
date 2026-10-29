@@ -292,6 +292,22 @@ export const summarizeInteraction = (
 	return `${trigger}${requires}: ${what}${limit}`
 }
 
+// A custom action or condition: a slot the def declares and each placement
+// fills in (DATA-MODEL.md 4.6).
+export type CustomSlot = Extract<Action | Condition, { custom: true }>
+
+// An interaction's custom slots, conditions first, in the order the def lists
+// them.
+export const customSlotsOf = (i: Interaction): CustomSlot[] =>
+	[...(i.conditions ?? []), ...i.actions].filter(
+		(x): x is CustomSlot => 'custom' in x && x.custom === true,
+	)
+
+// The editor's label for a slot's type ("Show dialog", "Has item").
+export const slotLabel = (slot: CustomSlot) =>
+	[...ACTION_TYPES, ...CONDITION_TYPES].find((t) => t.type === slot.type)
+		?.label ?? slot.type
+
 // A number input's text as a number. A blank stays NaN and never becomes 0, so
 // that a lone "-" typed on the way to a negative number isn't rewritten as 0
 // (the browser reports "" until the number is complete).

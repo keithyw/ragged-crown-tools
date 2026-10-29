@@ -91,11 +91,24 @@ export interface Placement {
 	interactions?: Interaction[] // per-instance overrides, checked before the def's
 	contents?: Placement[] // containers; depth-limited
 	destination?: Destination // portals only
+	customValues?: Record<string, CustomValue> // keyed by the def's slot ids
 }
+
+// A placement's value for one of its def's custom slots (DATA-MODEL.md 4.6):
+// the def declares the slot, the placement fills it in. Every field may be
+// blank, so unfinished work still saves; finding blanks is zone validation.
+export type CustomValue =
+	| { type: 'SHOW_DIALOG'; text?: string }
+	| {
+			type: 'GIVE_ITEM' | 'TAKE_ITEM' | 'HAS_ITEM'
+			itemId?: string
+			amount?: number
+	  }
+	| { type: 'SPAWN'; defKind?: Kind; defId?: string; quantity?: number }
 
 export type Condition =
 	| { type: 'HAS_ITEM'; itemId: string; amount: number; custom?: never }
-	| { type: 'HAS_ITEM'; custom: true }
+	| { type: 'HAS_ITEM'; custom: true; slot: string }
 	| { type: 'FLAG_SET'; flag: string }
 	| { type: 'FLAG_NOT_SET'; flag: string }
 
@@ -120,14 +133,16 @@ export type StatTarget = 'character' | 'party'
 // Fields beyond SPAWN and TELEPORT are provisional (DATA-MODEL.md 4.4).
 // `custom: true` means the value is left to each placement (a custom NPC's
 // dialog, a chest's contents), so the action carries no value fields at all
-// (DATA-MODEL.md 4.6).
+// (DATA-MODEL.md 4.6). Its `slot` is a stable id that the placement's
+// customValues are keyed by. Defs stored before slots existed lack it until
+// their next save, so code reading stored defs checks for it.
 export type Action =
 	| { type: 'SHOW_DIALOG'; text: string; custom?: never }
-	| { type: 'SHOW_DIALOG'; custom: true }
+	| { type: 'SHOW_DIALOG'; custom: true; slot: string }
 	| { type: 'GIVE_ITEM'; itemId: string; amount?: number; custom?: never }
-	| { type: 'GIVE_ITEM'; custom: true }
+	| { type: 'GIVE_ITEM'; custom: true; slot: string }
 	| { type: 'TAKE_ITEM'; itemId: string; amount?: number; custom?: never }
-	| { type: 'TAKE_ITEM'; custom: true }
+	| { type: 'TAKE_ITEM'; custom: true; slot: string }
 	| { type: 'GIVE_CURRENCY'; amount: number }
 	| { type: 'SET_FLAG'; flag: string }
 	| {
@@ -137,7 +152,7 @@ export type Action =
 			quantity?: number
 			custom?: never
 	  }
-	| { type: 'SPAWN'; custom: true }
+	| { type: 'SPAWN'; custom: true; slot: string }
 	| { type: 'REMOVE_SELF' }
 	| { type: 'TELEPORT'; destination: Destination }
 	| { type: 'PLAY_SOUND'; sound: string }

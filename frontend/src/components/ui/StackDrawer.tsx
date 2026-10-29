@@ -4,27 +4,47 @@ import { useState } from 'react'
 import {
 	Button,
 	ConfirmationModal,
+	CustomValueInput,
 	ReorderableList,
 	SlideOverDrawer,
 	TileGlyph,
 } from '@/components'
-import { type Glyph, type Placement, type Position } from '@/lib/types'
-import { cellKey, defKey } from '@/lib/utils'
+import {
+	type CustomValue,
+	type Glyph,
+	type Interaction,
+	type Placement,
+	type Position,
+} from '@/lib/types'
+import {
+	cellKey,
+	customSlotsOf,
+	defKey,
+	summarizeInteraction,
+	type SummaryContext,
+} from '@/lib/utils'
+
+export interface StackDef {
+	glyph: Glyph
+	name: string
+	interactions?: Interaction[]
+}
 
 interface StackDrawerProps {
 	isOpen: boolean
 	cell: Position | null
 	// Bottom to top, as stored.
 	stack: Placement[]
-	placedDefs: ReadonlyMap<string, { glyph: Glyph; name: string }>
+	placedDefs: ReadonlyMap<string, StackDef>
 	// Gets the cell's whole stack after an edit, bottom to top.
 	onChange: (stack: Placement[]) => void
 	onClose: () => void
 }
 
 // One cell's placements, top first. Rows are reordered by dragging or with the
-// selected row's arrows, and the selected one can be deleted. Every edit goes
-// straight to the zone through onChange.
+// selected row's arrows, and the selected one can be deleted or have its def's
+// custom slots filled in. Every edit goes straight to the zone through
+// onChange.
 export const StackDrawer = ({
 	isOpen,
 	cell,
@@ -45,10 +65,27 @@ export const StackDrawer = ({
 	}
 
 	const selected = stack.find((p) => p.uid === selectedUid)
-	const selectedName = selected
-		? (placedDefs.get(defKey(selected.defKind, selected.defId))?.name ??
-			'this placement')
-		: ''
+	const selectedDef = selected
+		? placedDefs.get(defKey(selected.defKind, selected.defId))
+		: undefined
+	const selectedName = selectedDef?.name ?? 'this placement'
+	// Only interactions with something to fill in are shown.
+	const slotGroups = (selectedDef?.interactions ?? [])
+		.map((i) => ({ interaction: i, slots: customSlotsOf(i) }))
+		.filter((g) => g.slots.length > 0)
+	const names: SummaryContext = {
+		defName: (kind, id) => placedDefs.get(defKey(kind, id))?.name ?? id,
+	}
+
+	// The value belongs to the placement, so it moves with it in the stack.
+	const setCustomValue = (slotId: string, value: CustomValue) =>
+		onChange(
+			stack.map((p) =>
+				p.uid === selectedUid
+					? { ...p, customValues: { ...p.customValues, [slotId]: value } }
+					: p,
+			),
+		)
 
 	const deleteSelected = () => {
 		onChange(stack.filter((p) => p.uid !== selectedUid))
@@ -105,6 +142,43 @@ export const StackDrawer = ({
 							Delete
 						</Button>
 					</div>
+					{selected && (
+						<section className='mt-6 border-t border-gray-200 pt-4'>
+							<h3 className='mb-3 text-sm font-bold text-gray-900'>
+								Custom values for {selectedName}
+							</h3>
+							{slotGroups.length === 0 ? (
+								<p className='text-sm text-gray-500'>
+									Nothing on this definition is set per placement.
+								</p>
+							) : (
+								slotGroups.map(({ interaction, slots }) => (
+									<div key={interaction.id} className='mb-4'>
+										<p className='mb-2 text-xs text-gray-500'>
+											{summarizeInteraction(interaction, names)}
+										</p>
+										{slots.map((slot, idx) =>
+											// Stored before slots existed: no key to save a value under.
+											slot.slot ? (
+												<CustomValueInput
+													key={slot.slot}
+													id={`custom-${slot.slot}`}
+													slot={slot}
+													value={selected.customValues?.[slot.slot]}
+													onChange={(v) => setCustomValue(slot.slot, v)}
+												/>
+											) : (
+												<p key={idx} className='mb-4 text-sm text-amber-700'>
+													Save {selectedName} again in its editor to fill this
+													in.
+												</p>
+											),
+										)}
+									</div>
+								))
+							)}
+						</section>
+					)}
 				</>
 			)}
 			<ConfirmationModal

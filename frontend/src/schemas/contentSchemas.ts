@@ -4,6 +4,7 @@ import type {
 	CharacterStat,
 	Condition,
 	ContainerSpec,
+	CustomValue,
 	CreatureDef,
 	Destination,
 	Glyph,
@@ -75,10 +76,15 @@ const amount = z.number().int().min(1)
 
 // Like the custom actions below: a custom item check leaves the item and amount
 // to each placement, so nothing but the flag is kept (DATA-MODEL.md 4.6).
+//
+// Every custom action or condition keeps its `slot` id, the key a placement's
+// value is stored under. One saved before slots existed gets a new id here,
+// so it is added the next time the def is saved.
 const hasItemSchema = z
 	.object({
 		type: z.literal('HAS_ITEM'),
 		custom: z.boolean().optional(),
+		slot: z.string().min(1).optional(),
 		itemId: z.string().optional(),
 		amount: amount.optional(),
 	})
@@ -101,7 +107,11 @@ const hasItemSchema = z
 	})
 	.transform((c) =>
 		c.custom
-			? { type: c.type, custom: true as const }
+			? {
+					type: c.type,
+					custom: true as const,
+					slot: c.slot ?? crypto.randomUUID(),
+				}
 			: { type: c.type, itemId: c.itemId ?? '', amount: c.amount ?? 1 },
 	)
 
@@ -118,6 +128,7 @@ const showDialogSchema = z
 	.object({
 		type: z.literal('SHOW_DIALOG'),
 		custom: z.boolean().optional(),
+		slot: z.string().min(1).optional(),
 		text: z.string().optional(),
 	})
 	.superRefine((a, ctx) => {
@@ -131,7 +142,11 @@ const showDialogSchema = z
 	})
 	.transform((a) =>
 		a.custom
-			? { type: a.type, custom: true as const }
+			? {
+					type: a.type,
+					custom: true as const,
+					slot: a.slot ?? crypto.randomUUID(),
+				}
 			: { type: a.type, text: a.text ?? '' },
 	)
 
@@ -139,6 +154,7 @@ const spawnSchema = z
 	.object({
 		type: z.literal('SPAWN'),
 		custom: z.boolean().optional(),
+		slot: z.string().min(1).optional(),
 		defKind: kindSchema.optional(),
 		defId: z.string().optional(),
 		quantity: amount.optional(),
@@ -154,7 +170,11 @@ const spawnSchema = z
 	})
 	.transform((a) =>
 		a.custom
-			? { type: a.type, custom: true as const }
+			? {
+					type: a.type,
+					custom: true as const,
+					slot: a.slot ?? crypto.randomUUID(),
+				}
 			: {
 					type: a.type,
 					defKind: a.defKind ?? ('item' as const),
@@ -197,6 +217,7 @@ const itemActionSchema = <T extends 'GIVE_ITEM' | 'TAKE_ITEM'>(type: T) =>
 		.object({
 			type: z.literal(type),
 			custom: z.boolean().optional(),
+			slot: z.string().min(1).optional(),
 			itemId: z.string().optional(),
 			amount: amount.optional(),
 		})
@@ -211,7 +232,11 @@ const itemActionSchema = <T extends 'GIVE_ITEM' | 'TAKE_ITEM'>(type: T) =>
 		})
 		.transform((a) =>
 			a.custom
-				? { type: a.type, custom: true as const }
+				? {
+						type: a.type,
+						custom: true as const,
+						slot: a.slot ?? crypto.randomUUID(),
+					}
 				: { type: a.type, itemId: a.itemId ?? '', amount: a.amount },
 		)
 
@@ -298,6 +323,23 @@ export const defSchema = z.discriminatedUnion('kind', [
 
 // ---- Placements ----
 
+// The value a placement gives one of its def's custom slots. Every field is
+// optional: a blank still saves, and zone validation reports it.
+export const customValueSchema = z.union([
+	z.object({ type: z.literal('SHOW_DIALOG'), text: z.string().optional() }),
+	z.object({
+		type: z.enum(['GIVE_ITEM', 'TAKE_ITEM', 'HAS_ITEM']),
+		itemId: z.string().optional(),
+		amount: amount.optional(),
+	}),
+	z.object({
+		type: z.literal('SPAWN'),
+		defKind: kindSchema.optional(),
+		defId: z.string().optional(),
+		quantity: amount.optional(),
+	}),
+]) satisfies z.ZodType<CustomValue>
+
 // Recursive (contents), so it needs an explicit annotation instead of `satisfies`.
 export const placementSchema: z.ZodType<Placement> = z.object({
 	uid: z.string().min(1),
@@ -309,4 +351,5 @@ export const placementSchema: z.ZodType<Placement> = z.object({
 		return z.array(placementSchema).optional()
 	},
 	destination: destinationSchema.optional(),
+	customValues: z.record(z.string().min(1), customValueSchema).optional(),
 })

@@ -27,16 +27,10 @@ import {
 	ZoneMapGrid,
 	type Crumb,
 	type NewMapValues,
+	type StackDef,
 } from '@/components'
 import { useCollection } from '@/hooks'
-import type {
-	Glyph,
-	ItemDef,
-	ObjectDef,
-	Position,
-	TileDef,
-	Zone,
-} from '@/lib/types'
+import type { ItemDef, ObjectDef, Position, TileDef, Zone } from '@/lib/types'
 import {
 	canPlaceOnTop,
 	cellKey,
@@ -151,7 +145,7 @@ export const ZoneBuilder = ({
 	// Defs that can sit on the terrain, keyed like a Placement (kind + _id).
 	const placedDefs = useMemo(
 		() =>
-			new Map<string, { glyph: Glyph; name: string }>([
+			new Map<string, StackDef>([
 				...objects.map((o) => [defKey('object', o._id), o] as const),
 				...items.map((i) => [defKey('item', i._id), i] as const),
 			]),
