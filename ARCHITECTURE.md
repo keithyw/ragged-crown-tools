@@ -347,6 +347,22 @@ Both pipe `scripts/ensure-indexes.js` into `mongosh` inside the container (`ragg
 - **When to run it:** after the sandbox is created or reset, after the real database is recreated, and after adding a collection. A restore from a backup brings the indexes back with it (section 6.2), so a restore alone doesn't need it.
 - **New collections:** the collection list in the script is another copy of `validCollections` (with `middleware.go` and `mcp/src/index.ts`). Adding a collection means adding it to all three; section 7 step 2 is the reminder. A shared list that all of them read (a JSON file, say) is a possible later cleanup and would touch the backend, the MCP and the script.
 
+### 6.4 Generating content with Claude (review flow)
+
+Agreed 2026-10-29. Steps 1 to 3 work today; step 4 (promotion) is not built yet ([Skills 1]).
+
+1. **Create in the sandbox.** Claude writes through the sandbox MCP (`create_doc`, `replace_doc`), so everything is validated by the frontend's zod schemas. Each generated document gets an `id`.
+2. **Review in the sandbox UI.** Claude lists the `id`s it made. You look at them in the UI pointed at the sandbox API (section 6.0: `NEXT_PUBLIC_API_URL=http://localhost:8081 pnpm dev` in place of the normal dev server).
+3. **Fix or approve.** A fix is Claude replacing the same sandbox document, so the reviewer judges the same item each time. Back to step 2.
+4. **Promote.** Only the `id`s that were reviewed are copied into the real database. Never "everything in the sandbox".
+
+Why promotion is keyed on `id`: the server generates `_id` and strips any `_id` in a request, so a copied document always gets a new one, and `_id` can't link a sandbox document to its real twin.
+
+- **Promotion is an upsert by `id`:** create it if the real database has no document with that `id`, otherwise replace that one. The unique index on `id` (section 6.3) turns an accidental duplicate into a `409`.
+- **This makes `id` a cross-database key for promotion only.** Everywhere else it stays a display label (section 3.4).
+- **Planned first version:** a sprites-only script, a dry run by default that lists what it would create and update, and needs an explicit go-ahead. Run `make db-backup` first. Until it exists, the real MCP's `create_doc` and `replace_doc` stay denied.
+- **Sprites are the easy case:** they reference nothing. Defs reference sprites by `_id` and zones reference defs and tiles, so promoting those means rewriting references (sandbox `_id` to `id` to real `_id`) in dependency order. That is its own epic ([Skills 6]).
+
 ---
 
 ## 7. Adding a new entity (checklist)
