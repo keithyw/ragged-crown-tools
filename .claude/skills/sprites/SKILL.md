@@ -53,7 +53,7 @@ The MCP validates against `spriteSchema` and returns a readable error for a bad 
 2. Draw the 16 rows. Check them: 16 rows of 16 characters, only `0-F` and `.`.
 3. Run the helper to get `pixels`.
 4. `create_doc` into `sprites` on the sandbox.
-5. Report to the owner: the `id`s made, the rows in a code block (so they can import them to the real builder if wanted), choices made and doubts. Review is in the sandbox UI: `NEXT_PUBLIC_API_URL=http://localhost:8081 pnpm dev` in place of the normal dev server (ARCHITECTURE.md 6.0, 6.4).
+5. Report to the owner: the `id`s made, the rows in a code block (so they can import them to the real builder if wanted), choices made and doubts. Review is in the sandbox UI: `pnpm dev:sandbox` in `frontend/`, on :3001, next to the normal dev server (ARCHITECTURE.md 6.0, 6.4).
 
 ## Fixing one
 

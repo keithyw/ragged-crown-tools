@@ -4,6 +4,7 @@
 	"private": true,
 	"scripts": {
 		"dev": "next dev --webpack --port 3000",
+		"dev:sandbox": "NEXT_PUBLIC_API_URL=http://localhost:8081 NEXT_DIST_DIR=.next-sandbox next dev --webpack --port 3001",
 		"build": "next build",
 		"start": "next start",
 		"lint": "eslint"

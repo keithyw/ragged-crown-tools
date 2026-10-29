@@ -145,7 +145,7 @@ Note: I once added an index by hand on `tile_defs` only, and it is gone (the dat
 
 ### 3.5 Other
 
-- CORS allows `http://localhost:3000` and `http://127.0.0.1:3000` (hard-coded in `server.go`).
+- CORS allows `http://localhost:3000` and `http://127.0.0.1:3000`, plus `:3001` for the sandbox UI (section 6.0). Hard-coded in `server.go`.
 - No authentication. This is an internal tool.
 - JSON numbers decode into `bson.M` as `float64`, so `1` is stored as the double `1.0`. It round-trips to JSON as `1`; it only matters when inspecting data in Compass or querying by integer type.
 
@@ -274,7 +274,9 @@ A second, disposable API + MongoDB that runs alongside the real one, so generate
 - `.env.sandbox` is created by hand (copy `.env`, then change `MONGO_DATABASE` and the Mongo credentials; the host in `MONGODB_URI` resolves inside the sandbox's own network, so `mongodb` works, but `rc_mongodb_sandbox` is preferred because it fails loudly instead of reaching real data if the API is ever attached to the wrong network). It must be git-ignored and is never read or committed by Claude.
 - Targets: `make sandbox-up`, `sandbox-down`, `sandbox-restart`, `sandbox-rc-restart` (rebuild the sandbox API only) and `sandbox-reset`. **`sandbox-reset` deletes the sandbox database volume** (`down -v` on the sandbox project only; it cannot touch the real volume). Confirm before every run.
 - The sandbox starts empty. Neither stack has a unique index on `id` (Known gap 3; see [Infra 7]), so duplicate-`id` cases are not caught in either. A backup of the real database can be restored into it (section 6.2).
-- **Pointing things at it:** the MCP uses `RC_API_URL=http://localhost:8081`. The frontend uses `NEXT_PUBLIC_API_URL=http://localhost:8081`, but CORS only allows `localhost:3000` (Known gap 6), so run `NEXT_PUBLIC_API_URL=http://localhost:8081 pnpm dev` in place of the normal dev server, not alongside it.
+- **Pointing things at it:** the MCP uses `RC_API_URL=http://localhost:8081`. The sandbox UI is `pnpm dev:sandbox` (in `frontend/`), on **:3001**, so it runs next to the normal `pnpm dev` on :3000. The script points it at the sandbox API (`NEXT_PUBLIC_API_URL=http://localhost:8081`) and gives it its own build folder, `.next-sandbox` (git-ignored; set through `NEXT_DIST_DIR` in `next.config.ts`), because Next allows only one `next dev` per folder.
+- **CORS for the second UI:** the API allows `localhost:3001` and `127.0.0.1:3001` as well as :3000. The list is still hard-coded in `server.go` (Known gap 6). After changing it, `make sandbox-rc-restart` rebuilds the sandbox API; the real API only picks it up on its next rebuild, and doesn't need it.
+- **`tsconfig.json`** lists `.next-sandbox/types` and `.next-sandbox/dev/types` in `include`. Next adds them itself the first time the sandbox UI starts (and reformats the whole file while doing so), so they're committed to keep it from rewriting the file.
 
 Verification: use `pnpm exec tsc --noEmit` in `frontend/` as the source of truth for types. Editor squiggles in a monorepo can be stale TS-server project issues rather than real errors.
 
@@ -352,7 +354,7 @@ Both pipe `scripts/ensure-indexes.js` into `mongosh` inside the container (`ragg
 Agreed 2026-10-29. Steps 1 to 3 work today; step 4 (promotion) is not built yet ([Skills 1]).
 
 1. **Create in the sandbox.** Claude writes through the sandbox MCP (`create_doc`, `replace_doc`), so everything is validated by the frontend's zod schemas. Each generated document gets an `id`.
-2. **Review in the sandbox UI.** Claude lists the `id`s it made. You look at them in the UI pointed at the sandbox API (section 6.0: `NEXT_PUBLIC_API_URL=http://localhost:8081 pnpm dev` in place of the normal dev server).
+2. **Review in the sandbox UI.** Claude lists the `id`s it made. You look at them in the sandbox UI (`pnpm dev:sandbox`, on :3001, running next to the normal dev server; section 6.0).
 3. **Fix or approve.** A fix is Claude replacing the same sandbox document, so the reviewer judges the same item each time. Back to step 2.
 4. **Promote.** Only the `id`s that were reviewed are copied into the real database. Never "everything in the sandbox".
 

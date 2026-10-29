@@ -9,6 +9,7 @@ const eslintConfig = defineConfig([
   globalIgnores([
     // Default ignores of eslint-config-next:
     ".next/**",
+    ".next-sandbox/**", // the sandbox UI's build folder (pnpm dev:sandbox)
     "out/**",
     "build/**",
     "next-env.d.ts",
