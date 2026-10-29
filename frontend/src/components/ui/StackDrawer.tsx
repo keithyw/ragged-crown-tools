@@ -9,6 +9,7 @@ import {
 	SlideOverDrawer,
 	TileGlyph,
 } from '@/components'
+import type { PlaceableDef } from '@/hooks'
 import {
 	type CustomValue,
 	type Glyph,
@@ -36,6 +37,8 @@ interface StackDrawerProps {
 	// Bottom to top, as stored.
 	stack: Placement[]
 	placedDefs: ReadonlyMap<string, StackDef>
+	items: PlaceableDef[] // for item slots
+	itemsLoading: boolean
 	// Gets the cell's whole stack after an edit, bottom to top.
 	onChange: (stack: Placement[]) => void
 	onClose: () => void
@@ -50,6 +53,8 @@ export const StackDrawer = ({
 	cell,
 	stack,
 	placedDefs,
+	items,
+	itemsLoading,
 	onChange,
 	onClose,
 }: StackDrawerProps) => {
@@ -166,6 +171,8 @@ export const StackDrawer = ({
 													slot={slot}
 													value={selected.customValues?.[slot.slot]}
 													onChange={(v) => setCustomValue(slot.slot, v)}
+													items={items}
+													itemsLoading={itemsLoading}
 												/>
 											) : (
 												<p key={idx} className='mb-4 text-sm text-amber-700'>

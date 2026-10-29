@@ -152,6 +152,18 @@ export const ZoneBuilder = ({
 		[objects, items],
 	)
 
+	// The item choices for a placement's custom item slots.
+	const itemChoices = useMemo(
+		() =>
+			items.map((i) => ({
+				kind: 'item' as const,
+				_id: i._id,
+				name: i.name,
+				stackable: i.stackable,
+			})),
+		[items],
+	)
+
 	const activeTile = activeTileId ? tilesById.get(activeTileId) : undefined
 	const activeObject = objects.find((o) => o._id === activeObjectId)
 	const activeItem = items.find((i) => i._id === activeItemId)
@@ -533,6 +545,8 @@ export const ZoneBuilder = ({
 				cell={selectedCell}
 				stack={selectedStack}
 				placedDefs={placedDefs}
+				items={itemChoices}
+				itemsLoading={itemsLoading}
 				onChange={(stack) => {
 					if (!selectedCell) return
 					setPlacements((prev) =>
