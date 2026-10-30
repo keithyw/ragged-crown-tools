@@ -18,6 +18,7 @@ import {
 	ItemPickerModal,
 	NewMapModal,
 	ObjectPickerModal,
+	PortalPickerModal,
 	SelectDropdown,
 	ServerErrorMessages,
 	SpinnerSection,
@@ -30,7 +31,14 @@ import {
 	type StackDef,
 } from '@/components'
 import { useCollection } from '@/hooks'
-import type { ItemDef, ObjectDef, Position, TileDef, Zone } from '@/lib/types'
+import type {
+	ItemDef,
+	ObjectDef,
+	PortalDef,
+	Position,
+	TileDef,
+	Zone,
+} from '@/lib/types'
 import {
 	canPlaceOnTop,
 	cellKey,
@@ -54,7 +62,7 @@ import {
 import { detailFields } from '@/app/zone/fields'
 
 // One tool at a time; a click on the map does exactly one thing.
-type Tool = 'paint' | 'start' | 'object' | 'item' | 'stack'
+type Tool = 'paint' | 'start' | 'object' | 'item' | 'portal' | 'stack'
 // The tools offered in the tool selector. Start and stack have their own
 // sections.
 type PlaceTool = Exclude<Tool, 'start' | 'stack'>
@@ -63,6 +71,7 @@ const PLACE_TOOLS: { value: PlaceTool; label: string }[] = [
 	{ value: 'paint', label: 'Paint terrain' },
 	{ value: 'object', label: 'Place object' },
 	{ value: 'item', label: 'Place item' },
+	{ value: 'portal', label: 'Place portal' },
 ]
 
 interface ZoneBuilderProps {
@@ -103,6 +112,7 @@ export const ZoneBuilder = ({
 	const [activeTileId, setActiveTileId] = useState<string | null>(null)
 	const [activeObjectId, setActiveObjectId] = useState<string | null>(null)
 	const [activeItemId, setActiveItemId] = useState<string | null>(null)
+	const [activePortalId, setActivePortalId] = useState<string | null>(null)
 	const [placements, setPlacements] = useState<Placements | undefined>(
 		initialZone?.placements,
 	)
@@ -116,6 +126,7 @@ export const ZoneBuilder = ({
 	const [isPickerOpen, setIsPickerOpen] = useState(false)
 	const [isObjectPickerOpen, setIsObjectPickerOpen] = useState(false)
 	const [isItemPickerOpen, setIsItemPickerOpen] = useState(false)
+	const [isPortalPickerOpen, setIsPortalPickerOpen] = useState(false)
 	// The cell whose stack is open in the drawer.
 	const [selectedCell, setSelectedCell] = useState<Position | null>(null)
 	const [isStackOpen, setIsStackOpen] = useState(false)
@@ -134,8 +145,14 @@ export const ZoneBuilder = ({
 		isLoading: itemsLoading,
 		error: itemsError,
 	} = useCollection<ItemDef>('items')
-	const isLoading = tilesLoading || objectsLoading || itemsLoading
-	const error = tilesError ?? objectsError ?? itemsError
+	const {
+		items: portals,
+		isLoading: portalsLoading,
+		error: portalsError,
+	} = useCollection<PortalDef>('entities', { filter: { kind: 'portal' } })
+	const isLoading =
+		tilesLoading || objectsLoading || itemsLoading || portalsLoading
+	const error = tilesError ?? objectsError ?? itemsError ?? portalsError
 
 	const tilesById = useMemo(
 		() => new Map(tiles.map((t) => [t._id, t])),
@@ -148,8 +165,9 @@ export const ZoneBuilder = ({
 			new Map<string, StackDef>([
 				...objects.map((o) => [defKey('object', o._id), o] as const),
 				...items.map((i) => [defKey('item', i._id), i] as const),
+				...portals.map((p) => [defKey('portal', p._id), p] as const),
 			]),
-		[objects, items],
+		[objects, items, portals],
 	)
 
 	// The item choices for a placement's custom item slots.
@@ -167,6 +185,7 @@ export const ZoneBuilder = ({
 	const activeTile = activeTileId ? tilesById.get(activeTileId) : undefined
 	const activeObject = objects.find((o) => o._id === activeObjectId)
 	const activeItem = items.find((i) => i._id === activeItemId)
+	const activePortal = portals.find((p) => p._id === activePortalId)
 	const selectedStack = selectedCell
 		? (placements?.[cellKey(selectedCell.x, selectedCell.y)] ?? [])
 		: []
@@ -178,6 +197,7 @@ export const ZoneBuilder = ({
 			isPickerOpen ||
 			isObjectPickerOpen ||
 			isItemPickerOpen ||
+			isPortalPickerOpen ||
 			isStackOpen
 		)
 			return
@@ -186,7 +206,14 @@ export const ZoneBuilder = ({
 		}
 		window.addEventListener('keydown', onKeyDown)
 		return () => window.removeEventListener('keydown', onKeyDown)
-	}, [tool, isPickerOpen, isObjectPickerOpen, isItemPickerOpen, isStackOpen])
+	}, [
+		tool,
+		isPickerOpen,
+		isObjectPickerOpen,
+		isItemPickerOpen,
+		isPortalPickerOpen,
+		isStackOpen,
+	])
 
 	const handleCell = useCallback(
 		(x: number, y: number) => {
@@ -224,6 +251,22 @@ export const ZoneBuilder = ({
 						...(activeItem.stackable ? { quantity: 1 } : {}),
 					}),
 				)
+			} else if (tool === 'portal' && activePortal) {
+				const key = cellKey(x, y)
+				if (!canPlaceOnTop(placements, key, 'portal', activePortal._id)) {
+					toast.error(`${activePortal.name} is already on top of this cell.`, {
+						id: 'duplicate-placement',
+					})
+					return
+				}
+				// No destination yet: it is set in the stack drawer.
+				setPlacements((prev) =>
+					pushPlacement(prev, key, {
+						uid: crypto.randomUUID(),
+						defKind: 'portal',
+						defId: activePortal._id,
+					}),
+				)
 			} else if (tool === 'stack') {
 				// Stays on after the drawer closes, so the next stack is one click away.
 				if (!placements?.[cellKey(x, y)]?.length) {
@@ -234,7 +277,7 @@ export const ZoneBuilder = ({
 				setIsStackOpen(true)
 			}
 		},
-		[tool, activeTileId, activeObject, activeItem, placements],
+		[tool, activeTileId, activeObject, activeItem, activePortal, placements],
 	)
 
 	// What the tool selector shows for each tool.
@@ -290,6 +333,22 @@ export const ZoneBuilder = ({
 			resumeHint: 'Press Place to continue with this item.',
 			chooseHint: 'Choose an item to start placing.',
 		},
+		portal: {
+			title: 'Portal',
+			def: activePortal,
+			noneLabel: 'No portal selected',
+			chooseLabel: 'Choose portal',
+			changeLabel: 'Change portal',
+			startLabel: 'Place',
+			hasMap: !!grid,
+			isActive: tool === 'portal',
+			onChoose: () => setIsPortalPickerOpen(true),
+			onStart: () => setTool('portal'),
+			onStop: () => setTool(null),
+			activeHint: 'Click a cell to place the portal. Esc to stop.',
+			resumeHint: 'Press Place to continue with this portal.',
+			chooseHint: 'Choose a portal to start placing.',
+		},
 	}
 
 	const handleDraw = ({ width, height, tileId }: NewMapValues) => {
@@ -332,7 +391,9 @@ export const ZoneBuilder = ({
 	const sz = grid ? gridSize(grid) : null
 
 	if (isLoading) {
-		return <SpinnerSection spinnerMessage='Loading Tiles, Objects and Items' />
+		return (
+			<SpinnerSection spinnerMessage='Loading Tiles, Objects, Items and Portals' />
+		)
 	}
 
 	if (error) {
@@ -537,6 +598,18 @@ export const ZoneBuilder = ({
 					setActiveItemId(i._id)
 					setTool('item')
 					setIsItemPickerOpen(false)
+				}}
+			/>
+
+			<PortalPickerModal
+				isOpen={isPortalPickerOpen}
+				portals={portals}
+				selectedId={activePortalId}
+				onClose={() => setIsPortalPickerOpen(false)}
+				onSelect={(p) => {
+					setActivePortalId(p._id)
+					setTool('portal')
+					setIsPortalPickerOpen(false)
 				}}
 			/>
 

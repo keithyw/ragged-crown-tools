@@ -66,7 +66,7 @@ export interface CreatureDef extends BaseDef {
 // Always walkable; the destination is set per placement. Stored in entities.
 export interface PortalDef extends BaseDef {
 	kind: 'portal'
-	twoWay: boolean // false = one way; a placement then sets one or two destinations
+	twoWay: boolean // not used yet: every placement has one destination
 	interactions?: Interaction[] // normally on WALK
 }
 
