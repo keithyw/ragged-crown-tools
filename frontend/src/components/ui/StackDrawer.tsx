@@ -12,6 +12,7 @@ import {
 import type { PlaceableDef } from '@/hooks'
 import {
 	type CustomValue,
+	type Destination,
 	type Glyph,
 	type Interaction,
 	type Placement,
@@ -39,6 +40,8 @@ interface StackDrawerProps {
 	placedDefs: ReadonlyMap<string, StackDef>
 	items: PlaceableDef[] // for item slots
 	itemsLoading: boolean
+	// Saved zones by _id, for naming a portal's destination.
+	zoneNames: ReadonlyMap<string, string>
 	// Gets the cell's whole stack after an edit, bottom to top.
 	onChange: (stack: Placement[]) => void
 	onClose: () => void
@@ -55,6 +58,7 @@ export const StackDrawer = ({
 	placedDefs,
 	items,
 	itemsLoading,
+	zoneNames,
 	onChange,
 	onClose,
 }: StackDrawerProps) => {
@@ -92,6 +96,24 @@ export const StackDrawer = ({
 			),
 		)
 
+	// Clearing removes the key, so an unset destination is never stored as null.
+	const setDestination = (destination: Destination | undefined) =>
+		onChange(
+			stack.map((p) => {
+				if (p.uid !== selectedUid) return p
+				const next = { ...p, destination }
+				if (!destination) delete next.destination
+				return next
+			}),
+		)
+
+	const describeDestination = (d: Destination) => {
+		const zone = zoneNames.get(d.zoneId) ?? '(missing zone)'
+		return d.pos
+			? `${zone}, x ${d.pos.x}, y ${d.pos.y}`
+			: `${zone}, at its start position`
+	}
+
 	const deleteSelected = () => {
 		onChange(stack.filter((p) => p.uid !== selectedUid))
 		setSelectedUid(null)
@@ -128,6 +150,12 @@ export const StackDrawer = ({
 										<div className='text-xs text-gray-500'>
 											{p.defKind}
 											{p.quantity !== undefined && ` · x${p.quantity}`}
+											{p.defKind === 'portal' && !p.destination && (
+												<span className='text-amber-700'>
+													{' '}
+													· No destination
+												</span>
+											)}
 										</div>
 									</div>
 									{idx === 0 && (
@@ -147,6 +175,31 @@ export const StackDrawer = ({
 							Delete
 						</Button>
 					</div>
+					{selected?.defKind === 'portal' && (
+						<section className='mt-6 border-t border-gray-200 pt-4'>
+							<h3 className='mb-3 text-sm font-bold text-gray-900'>
+								Destination for {selectedName}
+							</h3>
+							<p className='mb-3 text-sm text-gray-700'>
+								{selected.destination
+									? describeDestination(selected.destination)
+									: 'Not set'}
+							</p>
+							<div className='flex gap-2'>
+								{/* TODO: opens the destination picker (Tools: Portals 6). */}
+								<Button type='button' disabled>
+									Set destination
+								</Button>
+								<Button
+									type='button'
+									disabled={!selected.destination}
+									onClick={() => setDestination(undefined)}
+								>
+									Clear
+								</Button>
+							</div>
+						</section>
+					)}
 					{selected && (
 						<section className='mt-6 border-t border-gray-200 pt-4'>
 							<h3 className='mb-3 text-sm font-bold text-gray-900'>

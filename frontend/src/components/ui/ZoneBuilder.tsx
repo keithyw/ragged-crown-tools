@@ -150,6 +150,12 @@ export const ZoneBuilder = ({
 		isLoading: portalsLoading,
 		error: portalsError,
 	} = useCollection<PortalDef>('entities', { filter: { kind: 'portal' } })
+	// Only names destinations, so a failed load doesn't block the builder.
+	const { items: zones } = useCollection<Zone>('zones')
+	const zoneNames = useMemo(
+		() => new Map(zones.map((z) => [z._id, `${z.name} (${z.id})`])),
+		[zones],
+	)
 	const isLoading =
 		tilesLoading || objectsLoading || itemsLoading || portalsLoading
 	const error = tilesError ?? objectsError ?? itemsError ?? portalsError
@@ -620,6 +626,7 @@ export const ZoneBuilder = ({
 				placedDefs={placedDefs}
 				items={itemChoices}
 				itemsLoading={itemsLoading}
+				zoneNames={zoneNames}
 				onChange={(stack) => {
 					if (!selectedCell) return
 					setPlacements((prev) =>
