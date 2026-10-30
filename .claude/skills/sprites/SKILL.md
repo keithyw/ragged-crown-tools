@@ -9,7 +9,7 @@ A sprite is 16x16 pixels in the 16 EGA colours, one tile, no multi-tile objects 
 
 ## Where you may write
 
-Sandbox only: `mcp__ragged-crown-sandbox__create_doc` and `replace_doc`. The real server (`mcp__ragged-crown__*`) is read-only. Promoting an approved sprite to the real database is not built yet ([Skills 4]), so never try to; tell the owner it is approved and waiting.
+Sandbox only: `mcp__ragged-crown-sandbox__create_doc` and `replace_doc`. The real server (`mcp__ragged-crown__*`) is read-only. The only way a sprite reaches the real database is `make promote-sprites` (see Promoting), and only after the owner approves it.
 
 ## The text form
 
@@ -54,6 +54,17 @@ The MCP validates against `spriteSchema` and returns a readable error for a bad 
 3. Run the helper to get `pixels`.
 4. `create_doc` into `sprites` on the sandbox.
 5. Report to the owner: the `id`s made, the rows in a code block (so they can import them to the real builder if wanted), choices made and doubts. Review is in the sandbox UI: `pnpm dev:sandbox` in `frontend/`, on :3001, next to the normal dev server (ARCHITECTURE.md 6.0, 6.4).
+
+## Promoting
+
+Only when the owner has approved specific sprites, and only those `id`s. From the repo root:
+
+1. Dry run: `make promote-sprites IDS="STONE_WALL,GRASS"`. It writes nothing and prints `CREATE`, `UPDATE` (with what differs) or `unchanged` per id.
+2. Show the owner that output. An `UPDATE` overwrites a sprite that already exists in the real database (for example one they imported by hand), so say what would change.
+3. Wait for an explicit go-ahead on that plan. Then run the same command with `APPLY=1`; it takes a backup first and then writes.
+4. Report what was written. If it stops part-way, re-run it: sprites already written show as `unchanged`.
+
+Never run `APPLY=1` without that go-ahead, never promote "everything", and don't try other ways to write to the real server.
 
 ## Fixing one
 

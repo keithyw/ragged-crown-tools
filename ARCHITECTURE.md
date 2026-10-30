@@ -255,7 +255,7 @@ pnpm install
 pnpm dev          # http://localhost:3000, needs NEXT_PUBLIC_API_URL=http://localhost:8080
 ```
 
-Makefile targets: `build`, `docker-up`, `docker-down`, `docker-restart`, `rc-build`, `rc-down`, `rc-restart` (the `rc-*` ones act on the API container only), `db-backup` (section 6.2), `db-indexes` and `sandbox-indexes` (section 6.3).
+Makefile targets: `build`, `docker-up`, `docker-down`, `docker-restart`, `rc-build`, `rc-down`, `rc-restart` (the `rc-*` ones act on the API container only), `db-backup` (section 6.2), `db-indexes` and `sandbox-indexes` (section 6.3), `promote-sprites` (section 6.4).
 
 ### 6.0 Sandbox stack
 
@@ -351,18 +351,22 @@ Both pipe `scripts/ensure-indexes.js` into `mongosh` inside the container (`ragg
 
 ### 6.4 Generating content with Claude (review flow)
 
-Agreed 2026-10-29. Steps 1 to 3 work today; step 4 (promotion) is not built yet ([Skills 1]).
+Agreed 2026-10-29. All four steps work for **sprites** ([Skills 4]); promoting anything that references other documents is not built ([Skills 6]).
 
 1. **Create in the sandbox.** Claude writes through the sandbox MCP (`create_doc`, `replace_doc`), so everything is validated by the frontend's zod schemas. Each generated document gets an `id`.
 2. **Review in the sandbox UI.** Claude lists the `id`s it made. You look at them in the sandbox UI (`pnpm dev:sandbox`, on :3001, running next to the normal dev server; section 6.0).
 3. **Fix or approve.** A fix is Claude replacing the same sandbox document, so the reviewer judges the same item each time. Back to step 2.
-4. **Promote.** Only the `id`s that were reviewed are copied into the real database. Never "everything in the sandbox".
+4. **Promote.** Only the `id`s that were reviewed are copied into the real database, with `make promote-sprites` (below). Never "everything in the sandbox".
 
 Why promotion is keyed on `id`: the server generates `_id` and strips any `_id` in a request, so a copied document always gets a new one, and `_id` can't link a sandbox document to its real twin.
 
 - **Promotion is an upsert by `id`:** create it if the real database has no document with that `id`, otherwise replace that one. The unique index on `id` (section 6.3) turns an accidental duplicate into a `409`.
 - **This makes `id` a cross-database key for promotion only.** Everywhere else it stays a display label (section 3.4).
-- **Planned first version:** a sprites-only script, a dry run by default that lists what it would create and update, and needs an explicit go-ahead. Run `make db-backup` first. Until it exists, the real MCP's `create_doc` and `replace_doc` stay denied.
+- **`make promote-sprites IDS="STONE_WALL,GRASS"`** (`scripts/promote-sprites.ts`, run through the MCP's `tsx`) is a **dry run**: for each `id` it prints `CREATE`, `UPDATE` (with what differs: name, category, background, or how many pixels) or `unchanged`, and writes nothing. Add **`APPLY=1`** to write: it runs `make db-backup` first, then creates or replaces.
+- **It refuses before writing anything** if an `id` isn't in the sandbox, is invalid against `spriteSchema`, matches more than one sprite on either side, or if the sandbox and real API addresses are the same. A failure part-way through a write stops and says how many were written; re-running is safe, because sprites already written show up as `unchanged`.
+- **An update replaces the real sprite in place** and keeps its real `_id`, so anything referencing it keeps working. Read the dry run's `UPDATE` lines: a hand-imported sprite with the same `id` is overwritten by the sandbox's version.
+- **The gate is the owner's go-ahead.** The script talks to the two APIs over HTTP, not through the MCP, so the real MCP's `create_doc` and `replace_doc` stay denied in `.claude/settings.json` and still guard the generic path. Claude runs the dry run, shows the plan, and runs `APPLY=1` only after an explicit approval. Don't add `make promote-sprites` to a permission allow list.
+- The addresses come from `SANDBOX_API_URL` and `REAL_API_URL` (defaults `:8081` and `:8080`).
 - **Sprites are the easy case:** they reference nothing. Defs reference sprites by `_id` and zones reference defs and tiles, so promoting those means rewriting references (sandbox `_id` to `id` to real `_id`) in dependency order. That is its own epic ([Skills 6]).
 
 ---

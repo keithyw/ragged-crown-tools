@@ -62,3 +62,15 @@ sandbox-rc-restart:
 # Destructive: deletes the SANDBOX database volume only
 sandbox-reset:
 	$(SANDBOX) down -v
+
+# Promote reviewed sprites from the sandbox to the REAL database (ARCHITECTURE.md 6.4).
+# IDS="STONE_WALL,GRASS" is required. A dry run unless APPLY=1, which takes a
+# backup first and then writes.
+promote-sprites:
+	@test -n "$(IDS)" || { echo 'IDS="ID_ONE,ID_TWO" is required'; exit 1; }
+ifeq ($(APPLY),1)
+	$(MAKE) db-backup
+	node mcp/node_modules/tsx/dist/cli.mjs scripts/promote-sprites.ts --apply "$(IDS)"
+else
+	node mcp/node_modules/tsx/dist/cli.mjs scripts/promote-sprites.ts "$(IDS)"
+endif
