@@ -141,7 +141,7 @@ All error bodies are JSON: `{"error": "..."}`.
 
 `ErrDuplicate` only fires if MongoDB has a **unique index** on the user-facing `id` for that collection. The code does not create indexes today (see Known gaps).
 
-Note: I once added an index by hand on `tile_defs` only, and it is gone (the database has been flushed or recreated since). **No collection has an index on `id` today**, in the real database or the sandbox; `_id` is the real key and `id` is a legacy label filled in by hand. There is no base code to keep such a thing up to date in the way a migration file is used; `make db-indexes` creates them (section 6.3, [Infra 7]).
+Note: I once added an index by hand on `tile_defs` only, and it is gone (the database has been flushed or recreated since). **Every collection now has a unique `id_unique` index on `id`**, in the real database and the sandbox (created with `make db-indexes` and `make sandbox-indexes`, section 6.3, [Infra 7]; checked by hand 2026-10-30). `_id` is still the real key and `id` is a legacy label filled in by hand. There is no base code to keep the indexes up to date in the way a migration file is used, so a recreated or reset database needs the make target run again.
 
 ### 3.5 Other
 
@@ -273,7 +273,7 @@ A second, disposable API + MongoDB that runs alongside the real one, so generate
 
 - `.env.sandbox` is created by hand (copy `.env`, then change `MONGO_DATABASE` and the Mongo credentials; the host in `MONGODB_URI` resolves inside the sandbox's own network, so `mongodb` works, but `rc_mongodb_sandbox` is preferred because it fails loudly instead of reaching real data if the API is ever attached to the wrong network). It must be git-ignored and is never read or committed by Claude.
 - Targets: `make sandbox-up`, `sandbox-down`, `sandbox-restart`, `sandbox-rc-restart` (rebuild the sandbox API only) and `sandbox-reset`. **`sandbox-reset` deletes the sandbox database volume** (`down -v` on the sandbox project only; it cannot touch the real volume). Confirm before every run.
-- The sandbox starts empty. Neither stack has a unique index on `id` (Known gap 3; see [Infra 7]), so duplicate-`id` cases are not caught in either. A backup of the real database can be restored into it (section 6.2).
+- The sandbox starts empty. Both stacks have the unique index on `id` (section 6.3), so a duplicate `id` returns `409` in either; after `sandbox-reset` run `make sandbox-indexes` again. A backup of the real database can be restored into it (section 6.2).
 - **Pointing things at it:** the MCP uses `RC_API_URL=http://localhost:8081`. The sandbox UI is `pnpm dev:sandbox` (in `frontend/`), on **:3001**, so it runs next to the normal `pnpm dev` on :3000. The script points it at the sandbox API (`NEXT_PUBLIC_API_URL=http://localhost:8081`) and gives it its own build folder, `.next-sandbox` (git-ignored; set through `NEXT_DIST_DIR` in `next.config.ts`), because Next allows only one `next dev` per folder.
 - **CORS for the second UI:** the API allows `localhost:3001` and `127.0.0.1:3001` as well as :3000. The list is still hard-coded in `server.go` (Known gap 6). After changing it, `make sandbox-rc-restart` rebuilds the sandbox API; the real API only picks it up on its next rebuild, and doesn't need it.
 - **`tsconfig.json`** lists `.next-sandbox/types` and `.next-sandbox/dev/types` in `include`. Next adds them itself the first time the sandbox UI starts (and reformats the whole file while doing so), so they're committed to keep it from rewriting the file.
@@ -317,7 +317,7 @@ make db-backup    # real database -> ~/databases/ragged-crown-tools/rc-<date>-<t
 - It runs `mongodump --archive --gzip` inside `rc_mongodb` and writes a dated BSON archive on the host, **outside the repo and outside the Docker volume**, so `docker compose down -v` cannot take it along. Override the folder with `BACKUP_DIR=...`. The archive is written as `*.partial` and renamed only if the dump succeeds.
 - Every run adds a new file. Nothing is pruned; the dumps are tiny. Deleting old ones is manual.
 - It dumps every database on the instance, not just `MONGO_DATABASE`.
-- BSON keeps types exactly (the `float64` note in section 3.5 round-trips unchanged) and includes index definitions. There are currently no indexes beyond `_id` to include.
+- BSON keeps types exactly (the `float64` note in section 3.5 round-trips unchanged) and includes index definitions, so the `id_unique` indexes (section 6.3) travel with a backup.
 - Backing up is read-only on the database. **Restoring is destructive; confirm every time**, and try it on the sandbox first, never first on real data.
 
 Restore into the sandbox (the sandbox must be up):
