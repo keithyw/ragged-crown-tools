@@ -41,6 +41,7 @@ const ZonePage = () => {
 	const deleteController = useDeleteRecord<StoredZone>({
 		collectionName: 'zones',
 		deleteFn: collectionService.delete,
+		referrerFn: collectionService.findReferrer,
 		onSuccess: refresh,
 		itemNameProp: 'name',
 	})
@@ -83,6 +84,8 @@ const ZonePage = () => {
 				isOpen={deleteController.isModalOpen}
 				onClose={deleteController.closeDeleteModal}
 				onConfirm={deleteController.handleDelete}
+				warning={deleteController.blockedMessage}
+				confirmDisabled={!deleteController.canDelete}
 				title='Delete Zone'
 				message={`Are you sure you want to delete ${deleteController.deleteItem?.name ?? 'this zone'}?`}
 				isDeleting={deleteController.isDeleting}

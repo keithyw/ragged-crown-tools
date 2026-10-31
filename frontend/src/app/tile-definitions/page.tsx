@@ -30,6 +30,7 @@ const TileDefinitionsPage = () => {
 	const deleteController = useDeleteRecord<StoredDoc<TileDef>>({
 		collectionName: 'tile_defs',
 		deleteFn: collectionService.delete,
+		referrerFn: collectionService.findReferrer,
 		onSuccess: refresh,
 		itemNameProp: 'name',
 	})
@@ -97,6 +98,8 @@ const TileDefinitionsPage = () => {
 				isOpen={deleteController.isModalOpen}
 				onClose={deleteController.closeDeleteModal}
 				onConfirm={deleteController.handleDelete}
+				warning={deleteController.blockedMessage}
+				confirmDisabled={!deleteController.canDelete}
 				title='Delete Tile Def'
 				message={`Are you sure you want to delete this tile?`}
 				isDeleting={deleteController.isDeleting}

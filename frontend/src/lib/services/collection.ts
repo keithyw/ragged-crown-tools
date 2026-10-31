@@ -7,6 +7,15 @@ export interface SaveResponse {
 
 export type StoredDoc<TData> = TData & { _id: string; updated_at: string }
 
+// The first document that points at another one (GET /references/...).
+// `id` is the user-facing label, absent when the referrer has none.
+export interface Referrer {
+	collection: string
+	_id: string
+	id?: string
+	name: string
+}
+
 // Mirrors the backend's list params. Filters are equality matches; an array
 // means "any of". Omit limit to get everything.
 export interface CollectionQuery {
@@ -26,6 +35,7 @@ interface CollectionService {
 		collectionName: string,
 		query?: CollectionQuery,
 	) => Promise<StoredDoc<TData>[]>
+	findReferrer: (collectionName: string, id: string) => Promise<Referrer | null>
 	get: <TData extends object>(
 		collectionName: string,
 		id: string,
@@ -71,6 +81,15 @@ export const collectionService: CollectionService = {
 			},
 		)
 		return res.data
+	},
+	findReferrer: async (
+		collectionName: string,
+		id: string,
+	): Promise<Referrer | null> => {
+		const res = await client.get<{ referencedBy: Referrer | null }>(
+			`/references/${collectionName}/${id}`,
+		)
+		return res.data.referencedBy
 	},
 	get: async <TData extends object>(
 		collectionName: string,

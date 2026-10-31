@@ -29,6 +29,7 @@ const SpritesPage = () => {
 	const deleteController = useDeleteRecord<StoredDoc<Sprite>>({
 		collectionName: 'sprites',
 		deleteFn: collectionService.delete,
+		referrerFn: collectionService.findReferrer,
 		onSuccess: refresh,
 		itemNameProp: 'name',
 	})
@@ -91,6 +92,8 @@ const SpritesPage = () => {
 				isOpen={deleteController.isModalOpen}
 				onClose={deleteController.closeDeleteModal}
 				onConfirm={deleteController.handleDelete}
+				warning={deleteController.blockedMessage}
+				confirmDisabled={!deleteController.canDelete}
 				title='Delete Sprite'
 				message={`Are you sure you want to delete this sprite?`}
 				isDeleting={deleteController.isDeleting}

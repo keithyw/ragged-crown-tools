@@ -30,6 +30,7 @@ const ItemDefinitionsPage = () => {
 	const deleteController = useDeleteRecord<StoredDoc<ItemDef>>({
 		collectionName: 'items',
 		deleteFn: collectionService.delete,
+		referrerFn: collectionService.findReferrer,
 		onSuccess: refresh,
 		itemNameProp: 'name',
 	})
@@ -97,6 +98,8 @@ const ItemDefinitionsPage = () => {
 				isOpen={deleteController.isModalOpen}
 				onClose={deleteController.closeDeleteModal}
 				onConfirm={deleteController.handleDelete}
+				warning={deleteController.blockedMessage}
+				confirmDisabled={!deleteController.canDelete}
 				title='Delete Item Def'
 				message={`Are you sure you want to delete this item?`}
 				isDeleting={deleteController.isDeleting}

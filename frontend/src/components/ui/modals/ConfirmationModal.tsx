@@ -46,6 +46,9 @@ interface ConfirmationModalProps
 	message: string
 	confirmButtonText?: string
 	cancelButtonText?: string
+	// Shown in red under the message. With confirmDisabled it explains why.
+	warning?: string | null
+	confirmDisabled?: boolean
 	onClose: () => void
 	onConfirm: () => void
 }
@@ -57,6 +60,8 @@ export const ConfirmationModal = ({
 	isDeleting,
 	confirmButtonText = 'Confirm',
 	cancelButtonText = 'Cancel',
+	warning,
+	confirmDisabled = false,
 	onClose,
 	onConfirm,
 }: ConfirmationModalProps) => {
@@ -76,11 +81,18 @@ export const ConfirmationModal = ({
 			</DialogTitle>
 			<div className='mt-2'>
 				<p className='text-sm text-gray-500'>{message}</p>
+				{warning && (
+					<p className='mt-2 text-sm font-medium text-red-600'>{warning}</p>
+				)}
 			</div>
 			<div className='mt-4 flex justify-end space-x-3'>
 				<button
 					type='button'
-					className={cn(confirmButtonVariants({ isDeleting }))}
+					className={cn(
+						confirmButtonVariants({ isDeleting }),
+						'disabled:cursor-not-allowed disabled:opacity-50',
+					)}
+					disabled={confirmDisabled}
 					onClick={onConfirm}
 					ref={confirmButtonRef}
 				>

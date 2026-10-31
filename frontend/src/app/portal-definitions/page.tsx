@@ -29,6 +29,7 @@ const PortalDefinitionsPage = () => {
 	const deleteController = useDeleteRecord<StoredDoc<PortalDef>>({
 		collectionName: 'entities',
 		deleteFn: collectionService.delete,
+		referrerFn: collectionService.findReferrer,
 		onSuccess: refresh,
 		itemNameProp: 'name',
 	})
@@ -96,6 +97,8 @@ const PortalDefinitionsPage = () => {
 				isOpen={deleteController.isModalOpen}
 				onClose={deleteController.closeDeleteModal}
 				onConfirm={deleteController.handleDelete}
+				warning={deleteController.blockedMessage}
+				confirmDisabled={!deleteController.canDelete}
 				title='Delete Portal Def'
 				message={`Are you sure you want to delete this portal?`}
 				isDeleting={deleteController.isDeleting}
