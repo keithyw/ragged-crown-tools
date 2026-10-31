@@ -79,6 +79,8 @@ interface ZoneBuilderProps {
 	cancelUrl: string
 	// Edit passes the saved zone to start from; Create passes nothing.
 	initialZone?: Zone
+	// The saved zone's _id (Edit only); a new zone has none to point at.
+	zoneId?: string
 	// Saves the assembled zone: Create POSTs it, Edit PUTs it. A thrown error is
 	// shown on the form.
 	onSave: (zone: Zone) => Promise<void>
@@ -88,6 +90,7 @@ export const ZoneBuilder = ({
 	breadcrumbs,
 	cancelUrl,
 	initialZone,
+	zoneId,
 	onSave,
 }: ZoneBuilderProps) => {
 	const {
@@ -152,10 +155,6 @@ export const ZoneBuilder = ({
 	} = useCollection<PortalDef>('entities', { filter: { kind: 'portal' } })
 	// Only names destinations, so a failed load doesn't block the builder.
 	const { items: zones } = useCollection<Zone>('zones')
-	const zoneNames = useMemo(
-		() => new Map(zones.map((z) => [z._id, `${z.name} (${z.id})`])),
-		[zones],
-	)
 	const isLoading =
 		tilesLoading || objectsLoading || itemsLoading || portalsLoading
 	const error = tilesError ?? objectsError ?? itemsError ?? portalsError
@@ -626,7 +625,18 @@ export const ZoneBuilder = ({
 				placedDefs={placedDefs}
 				items={itemChoices}
 				itemsLoading={itemsLoading}
-				zoneNames={zoneNames}
+				destinationPicker={{
+					zones,
+					thisZone: {
+						_id: zoneId,
+						name: initialZone?.name ?? 'This zone',
+						grid,
+						placements,
+						startingPosition,
+					},
+					tilesById,
+					placedDefs,
+				}}
 				onChange={(stack) => {
 					if (!selectedCell) return
 					setPlacements((prev) =>

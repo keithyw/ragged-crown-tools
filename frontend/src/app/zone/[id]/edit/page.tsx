@@ -43,6 +43,7 @@ const EditZonePage = () => {
 			breadcrumbs={[{ label: 'Zones', href: URLS.ZONE }, { label: zone.name }]}
 			cancelUrl={URLS.ZONE}
 			initialZone={zone}
+			zoneId={zone._id}
 			onSave={async (edited) => {
 				// PUT replaces the whole document, so start from the loaded one and
 				// overwrite only what the builder owns. edgeExits and any other fields

@@ -5,9 +5,11 @@ import {
 	Button,
 	ConfirmationModal,
 	CustomValueInput,
+	DestinationPickerModal,
 	ReorderableList,
 	SlideOverDrawer,
 	TileGlyph,
+	type DestinationPickerData,
 } from '@/components'
 import type { PlaceableDef } from '@/hooks'
 import {
@@ -40,8 +42,8 @@ interface StackDrawerProps {
 	placedDefs: ReadonlyMap<string, StackDef>
 	items: PlaceableDef[] // for item slots
 	itemsLoading: boolean
-	// Saved zones by _id, for naming a portal's destination.
-	zoneNames: ReadonlyMap<string, string>
+	// Zones and map data for naming a portal's destination and picking one.
+	destinationPicker: DestinationPickerData
 	// Gets the cell's whole stack after an edit, bottom to top.
 	onChange: (stack: Placement[]) => void
 	onClose: () => void
@@ -58,13 +60,14 @@ export const StackDrawer = ({
 	placedDefs,
 	items,
 	itemsLoading,
-	zoneNames,
+	destinationPicker,
 	onChange,
 	onClose,
 }: StackDrawerProps) => {
 	const topFirst = [...stack].reverse()
 	const [selectedUid, setSelectedUid] = useState<string | null>(null)
 	const [isConfirmOpen, setIsConfirmOpen] = useState(false)
+	const [isDestinationOpen, setIsDestinationOpen] = useState(false)
 	// Opening another cell, or reopening this one, starts with nothing selected.
 	const cellId = cell ? cellKey(cell.x, cell.y) : null
 	const [shownCell, setShownCell] = useState(cellId)
@@ -108,7 +111,12 @@ export const StackDrawer = ({
 		)
 
 	const describeDestination = (d: Destination) => {
-		const zone = zoneNames.get(d.zoneId) ?? '(missing zone)'
+		const z =
+			destinationPicker.zones.find((z) => z._id === d.zoneId) ??
+			(d.zoneId === destinationPicker.thisZone._id
+				? destinationPicker.thisZone
+				: undefined)
+		const zone = z ? z.name : '(missing zone)'
 		return d.pos
 			? `${zone}, x ${d.pos.x}, y ${d.pos.y}`
 			: `${zone}, at its start position`
@@ -186,12 +194,18 @@ export const StackDrawer = ({
 									: 'Not set'}
 							</p>
 							<div className='flex gap-2'>
-								{/* TODO: opens the destination picker (Tools: Portals 6). */}
-								<Button type='button' disabled>
-									Set destination
+								<Button
+									type='button'
+									actionType='edit'
+									onClick={() => setIsDestinationOpen(true)}
+								>
+									{selected.destination
+										? 'Change destination'
+										: 'Set destination'}
 								</Button>
 								<Button
 									type='button'
+									actionType='neutral'
 									disabled={!selected.destination}
 									onClick={() => setDestination(undefined)}
 								>
@@ -250,6 +264,16 @@ export const StackDrawer = ({
 				isDeleting={false}
 				onClose={() => setIsConfirmOpen(false)}
 				onConfirm={deleteSelected}
+			/>
+			<DestinationPickerModal
+				{...destinationPicker}
+				isOpen={isDestinationOpen}
+				initial={selected?.destination}
+				onClose={() => setIsDestinationOpen(false)}
+				onConfirm={(destination) => {
+					setDestination(destination)
+					setIsDestinationOpen(false)
+				}}
 			/>
 		</SlideOverDrawer>
 	)
