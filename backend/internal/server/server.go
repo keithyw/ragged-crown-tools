@@ -33,5 +33,10 @@ func NewServer(store database.Mongo, log *slog.Logger) http.Handler {
 		r.Post("/", h.Post)
 		r.Put("/{id}", h.Put)
 	})
+
+	r.Route("/references/{collection}", func(r chi.Router) {
+		r.Use(middleware.ValidateCollection)
+		r.Get("/{id}", h.GetReferrer)
+	})
 	return r
 }

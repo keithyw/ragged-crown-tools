@@ -27,6 +27,7 @@ type Repository interface {
 	GetByID(ctx context.Context, collName, id string) (bson.M, error)
 	Replace(ctx context.Context, collName, id string, doc bson.M) (bson.M, error)
 	Delete(ctx context.Context, collName, id string) error
+	FirstReferrer(ctx context.Context, collName, id string) (*Referrer, error)
 }
 
 type repository struct {

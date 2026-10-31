@@ -77,6 +77,7 @@ All entity access goes through one generic route group:
 | GET    | `/collection/{collection}/{id}` | GetByID | `200` document, `404`, or `400`    |
 | PUT    | `/collection/{collection}/{id}` | Put     | `200` the replaced document, `404` |
 | DELETE | `/collection/{collection}/{id}` | Delete  | `204` no body, `404`               |
+| GET    | `/references/{collection}/{id}` | GetReferrer | `200` `{"referencedBy": null}` or the first referrer, `400`, `404` |
 
 `{collection}` must be in the allow-list in `collection/middleware.go`; otherwise `404`. **This list is the one backend change needed for each new entity type.**
 
@@ -107,6 +108,14 @@ With no params it returns the whole collection, as before. The response body is 
 - `_id` is the exception: its values must be valid ObjectID hex and are converted, since they are stored as ObjectIDs.
 - `sort`, `limit` and `offset` are reserved, so a document field with one of those names can't be filtered on.
 - Bad params return `400` with `{"error": "invalid query: ..."}`.
+
+#### Reference check (`GET /references/{collection}/{id}`)
+
+Answers "does any other document point at this one?" so the frontend can warn before a delete ([Backend 5], [Tools 20]). It returns `{"referencedBy": null}` or `{"referencedBy": {"collection", "_id", "id", "name"}}`: the **first** referrer found, not a list. A malformed `id` is `400`; it does not check that the document exists.
+
+- **The backend knows the reference map** (`referenceSources` in `collection/references.go`): for each collection, which fields in which collections hold its `_id`s. This is a deliberate exception to the schema-less rule (section 10); it lists reference fields only. A schema that gains a reference field needs a line there, like the allow-list.
+- Direct references only, covered today: a def's `spriteId`, and the `itemId` / `defId` inside a def's interactions (HAS_ITEM, GIVE_ITEM, TAKE_ITEM, SPAWN).
+- **Not covered yet:** zones (`terrain`, `placements`). Until they are, `tile_defs`, `zones` and `events` always answer `null`, even for a tile a zone uses. Treat `null` as "no referrer among the covered fields", not "safe to delete".
 
 ### 3.2 Document identity
 
@@ -421,8 +430,13 @@ Not planned work. Notes from design discussions, kept as a reference point for w
 - **Player state in localStorage as a delta.** Store only what the player changed (completed event `_id`s, flags), keyed by zone `_id`, and apply it on top of the static exported data. Avoid copying whole zones into the browser: a copy would keep stale content after a re-export, while a delta picks up fixes automatically and keeps saves small. Stable `_id` keys are what make this work.
 - **Before any deploy: split reads from writes.** The generic `/collection/{collection}` API allows open PUT/DELETE and must not be exposed publicly as-is. Either deploy read-only routes for game content (or skip the API entirely via JSON export) and keep writes local, or put the tools behind a single admin credential.
 - **Player accounts are a separate concern** from protecting the tools: users, characters and saves are player-written data, likely in their own collections and routes, probably using a managed auth provider.
-- **Data integrity, content versions and migrations.** Definitions change while zones and saves still refer to them: a tile or item is deleted, a custom slot is ticked on a def after it was placed, a stat is renamed. This is one problem seen from several places. Notes only, nothing is planned or decided:
-  - **In the tools.** Known gap 9 and [Backend 5] (deleting a def that zones use). Its owner constraints still hold: no soft deletes, no "check the whole world" scan that blocks a delete, and eventually a backend step that runs when a delete happens (an event processor of some kind), since MongoDB has no foreign keys. [Tools 16] adds a second angle: a zone validated last week is not necessarily valid after one of its defs changes, so a saved "validated" state can go stale without the zone being touched.
+- **Data integrity, content versions and migrations.** Definitions change while zones and saves still refer to them: a tile or item is deleted, a custom slot is ticked on a def after it was placed, a stat is renamed. This is one problem seen from several places. Notes only, nothing is planned or decided except where marked:
+  - **In the tools.** Known gap 9 and [Backend 5]. The owner constraints still hold: no soft deletes, and no "check the whole world" scan that blocks a delete.
+    - **Decided 2026-10-30, for direct references** (a def's `spriteId`, and an interaction's `itemId` or SPAWN `defId`): a dedicated backend call ([Backend 5]) returns the first document that references a given `_id`. The delete modal calls it before deleting and warns, naming that one referrer ([Tools 20]); the MCP relays it as a read tool ([Infra 5]). It shows the first match only, with no count or list, so the designer deals with one thing at a time; deletes are meant to be a hassle. The DELETE route itself is unchanged for now.
+    - **The backend owns the reference map** (which collection and field hold an `_id` of which collection). This is a deliberate exception to the dumb store: the frontend shapes the data, but MongoDB holds it, so the backend is the place that protects it once it's in. The map lists reference fields only; there is no POST/PUT validation and no second copy of the schemas. Like the collection allow-list, it needs updating when a schema gains a reference field.
+    - **Not chosen:** the list filters (built for finding things, not for integrity, and they can't reach zones), and a separate store of all relationships (a second source of truth that can go stale). The earlier idea of an event processor on delete is dropped.
+    - **Zones are separate and still open.** `terrain` (nested arrays) and `placements` (dynamic `"x,y"` keys) need their own design; the [Backend 5] endpoint is where it would land.
+  - **Validation.** [Tools 16] adds a second angle: a zone validated last week is not necessarily valid after one of its defs changes, so a saved "validated" state can go stale without the zone being touched.
   - **If the game loads exported JSON** (see the first idea above) with player state in the browser, that state outlives the content it points at. It needs a **content/build version** stamped on the export and on every save, so the game can tell a save was made against older content and migrate it (or refuse it). Storing only a delta keyed by `_id` helps but doesn't remove the problem: a delta that names a placement `uid` or an interaction `id` that no longer exists is stale too.
   - **If the game runs client-server** with state in MongoDB, migrations run server-side next to the data. The schema-less store has no schema version to hang them on either, so the same version stamp is needed.
   - **Both routes need the same ingredients:** a version on content and on saves, stable ids (already there: `_id`, placement `uid`, interaction `id`), and a place for "when X changes, fix Y" (a migration, or an event on delete or update).
