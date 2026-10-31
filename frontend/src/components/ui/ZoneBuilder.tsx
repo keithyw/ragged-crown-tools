@@ -23,6 +23,7 @@ import {
 	ServerErrorMessages,
 	SpinnerSection,
 	StackDrawer,
+	NoticeModal,
 	TilePickerModal,
 	ToolPickerSection,
 	ZoneMapGrid,
@@ -130,6 +131,11 @@ export const ZoneBuilder = ({
 	const [isObjectPickerOpen, setIsObjectPickerOpen] = useState(false)
 	const [isItemPickerOpen, setIsItemPickerOpen] = useState(false)
 	const [isPortalPickerOpen, setIsPortalPickerOpen] = useState(false)
+	// The def the designer just tried to stack on itself.
+	const [duplicate, setDuplicate] = useState<{
+		name: string
+		isStackable: boolean
+	} | null>(null)
 	// The cell whose stack is open in the drawer.
 	const [selectedCell, setSelectedCell] = useState<Position | null>(null)
 	const [isStackOpen, setIsStackOpen] = useState(false)
@@ -182,7 +188,7 @@ export const ZoneBuilder = ({
 				kind: 'item' as const,
 				_id: i._id,
 				name: i.name,
-				stackable: i.stackable,
+				maxQuantity: i.maxQuantity,
 			})),
 		[items],
 	)
@@ -203,6 +209,7 @@ export const ZoneBuilder = ({
 			isObjectPickerOpen ||
 			isItemPickerOpen ||
 			isPortalPickerOpen ||
+			duplicate !== null ||
 			isStackOpen
 		)
 			return
@@ -217,11 +224,24 @@ export const ZoneBuilder = ({
 		isObjectPickerOpen,
 		isItemPickerOpen,
 		isPortalPickerOpen,
+		duplicate,
 		isStackOpen,
 	])
 
 	const handleCell = useCallback(
-		(x: number, y: number) => {
+		(x: number, y: number, isStrokeStart: boolean) => {
+			// A click gets a popup. A drag only crosses placed cells by overshooting,
+			// where a popup mid-stroke would be worse than the mistake, so it gets
+			// the quiet toast.
+			const warnDuplicate = (name: string, isStackable = false) => {
+				if (isStrokeStart) setDuplicate({ name, isStackable })
+				else {
+					// A fixed id makes a repeat replace this toast instead of piling up.
+					toast.error(`${name} is already on top of this cell.`, {
+						id: 'duplicate-placement',
+					})
+				}
+			}
 			if (tool === 'paint' && activeTileId) {
 				setGrid((prev) => (prev ? paintCell(prev, x, y, activeTileId) : prev))
 			} else if (tool === 'start') {
@@ -231,10 +251,7 @@ export const ZoneBuilder = ({
 			} else if (tool === 'object' && activeObject) {
 				const key = cellKey(x, y)
 				if (!canPlaceOnTop(placements, key, 'object', activeObject._id)) {
-					// A fixed id makes a repeat replace this toast instead of piling up.
-					toast.error(`${activeObject.name} is already on top of this cell.`, {
-						id: 'duplicate-placement',
-					})
+					warnDuplicate(activeObject.name)
 					return
 				}
 				setPlacements((prev) =>
@@ -245,23 +262,26 @@ export const ZoneBuilder = ({
 					}),
 				)
 			} else if (tool === 'item' && activeItem) {
-				// No duplicate check for items: the same item can go on a stack more
-				// than once (100 gold and 200 gold). A stackable item starts at
-				// quantity 1; changing it is for the stack manager (Tools 12).
+				const key = cellKey(x, y)
+				// Several of the same item are one placement with a quantity, not
+				// repeated clicks. An item with a maxQuantity starts at quantity 1; the stack
+				// drawer changes it.
+				if (!canPlaceOnTop(placements, key, 'item', activeItem._id)) {
+					warnDuplicate(activeItem.name, activeItem.maxQuantity !== undefined)
+					return
+				}
 				setPlacements((prev) =>
-					pushPlacement(prev, cellKey(x, y), {
+					pushPlacement(prev, key, {
 						uid: crypto.randomUUID(),
 						defKind: 'item',
 						defId: activeItem._id,
-						...(activeItem.stackable ? { quantity: 1 } : {}),
+						...(activeItem.maxQuantity !== undefined ? { quantity: 1 } : {}),
 					}),
 				)
 			} else if (tool === 'portal' && activePortal) {
 				const key = cellKey(x, y)
 				if (!canPlaceOnTop(placements, key, 'portal', activePortal._id)) {
-					toast.error(`${activePortal.name} is already on top of this cell.`, {
-						id: 'duplicate-placement',
-					})
+					warnDuplicate(activePortal.name)
 					return
 				}
 				// No destination yet: it is set in the stack drawer.
@@ -606,6 +626,12 @@ export const ZoneBuilder = ({
 				}}
 			/>
 
+			<NoticeModal
+				isOpen={duplicate !== null}
+				title='Already on top'
+				message={`${duplicate?.name} is already on top of this cell. Placing it again would only stack a copy on itself. ${duplicate?.isStackable ? "For several, open the cell's stack and set a quantity." : "Open the cell's stack to see what is there."}`}
+				onClose={() => setDuplicate(null)}
+			/>
 			<PortalPickerModal
 				isOpen={isPortalPickerOpen}
 				portals={portals}

@@ -25,7 +25,9 @@ interface ZoneMapGridProps {
 	startingPosition?: Position
 	// The cell whose stack is open, outlined.
 	selectedCell?: Position | null
-	onCellAction?: (x: number, y: number) => void
+	// isStrokeStart is true for the cell where the pointer went down (a click),
+	// false for cells a drag crosses afterwards.
+	onCellAction?: (x: number, y: number, isStrokeStart: boolean) => void
 	// Dragging applies the action to each cell crossed. When false, only the
 	// cell that was clicked gets it.
 	dragToApply?: boolean
@@ -51,8 +53,9 @@ export const ZoneMapGrid = ({
 		if (!cell || !onCellAction) return
 		const key = cellKey(cell.x, cell.y)
 		if (key === lastCell.current) return
+		const isStrokeStart = lastCell.current === null
 		lastCell.current = key
-		onCellAction(cell.x, cell.y)
+		onCellAction(cell.x, cell.y, isStrokeStart)
 	}
 
 	// The topmost placement is what's drawn; a cell with none shows its terrain.

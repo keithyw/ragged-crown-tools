@@ -8,6 +8,7 @@ import {
 	DestinationPickerModal,
 	ReorderableList,
 	SlideOverDrawer,
+	TextInput,
 	TileGlyph,
 	type DestinationPickerData,
 } from '@/components'
@@ -32,6 +33,7 @@ export interface StackDef {
 	glyph: Glyph
 	name: string
 	interactions?: Interaction[]
+	maxQuantity?: number // items: how many one placement can hold
 }
 
 interface StackDrawerProps {
@@ -98,6 +100,17 @@ export const StackDrawer = ({
 					: p,
 			),
 		)
+
+	// Only whole numbers from 1 are kept; anything else (a half-typed field)
+	// leaves the stored quantity alone.
+	const setQuantity = (value: string) => {
+		const n = Number(value)
+		if (!Number.isInteger(n) || n < 1) return
+		if (selectedDef?.maxQuantity && n > selectedDef.maxQuantity) return
+		onChange(
+			stack.map((p) => (p.uid === selectedUid ? { ...p, quantity: n } : p)),
+		)
+	}
 
 	// Clearing removes the key, so an unset destination is never stored as null.
 	const setDestination = (destination: Destination | undefined) =>
@@ -183,6 +196,21 @@ export const StackDrawer = ({
 							Delete
 						</Button>
 					</div>
+					{selected && selectedDef?.maxQuantity !== undefined && (
+						<section className='mt-6 border-t border-gray-200 pt-4'>
+							<TextInput
+								id='placement-quantity'
+								label={`How many ${selectedName}`}
+								type='number'
+								inputWidth='sm'
+								min={1}
+								max={selectedDef.maxQuantity}
+								step={1}
+								value={selected.quantity ?? 1}
+								onChange={(e) => setQuantity(e.target.value)}
+							/>
+						</section>
+					)}
 					{selected?.defKind === 'portal' && (
 						<section className='mt-6 border-t border-gray-200 pt-4'>
 							<h3 className='mb-3 text-sm font-bold text-gray-900'>

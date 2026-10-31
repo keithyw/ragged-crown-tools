@@ -297,7 +297,11 @@ export const objectDefSchema = baseDefSchema.extend({
 
 export const itemDefSchema = baseDefSchema.extend({
 	kind: z.literal('item'),
-	stackable: z.boolean(),
+	maxQuantity: z
+		.number()
+		.int()
+		.min(2, 'Leave blank for a single item, or enter 2 or more')
+		.optional(),
 	numberOfUses: z.number().int().min(1).optional(),
 	container: containerSpecSchema.optional(),
 	interactions: z.array(interactionSchema).optional(),

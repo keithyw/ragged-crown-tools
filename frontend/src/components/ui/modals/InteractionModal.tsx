@@ -272,7 +272,7 @@ const InteractionForm = ({
 									// is always shown.
 									if (
 										field.stackableOnly &&
-										!selectedItem?.stackable &&
+										selectedItem?.maxQuantity === undefined &&
 										condition.amount === 1
 									) {
 										return null
@@ -430,7 +430,7 @@ const InteractionForm = ({
 										raw === 1 &&
 										!items.find(
 											(d) => d._id === (action as { itemId?: string }).itemId,
-										)?.stackable
+										)?.maxQuantity === undefined
 									) {
 										return null
 									}

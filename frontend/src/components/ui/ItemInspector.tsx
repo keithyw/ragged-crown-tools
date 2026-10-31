@@ -15,7 +15,7 @@ export const ItemInspector = ({
 	onDelete,
 }: ItemInspectorProps) => {
 	const details = [
-		{ key: 'Stackable', val: item.stackable ? 'Yes' : 'No' },
+		{ key: 'Max quantity', val: item.maxQuantity?.toString() ?? 'One' },
 		{ key: 'Color', val: item.glyph.color },
 		{ key: 'Background', val: item.glyph.bg },
 		{ key: 'Uses', val: item.numberOfUses?.toString() ?? 'Unlimited' },

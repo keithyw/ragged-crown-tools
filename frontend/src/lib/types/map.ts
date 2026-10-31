@@ -52,7 +52,7 @@ export interface ObjectDef extends BaseDef {
 // Category (weapon, armor, ...) is deferred: see DATA-MODEL.md, open questions.
 export interface ItemDef extends BaseDef {
 	kind: 'item'
-	stackable: boolean
+	maxQuantity?: number // how many fit in one pile; absent = only one. Not numberOfUses
 	numberOfUses?: number // absent = unlimited
 	container?: ContainerSpec
 	interactions?: Interaction[] // on USE
@@ -87,7 +87,7 @@ export interface Placement {
 	uid: string // stable id for this instance (runtime state refers to it)
 	defKind: Kind // with defId, a composite key: kind says which collection
 	defId: string // the def's _id
-	quantity?: number // stackable items
+	quantity?: number // items with a maxQuantity
 	interactions?: Interaction[] // per-instance overrides, checked before the def's
 	contents?: Placement[] // containers; depth-limited
 	destination?: Destination // portals only

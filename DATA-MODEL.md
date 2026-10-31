@@ -64,7 +64,7 @@ The legacy category types that used to be in `map.ts` (`TileType`, `TileType2`, 
 | ---------- | ----------- | ------------------------------------------------------------------------------------ |
 | `terrain`  | `tile_defs` | Today's `TileDef` fields minus the glyph and `isConsumable`: `moveCost`, `isWalkable?`, `encounterRate?`, `encounterTableKey?` |
 | `object`   | `entities`  | `isSolid`, `moveCost?` (spaces only, default 1), `numberOfUses?`, `container?`, `interactions?` |
-| `item`     | `items`     | `stackable`, `numberOfUses?`, `container?`, `interactions?` (reserved for item use, deferred). More as the inventory design settles; `category` is deferred |
+| `item`     | `items`     | `maxQuantity?`, `numberOfUses?`, `container?`, `interactions?` (reserved for item use, deferred). More as the inventory design settles; `category` is deferred |
 | `creature` | `entities`  | Stub for now. Used by random encounters, not placed on the map                       |
 | `portal`   | `entities`  | `twoWay`, `interactions?`: always walkable; its destination is set per placement     |
 
@@ -98,6 +98,8 @@ Entering a town, castle or dungeon normally lands the player on its `startingPos
 **Terrain has no interactions.** Its only behavior beyond movement is the chance of a random encounter, from its `encounterRate` and an encounter table chosen by the region's difficulty (zone `dangerLevel`) and the terrain. A dirt road in a low-level zone gives rats, deer or goblins; the same road in Hell gives demons.
 
 **Uses (`numberOfUses`, name provisional).** Replaces `isConsumable`. How many times an object or item can be used before it disappears; absent means unlimited. Examples: a wheat field (Ultima 5) is used once, disappears, and gives 1 food; a torch is consumed when used; a wand has charges; a healing fountain has N uses. This is the lifetime of the **thing**; an interaction's `limit` (section 4.2) is the lifetime of one **interaction**. Remaining uses are runtime/save state, never zone data.
+
+**Max quantity (`maxQuantity`, items only; owner, 2026-10-31).** Replaces the `stackable` flag. How many of the item fit in one pile: gold, a quiver of arrows, a thief's lockpicks, throwing spears. Absent means only one. This is not `numberOfUses`: a wand with 100 charges is one thing with 100 uses, while 100 arrows are 100 things in one pile. Whole number, 2 or more. What the game does with an overflow (a second pile) is the inventory's decision. Existing items stored with `stackable: false` need no migration: that reads as no `maxQuantity`.
 
 ### 1.4 Spaces and objects (ACS mapping)
 
@@ -135,7 +137,7 @@ interface ContainerSpec {
 - Depth is a size question, so **each container def sets its own `maxDepth`**, counting itself. The corpse above needs 3 (corpse, chest, bag). `maxDepth` absent, 0 or 1 means it cannot hold other containers; there is no separate `allowNested` flag.
 - `MAX_CONTAINER_DEPTH = 3` is the overall ceiling, enforced by both the tools and the engine. Raise it if a real case needs more.
 - A Bag of Holding style container is just one with its own capacity.
-- When the player uses a container, its contents are shown in stack order, with identical stackable items grouped ("4 spears").
+- When the player uses a container, its contents are shown in stack order, with identical items grouped ("4 spears").
 
 ---
 
@@ -188,7 +190,7 @@ interface Placement {
 	uid: string // generated; stable id for this instance
 	defKind: Kind // with defId, a composite key: kind says which collection
 	defId: string // the def's _id
-	quantity?: number // for stackable items: "4 spears", not four rows
+	quantity?: number // items with a maxQuantity: "4 spears", not four rows
 	interactions?: Interaction[] // per-instance overrides (section 4)
 	contents?: Placement[] // for containers; nested, depth-limited
 	destination?: Destination // portals only; required for a valid map
@@ -202,7 +204,7 @@ A def is like a **class** and a placement like an **instance** of it (owner, 202
 
 `uid` exists so runtime state (an interaction fired once, a placement removed) can refer to this instance without mutating zone data.
 
-A stack may hold the same **stackable item** more than once, each its own placement with its own `quantity` (for example 100 gold and 200 gold, which random amounts will produce). The tools place a stackable item with `quantity: 1` and change it afterwards in the stack manager, not while placing. Objects and spaces are different: the same def can't go directly on top of itself.
+The same def can't go directly on top of itself, whatever its kind: the builder refuses it with a popup (owner, 2026-10-31). Several of one item are one placement with a `quantity` ("4 spears"), up to the def's `maxQuantity`. The tools place such an item with `quantity: 1` and change it afterwards in the stack drawer, not while placing. Repeats further down a stack are allowed and not checked; the stack drawer is where a duplicate is found and removed.
 
 ---
 
@@ -257,7 +259,7 @@ Interactions can be **unlimited** (a generic NPC's "Hello and welcome to town X"
 
 - **All of an interaction's conditions must pass.** There is no "or" yet (see Open questions).
 - `HAS_ITEM` only **checks**: the item stays with the player. A reusable password item that several guards ask for uses `HAS_ITEM` alone. A key that is used up pairs it with a `TAKE_ITEM` action.
-- `amount` defaults to 1. The editor only offers it when the chosen item is `stackable` (keys, arrows, torches), since a non-stackable item is always 1.
+- `amount` defaults to 1. The editor only offers it when the chosen item has a `maxQuantity` (keys, arrows, torches), since an item without one is always 1.
 
 ### 4.4 Initial actions
 
@@ -380,7 +382,7 @@ Zone JSON is the **initial state only**. When a game starts, the player gets a r
   - Variants (sword vs long sword, chain mail vs elven chain mail +5) are extra attributes on an item, not an inheritance hierarchy. An armor item might carry a location (helmet, boots, ...) while staying in the armor category.
   - The item builder may grow one form per category, with shared fields (weight, sale value) in common.
   - Character skills (a "swords" skill covering all swords) come later; AD&D-style specialization is not decided.
-- **Gold and currency.** Deferred. Undecided whether currency is a pooled resource, a per-character stat, or an inventory item with weight, and whether the party can split across locations. `GIVE_CURRENCY` is a placeholder action until then, and gold can be a plain stackable item meanwhile.
+- **Gold and currency.** Deferred. Undecided whether currency is a pooled resource, a per-character stat, or an inventory item with weight, and whether the party can split across locations. `GIVE_CURRENCY` is a placeholder action until then, and gold can be a plain item with a large `maxQuantity` meanwhile.
 - **Item use.** What using an item does (a wand casting a spell; thieves' tools used on an NPC to get gold) and how it is described. Probably the same Interaction shape with `on: USE`, with conditions (a pickpocket check against the character's skill percentage) and a limit on uses (99, or 1d100). That is why `ItemDef.interactions` stays. Deferred; not part of the object interactions work.
 - **Portal rules.** `twoWay` exists on the def but is unused for now (section 1.3), and a key requirement is a `HAS_ITEM` condition on the def's `WALK` interaction. Still open: single use, blocking the player, and where those live in the data. Designed with the portals ([Tools: Portals 1]) when the first interior building is built.
 - **Boolean logic and branching in conditions.** Today all conditions must pass (AND). Out of scope for the current milestones, so nothing is implemented:

@@ -21,7 +21,6 @@ const EditItemDefinitionPage = () => {
 			id: '',
 			name: '',
 			glyph: { symbol: '', color: '', bg: '' },
-			stackable: false,
 			container: { capacity: 0, maxDepth: 0 },
 			description: '',
 		},
@@ -40,7 +39,7 @@ const EditItemDefinitionPage = () => {
 				description: i.description,
 				glyph: i.glyph,
 				spriteId: i.spriteId,
-				stackable: i.stackable,
+				maxQuantity: i.maxQuantity,
 				numberOfUses: i.numberOfUses,
 				container: {
 					capacity: i.container?.capacity ?? 0,

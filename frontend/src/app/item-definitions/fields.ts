@@ -25,9 +25,11 @@ export const fields: FormField<ItemDefinitionFormData>[] = [
 	},
 	...glyphFields<ItemDefinitionFormData>(),
 	{
-		name: 'stackable',
-		label: 'Is Stackable (shown as "4 spears", not four rows)',
-		type: 'checkbox',
+		name: 'maxQuantity',
+		label: 'Max Quantity (blank = only one; "4 spears", 99 gold)',
+		type: 'number',
+		inputWidth: 'xs',
+		inputAttrs: { min: 2, step: 1 },
 	},
 	{
 		name: 'numberOfUses',

@@ -31,7 +31,7 @@ interface ItemChipPickerProps {
 }
 
 // Picks any number of distinct items: type to find one, it becomes a chip, and
-// the chip's X removes it. A stackable item's chip carries an amount. It knows
+// the chip's X removes it. An item with a maxQuantity's chip carries an amount. It knows
 // nothing about conditions or actions, so any "needs these items" field can use
 // it.
 export const ItemChipPicker = ({
@@ -115,7 +115,7 @@ export const ItemChipPicker = ({
 						const name = isLoading ? '...' : (item?.name ?? '(missing)')
 						// An amount other than 1 is always shown, so stored data is
 						// never hidden (a def that is gone or still loading).
-						const showAmount = item?.stackable || v.amount !== 1
+						const showAmount = item?.maxQuantity !== undefined || v.amount !== 1
 						return (
 							<Chip key={v.itemId} chipType='primary' className='gap-1'>
 								{name}

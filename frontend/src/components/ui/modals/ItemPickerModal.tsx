@@ -27,6 +27,6 @@ export const ItemPickerModal = ({
 		selectedId={selectedId}
 		onClose={onClose}
 		onSelect={onSelect}
-		tag={(i) => (i.stackable ? 'Stackable' : '')}
+		tag={(i) => (i.maxQuantity !== undefined ? `Up to ${i.maxQuantity}` : '')}
 	/>
 )

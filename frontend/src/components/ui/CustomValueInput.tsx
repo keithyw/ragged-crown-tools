@@ -45,9 +45,10 @@ export const CustomValueInput = ({
 			const type = slot.type
 			const current = value?.type === type ? value : undefined
 			const item = items.find((i) => i._id === current?.itemId)
-			// Only a stackable item has an amount (DATA-MODEL.md 4.3). A stored
+			// Only an item with a maxQuantity has an amount (DATA-MODEL.md 4.3). A stored
 			// amount is still shown, so stored data is never hidden.
-			const showAmount = item?.stackable || current?.amount !== undefined
+			const showAmount =
+				item?.maxQuantity !== undefined || current?.amount !== undefined
 			return (
 				<div className='mb-4 rounded border border-gray-200 bg-gray-50 p-3'>
 					<ItemCombobox
@@ -56,12 +57,13 @@ export const CustomValueInput = ({
 						items={items}
 						isLoading={itemsLoading}
 						selectedId={current?.itemId ?? ''}
-						// A non-stackable item is always 1, so its amount is dropped.
+						// A single-quantity item is always 1, so its amount is dropped.
 						onSelect={(i) =>
 							onChange({
 								type,
 								itemId: i._id,
-								amount: i.stackable ? current?.amount : undefined,
+								amount:
+									i.maxQuantity !== undefined ? current?.amount : undefined,
 							})
 						}
 					/>
