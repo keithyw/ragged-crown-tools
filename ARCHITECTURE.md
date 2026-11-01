@@ -111,11 +111,11 @@ With no params it returns the whole collection, as before. The response body is 
 
 #### Reference check (`GET /references/{collection}/{id}`)
 
-Answers "does any other document point at this one?" so the frontend can warn before a delete ([Backend 5], [Tools 20]). It returns `{"referencedBy": null}` or `{"referencedBy": {"collection", "_id", "id", "name"}}`: the **first** referrer found, not a list. A malformed `id` is `400`; it does not check that the document exists.
+Answers "does any other document point at this one?" so the frontend can warn before a delete ([Backend 5], [Tools 20]). It returns `{"referencedBy": null}` or `{"referencedBy": {"collection", "_id", "id", "name"}}` (plus `cell`, `"x,y"`, when a zone's placement stack is the referrer)`: the **first** referrer found, not a list. A malformed `id` is `400`; it does not check that the document exists.
 
 - **The backend knows the reference map** (`referenceSources` in `collection/references.go`): for each collection, which fields in which collections hold its `_id`s. This is a deliberate exception to the schema-less rule (section 10); it lists reference fields only. A schema that gains a reference field needs a line there, like the allow-list.
-- Direct references only, covered today: a def's `spriteId`; the `itemId` / `defId` inside a def's interactions (HAS_ITEM, GIVE_ITEM, TAKE_ITEM, SPAWN); and a tile def painted into a zone's `terrain` (a custom query, since plain equality only looks one array level deep).
-- **Not covered yet:** what a zone's `placements` point at ([Backend 8], [Backend 9]) and zones that other zones' portals lead to ([Backend 10]). Until then an object, item or portal def that is placed in a zone, and a zone that a portal points to, answer `null` even when used, and so do `zones` and `events`. Treat `null` as "no referrer among the covered fields", not "safe to delete".
+- Direct references only, covered today: a def's `spriteId`; the `itemId` / `defId` inside a def's interactions (HAS_ITEM, GIVE_ITEM, TAKE_ITEM, SPAWN); and a tile def painted into a zone's `terrain` (a custom query, since plain equality only looks one array level deep); and an object, item or portal def placed in a zone (`placedTargets` in `references.go`). Placements are keyed by dynamic `"x,y"` cells, which a query path can't name, so the backend loads the zones and searches each cell's placements for the `_id` string at any depth (stack, `contents`, `customValues`). It is checked after the field sources above.
+- **Not covered yet:** zones that other zones' portals lead to ([Backend 10]); a zone that a portal points to answers `null` even when used, and so do `zones` and `events`. Treat `null` as "no referrer among the covered fields", not "safe to delete".
 
 ### 3.2 Document identity
 

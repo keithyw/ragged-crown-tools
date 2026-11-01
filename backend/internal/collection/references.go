@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
+	"sort"
 
 	"github.com/go-chi/chi/v5"
 	"go.mongodb.org/mongo-driver/bson"
@@ -25,9 +26,9 @@ type refSource struct {
 // Direct references only. Adding a reference field to a schema? Add it here
 // (DATA-MODEL.md, [Backend 5]).
 //
-// Not covered yet, so they report no referrers even when used: zones, events,
-// and anything a zone's placements point at (objects, items and portals placed
-// on the map: [Backend 8], [Backend 9], [Backend 10]).
+// Not covered yet, so they report no referrers even when used: zones (portal
+// destinations, [Backend 10]) and events. Items and entities placed in a zone
+// are found by a scan of the placements, not by this map ([Backend 8]).
 var referenceSources = map[string][]refSource{
 	"tile_defs": {
 		{"zones", "terrain"},
@@ -71,12 +72,91 @@ func (s refSource) filter(id string) bson.M {
 	return bson.M{s.Field: id}
 }
 
-// Referrer is the first document found that points at the target.
+// Targets that zones place on the map. A zone's placements are keyed by
+// dynamic "x,y" cells, which a query path can't name, so these are found by
+// walking the zones in Go instead (see placementReferrer).
+var placedTargets = map[string]bool{
+	"items":    true,
+	"entities": true,
+}
+
+// containsID reports whether the string id appears anywhere inside v, however
+// deeply nested. It is deliberately not path-aware: an _id is 24 hex
+// characters, so a match that is not a reference is practically impossible,
+// and this covers stacks, contents and custom values alike ([Backend 9]).
+func containsID(v any, id string) bool {
+	switch x := v.(type) {
+	case string:
+		return x == id
+	case bson.M:
+		for _, e := range x {
+			if containsID(e, id) {
+				return true
+			}
+		}
+	case bson.D:
+		for _, e := range x {
+			if containsID(e.Value, id) {
+				return true
+			}
+		}
+	case bson.A:
+		for _, e := range x {
+			if containsID(e, id) {
+				return true
+			}
+		}
+	}
+	return false
+}
+
+// placementReferrer returns the first zone with `id` anywhere in a cell's
+// placements, and that cell's key ("x,y"), or nil if none.
+func (r *repository) placementReferrer(ctx context.Context, id string) (*Referrer, error) {
+	cur, err := r.db.Collection("zones").Find(ctx, bson.M{},
+		options.Find().SetProjection(bson.M{"name": 1, "id": 1, "placements": 1}))
+	if err != nil {
+		return nil, fmt.Errorf("scan zone placements for %s: %w", id, err)
+	}
+	defer cur.Close(ctx)
+
+	for cur.Next(ctx) {
+		var zone struct {
+			Referrer   `bson:",inline"`
+			Placements bson.M `bson:"placements"`
+		}
+		if err := cur.Decode(&zone); err != nil {
+			return nil, fmt.Errorf("scan zone placements for %s: %w", id, err)
+		}
+		// Sorted so the same zone always reports the same cell.
+		cells := make([]string, 0, len(zone.Placements))
+		for cell := range zone.Placements {
+			cells = append(cells, cell)
+		}
+		sort.Strings(cells)
+		for _, cell := range cells {
+			if containsID(zone.Placements[cell], id) {
+				ref := zone.Referrer
+				ref.Collection = "zones"
+				ref.Cell = cell
+				return &ref, nil
+			}
+		}
+	}
+	if err := cur.Err(); err != nil {
+		return nil, fmt.Errorf("scan zone placements for %s: %w", id, err)
+	}
+	return nil, nil
+}
+
+// Referrer is the first document found that points at the target. Cell is set
+// when the referrer is a zone and the reference sits in a placement stack.
 type Referrer struct {
 	Collection string             `json:"collection"`
 	ID         primitive.ObjectID `json:"_id" bson:"_id"`
 	UserID     string             `json:"id,omitempty" bson:"id"`
 	Name       string             `json:"name" bson:"name"`
+	Cell       string             `json:"cell,omitempty" bson:"-"`
 }
 
 // FirstReferrer returns the first document that references the document `id`
@@ -102,6 +182,9 @@ func (r *repository) FirstReferrer(ctx context.Context, collName, id string) (*R
 		}
 		ref.Collection = src.Collection
 		return &ref, nil
+	}
+	if placedTargets[collName] {
+		return r.placementReferrer(ctx, id)
 	}
 	return nil, nil
 }

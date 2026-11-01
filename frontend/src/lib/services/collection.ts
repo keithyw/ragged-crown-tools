@@ -14,6 +14,7 @@ export interface Referrer {
 	_id: string
 	id?: string
 	name: string
+	cell?: string // "x,y": set when a zone references it from a placement stack
 }
 
 // Mirrors the backend's list params. Filters are equality matches; an array

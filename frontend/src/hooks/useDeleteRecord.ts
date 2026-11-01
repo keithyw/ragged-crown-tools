@@ -68,7 +68,8 @@ export function useDeleteRecord<T extends { _id: string }>({
 		const label = referrer.id
 			? `${referrer.name} (${referrer.id})`
 			: referrer.name
-		blockedMessage = `Used by ${label}. Remove that reference first, then delete this.`
+		const where = referrer.cell ? ` at ${referrer.cell}` : ''
+		blockedMessage = `Used by ${label}${where}. Remove that reference first, then delete this.`
 	} else if (checkFailed) {
 		blockedMessage =
 			"Couldn't check whether this is still in use. Close this and try again."
