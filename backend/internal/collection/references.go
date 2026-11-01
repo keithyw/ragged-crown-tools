@@ -25,9 +25,13 @@ type refSource struct {
 // Direct references only. Adding a reference field to a schema? Add it here
 // (DATA-MODEL.md, [Backend 5]).
 //
-// Not covered yet, so they report no referrers even when used: tile_defs and
-// zones (referenced by zones' terrain and placements) and events.
+// Not covered yet, so they report no referrers even when used: zones, events,
+// and anything a zone's placements point at (objects, items and portals placed
+// on the map: [Backend 8], [Backend 9], [Backend 10]).
 var referenceSources = map[string][]refSource{
+	"tile_defs": {
+		{"zones", "terrain"},
+	},
 	"sprites": {
 		{"tile_defs", "spriteId"},
 		{"items", "spriteId"},
@@ -48,6 +52,23 @@ var referenceSources = map[string][]refSource{
 		{"items", "interactions.actions.defId"},
 		{"entities", "interactions.actions.defId"},
 	},
+}
+
+// A source is matched by plain equality on its Field unless it is listed here.
+// Equality only looks one array level deep, which is not enough for fields
+// that hold arrays of arrays.
+var customFilters = map[refSource]func(id string) bson.M{
+	// terrain is rows of tile _ids, [y][x]: some row has a cell equal to id.
+	{"zones", "terrain"}: func(id string) bson.M {
+		return bson.M{"terrain": bson.M{"$elemMatch": bson.M{"$elemMatch": bson.M{"$eq": id}}}}
+	},
+}
+
+func (s refSource) filter(id string) bson.M {
+	if f, ok := customFilters[s]; ok {
+		return f(id)
+	}
+	return bson.M{s.Field: id}
 }
 
 // Referrer is the first document found that points at the target.
@@ -71,7 +92,7 @@ func (r *repository) FirstReferrer(ctx context.Context, collName, id string) (*R
 	for _, src := range referenceSources[collName] {
 		var ref Referrer
 		err := r.db.Collection(src.Collection).
-			FindOne(ctx, bson.M{src.Field: id}, projection).
+			FindOne(ctx, src.filter(id), projection).
 			Decode(&ref)
 		if errors.Is(err, mongo.ErrNoDocuments) {
 			continue

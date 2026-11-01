@@ -114,8 +114,8 @@ With no params it returns the whole collection, as before. The response body is 
 Answers "does any other document point at this one?" so the frontend can warn before a delete ([Backend 5], [Tools 20]). It returns `{"referencedBy": null}` or `{"referencedBy": {"collection", "_id", "id", "name"}}`: the **first** referrer found, not a list. A malformed `id` is `400`; it does not check that the document exists.
 
 - **The backend knows the reference map** (`referenceSources` in `collection/references.go`): for each collection, which fields in which collections hold its `_id`s. This is a deliberate exception to the schema-less rule (section 10); it lists reference fields only. A schema that gains a reference field needs a line there, like the allow-list.
-- Direct references only, covered today: a def's `spriteId`, and the `itemId` / `defId` inside a def's interactions (HAS_ITEM, GIVE_ITEM, TAKE_ITEM, SPAWN).
-- **Not covered yet:** zones (`terrain`, `placements`). Until they are, `tile_defs`, `zones` and `events` always answer `null`, even for a tile a zone uses. Treat `null` as "no referrer among the covered fields", not "safe to delete".
+- Direct references only, covered today: a def's `spriteId`; the `itemId` / `defId` inside a def's interactions (HAS_ITEM, GIVE_ITEM, TAKE_ITEM, SPAWN); and a tile def painted into a zone's `terrain` (a custom query, since plain equality only looks one array level deep).
+- **Not covered yet:** what a zone's `placements` point at ([Backend 8], [Backend 9]) and zones that other zones' portals lead to ([Backend 10]). Until then an object, item or portal def that is placed in a zone, and a zone that a portal points to, answer `null` even when used, and so do `zones` and `events`. Treat `null` as "no referrer among the covered fields", not "safe to delete".
 
 ### 3.2 Document identity
 
