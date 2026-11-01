@@ -192,6 +192,32 @@ server.registerTool(
 	},
 )
 
+server.registerTool(
+	'find_references',
+	{
+		description:
+			'Find the first document that points at another one, by its Mongo ' +
+			'_id (GET /references/{collection}/{_id}). Returns referencedBy: null ' +
+			'or {collection, _id, id, name, cell?}. Only the first referrer is ' +
+			'reported. null does NOT mean safe to delete: it means no referrer ' +
+			'among the fields the backend knows about. Not covered: zone ' +
+			'edgeExits and events.',
+		inputSchema: {
+			collection,
+			_id: z.string().regex(/^[0-9a-f]{24}$/i, 'Expected 24 hex characters'),
+		},
+		annotations: { readOnlyHint: true },
+	},
+	async ({ collection, _id }) => {
+		try {
+			const res = await apiGet(`/references/${collection}/${_id}`)
+			return ok(await res.json())
+		} catch (e) {
+			return fail((e as Error).message)
+		}
+	},
+)
+
 // Writes. Meant for the sandbox only: the dev server's copy of this tool is
 // blocked by a deny rule in .claude/settings.json, not by anything in here.
 server.registerTool(

@@ -297,6 +297,7 @@ A small local tool that lets Claude read the data in the database through the AP
 | ----------------- | ------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------- |
 | `list_collection` | `GET /collection/{collection}`       | Optional `filters` (string equality, array = "any of"), `sort`, `limit`, `offset`. Returns `total` (from `X-Total-Count`), `returned`, `items`. |
 | `get_doc`         | `GET /collection/{collection}/{_id}` | Takes the Mongo `_id` (24 hex characters), not the user-facing `id`.                                                                            |
+| `find_references` | `GET /references/{collection}/{_id}` | The first document that points at this one, or `referencedBy: null` (section 3.1). `null` is not "safe to delete". Read-only, works on both stacks. |
 | `create_doc`      | `POST /collection/{collection}`      | Create only. Sandbox only. Validated (see below). Errors such as `409` for a duplicate `id` come back readable.                                 |
 | `replace_doc`     | `PUT /collection/{collection}/{_id}` | **Replaces the whole document** (Known gap 1): send the full document, normally from `get_doc`. Sandbox only. Validated (see below).            |
 
