@@ -26,9 +26,9 @@ type refSource struct {
 // Direct references only. Adding a reference field to a schema? Add it here
 // (DATA-MODEL.md, [Backend 5]).
 //
-// Not covered yet, so they report no referrers even when used: zones (portal
-// destinations, [Backend 10]) and events. Items and entities placed in a zone
-// are found by a scan of the placements, not by this map ([Backend 8]).
+// Not covered yet, so they report no referrers even when used: events, and
+// zones' edgeExits. What zones' placements point at is found by a scan of the
+// placements, not by this map ([Backend 8], [Backend 10]).
 var referenceSources = map[string][]refSource{
 	"tile_defs": {
 		{"zones", "terrain"},
@@ -53,6 +53,13 @@ var referenceSources = map[string][]refSource{
 		{"items", "interactions.actions.defId"},
 		{"entities", "interactions.actions.defId"},
 	},
+	"zones": {
+		// TELEPORT actions on a def (the editor doesn't offer them yet). Portal
+		// destinations and TELEPORTs on placements are found by the placement
+		// scan below. edgeExits are not covered: the schema doesn't have them yet.
+		{"items", "interactions.actions.destination.zoneId"},
+		{"entities", "interactions.actions.destination.zoneId"},
+	},
 }
 
 // A source is matched by plain equality on its Field unless it is listed here.
@@ -72,12 +79,14 @@ func (s refSource) filter(id string) bson.M {
 	return bson.M{s.Field: id}
 }
 
-// Targets that zones place on the map. A zone's placements are keyed by
-// dynamic "x,y" cells, which a query path can't name, so these are found by
-// walking the zones in Go instead (see placementReferrer).
+// Targets that zones' placements point at: defs placed on the map, and zones
+// that portals lead to. A zone's placements are keyed by dynamic "x,y" cells,
+// which a query path can't name, so these are found by walking the zones in Go
+// instead (see placementReferrer).
 var placedTargets = map[string]bool{
 	"items":    true,
 	"entities": true,
+	"zones":    true,
 }
 
 // containsID reports whether the string id appears anywhere inside v, however
@@ -111,9 +120,19 @@ func containsID(v any, id string) bool {
 }
 
 // placementReferrer returns the first zone with `id` anywhere in a cell's
-// placements, and that cell's key ("x,y"), or nil if none.
-func (r *repository) placementReferrer(ctx context.Context, id string) (*Referrer, error) {
-	cur, err := r.db.Collection("zones").Find(ctx, bson.M{},
+// placements, and that cell's key ("x,y"), or nil if none. When the target is
+// itself a zone it is left out: a portal may lead to a spot in its own zone,
+// and that must not block deleting it.
+func (r *repository) placementReferrer(ctx context.Context, collName, id string) (*Referrer, error) {
+	filter := bson.M{}
+	if collName == "zones" {
+		oid, err := parseID(id)
+		if err != nil {
+			return nil, err
+		}
+		filter["_id"] = bson.M{"$ne": oid}
+	}
+	cur, err := r.db.Collection("zones").Find(ctx, filter,
 		options.Find().SetProjection(bson.M{"name": 1, "id": 1, "placements": 1}))
 	if err != nil {
 		return nil, fmt.Errorf("scan zone placements for %s: %w", id, err)
@@ -184,7 +203,7 @@ func (r *repository) FirstReferrer(ctx context.Context, collName, id string) (*R
 		return &ref, nil
 	}
 	if placedTargets[collName] {
-		return r.placementReferrer(ctx, id)
+		return r.placementReferrer(ctx, collName, id)
 	}
 	return nil, nil
 }
