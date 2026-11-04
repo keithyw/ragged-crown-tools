@@ -50,17 +50,28 @@ Shown when there is no sprite, and the backfill when a sprite is missing, so it 
 
 ## Sprites
 
-A sprite is optional. If the owner wants one (or you propose one and they agree), make it first with the sprites skill, category `terrain`, then read its `_id` from the create result and set it as `spriteId`. The MCP checks that sprite exists and is a terrain sprite, and refuses the tile otherwise. Ask before drawing: it is the expensive part.
+Every new tile gets a sprite (owner, 2026-11-04). The MCP checks the sprite exists and is a terrain sprite, and refuses the tile otherwise. For each tile:
+
+1. **Look for a suitable existing sprite** first, on both servers (names only; the full documents are long):
+   ```bash
+   for p in 8080 8081; do curl -s "localhost:$p/collection/sprites?category=terrain" | node -e 'let s="";process.stdin.on("data",d=>s+=d).on("end",()=>console.log(JSON.parse(s).map(d=>d.id+" ("+d.name+")").join(", ")))'; done
+   ```
+   Suitable means it really is that ground, not merely close. Reusing one is fine; say which and why. Use that sprite's `_id` from the server you are writing to (the sandbox).
+2. **Otherwise draw a new one** with the sprites skill, category `terrain`, and read its `_id` from the create result.
+3. **Stop and have the owner approve the sprites in the sandbox UI before creating any tile.** Redo one that isn't approved (same `id`) and ask again. Only then create the tile with `spriteId`.
+
+If the owner says a tile needs no sprite, leave `spriteId` out.
 
 ## Batches
 
 Terrain isn't capped, but the same discipline applies (Skills 12):
 
-1. Read the existing terrain, then **propose first**: a table of `id`, name, `moveCost`, `encounterRate`, walkable, and a one-line reason it is needed. Reuse an existing tile rather than a near copy.
-2. Wait for the owner to approve or trim the table. Then create exactly that list.
-3. Report the `id`s in the same order, with any choices or doubts. Review is in the sandbox UI (`pnpm dev:sandbox` in `frontend/`, on :3001, tile definitions page).
+1. Read the existing terrain, then **propose first**: a table of `id`, name, `moveCost`, `encounterRate`, walkable, the sprite (reuse an existing one, new, or none), and a one-line reason it is needed. Reuse an existing tile rather than a near copy.
+2. Wait for the owner to approve or trim the table. Then follow the Sprites steps: create the new sprites and stop for their review.
+3. After the sprites are approved, create exactly the approved list of tiles.
+4. Report the `id`s in the same order, with any choices or doubts. Review is in the sandbox UI (`pnpm dev:sandbox` in `frontend/`, on :3001, tile definitions page).
 
-A single tile asked for by name needs no table: create it and report.
+A single tile asked for by name needs no table, but it still goes through the Sprites steps before the tile is created.
 
 ## Fixing one
 
