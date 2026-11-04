@@ -50,7 +50,7 @@ Shown when there is no sprite, and the backfill when a sprite is missing, so it 
 
 ## Sprites
 
-A sprite is optional. If the owner wants one (or you propose one and they agree), make it first with the sprites skill, category `terrain`, then read its `_id` from the create result and set it as `spriteId`. Ask before drawing: it is the expensive part.
+A sprite is optional. If the owner wants one (or you propose one and they agree), make it first with the sprites skill, category `terrain`, then read its `_id` from the create result and set it as `spriteId`. The MCP checks that sprite exists and is a terrain sprite, and refuses the tile otherwise. Ask before drawing: it is the expensive part.
 
 ## Batches
 

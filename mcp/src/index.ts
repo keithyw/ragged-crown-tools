@@ -12,6 +12,7 @@ import {
 	portalDefSchema,
 	tileDefSchema,
 } from '../../frontend/src/schemas/contentSchemas'
+import { SPRITE_CATEGORIES } from '../../frontend/src/lib/types/sprite'
 import { spriteSchema } from '../../frontend/src/schemas/spriteSchema'
 import { zoneSchema } from '../../frontend/src/schemas/zoneSchema'
 import {
@@ -218,6 +219,127 @@ async function apiPut(path: string, body: unknown) {
 	return res
 }
 
+// Which collection holds each kind of def, from KINDS_BY_COLLECTION.
+const COLLECTION_BY_KIND = Object.fromEntries(
+	Object.entries(KINDS_BY_COLLECTION).flatMap(([c, kinds]) =>
+		(kinds ?? []).map((k) => [k, c]),
+	),
+) as Record<string, (typeof COLLECTIONS)[number]>
+
+// One document by _id, or null when there is none (a malformed _id answers 400
+// and an unknown one 404). Any other failure, such as the API being down, is
+// thrown.
+async function lookup(collection: string, _id: string) {
+	try {
+		return await (await apiGet(`/collection/${collection}/${_id}`)).json()
+	} catch (e) {
+		if (/^API (400|404):/.test((e as Error).message)) return null
+		throw e
+	}
+}
+
+type Loose = { type: string; itemId?: string; defKind?: string; defId?: string }
+
+// A def's references to other documents must exist, as they always do through
+// the UI's pickers: its sprite, the items its interactions check, give or take,
+// and what they SPAWN. The parsed copy is checked, so a custom action or
+// condition (which carries no value) has nothing to look up. Zones are not
+// covered, and neither is TELEPORT's destination zone.
+async function checkReferences(doc: unknown) {
+	const def = doc as {
+		kind?: string
+		spriteId?: string
+		interactions?: { conditions?: Loose[]; actions: Loose[] }[]
+	}
+	if (!def.kind || !(def.kind in COLLECTION_BY_KIND)) return
+
+	const refs: {
+		path: string
+		collection: string
+		_id: string
+		what: string
+		kind?: string
+	}[] = []
+	if (def.spriteId) {
+		refs.push({
+			path: 'spriteId',
+			collection: 'sprites',
+			_id: def.spriteId,
+			what: 'sprite',
+		})
+	}
+	def.interactions?.forEach((it, i) => {
+		it.conditions?.forEach((c, j) => {
+			if (c.type === 'HAS_ITEM' && c.itemId) {
+				refs.push({
+					path: `interactions.${i}.conditions.${j}.itemId`,
+					collection: 'items',
+					_id: c.itemId,
+					what: 'item',
+				})
+			}
+		})
+		it.actions.forEach((a, j) => {
+			const path = `interactions.${i}.actions.${j}`
+			if ((a.type === 'GIVE_ITEM' || a.type === 'TAKE_ITEM') && a.itemId) {
+				refs.push({
+					path: `${path}.itemId`,
+					collection: 'items',
+					_id: a.itemId,
+					what: 'item',
+				})
+			}
+			if (a.type === 'SPAWN' && a.defKind && a.defId) {
+				refs.push({
+					path: `${path}.defId`,
+					collection: COLLECTION_BY_KIND[a.defKind],
+					_id: a.defId,
+					what: `${a.defKind} def`,
+					kind: a.defKind,
+				})
+			}
+		})
+	})
+
+	// One lookup per distinct document.
+	const found = new Map<string, Promise<Record<string, unknown> | null>>()
+	const get = (collection: string, _id: string) => {
+		const key = `${collection}/${_id}`
+		if (!found.has(key)) found.set(key, lookup(collection, _id))
+		return found.get(key)!
+	}
+
+	const problems: string[] = []
+	await Promise.all(
+		refs.map(async (r) => {
+			const target = await get(r.collection, r._id)
+			if (!target) {
+				problems.push(
+					`- ${r.path}: no ${r.what} with _id '${r._id}' in ${r.collection}`,
+				)
+			} else if (r.kind && target.kind !== r.kind) {
+				problems.push(
+					`- ${r.path}: '${target.id ?? r._id}' has kind '${target.kind}', not '${r.kind}'`,
+				)
+			} else if (
+				r.collection === 'sprites' &&
+				(SPRITE_CATEGORIES as readonly string[]).includes(def.kind!) &&
+				target.category !== def.kind
+			) {
+				// The forms only offer sprites of the def's own category.
+				problems.push(
+					`- spriteId: sprite '${target.id ?? r._id}' is in category ` +
+						`'${target.category}', but this is a ${def.kind} def`,
+				)
+			}
+		}),
+	)
+	if (problems.length > 0) {
+		problems.sort()
+		throw new Error(`Invalid document:\n${problems.join('\n')}`)
+	}
+}
+
 server.registerTool(
 	'list_collection',
 	{
@@ -333,6 +455,7 @@ server.registerTool(
 	async ({ collection, doc }) => {
 		try {
 			const { data, warnings } = validate(collection, doc, { create: true })
+			await checkReferences(data)
 			const res = await apiPost(`/collection/${collection}`, data)
 			return ok(await res.json(), warnings)
 		} catch (e) {
@@ -364,6 +487,7 @@ server.registerTool(
 	async ({ collection, _id, doc }) => {
 		try {
 			const { data, warnings } = validate(collection, doc)
+			await checkReferences(data)
 			const res = await apiPut(`/collection/${collection}/${_id}`, data)
 			return ok(await res.json(), warnings)
 		} catch (e) {
