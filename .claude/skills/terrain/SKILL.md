@@ -24,13 +24,13 @@ If the sandbox looks stale next to the real database (real tiles or sprites miss
 }
 ```
 
-- `id`: required (the schema allows none, but review and promotion depend on it). Written like a constant: uppercase full words joined by underscores (`DIRT_ROAD`), not copied from the `name`. No abbreviations. Test documents start with `ZZ_`. Check it is free on **both** servers (`list_collection`, `collection: tile_defs`, `filters: { id }`, `limit: 1`), because promotion matches on `id` and the sandbox is behind the real database. If taken, say so and pick another.
+- `id`: required (the MCP refuses a def without one; review and promotion depend on it). Written like a constant: uppercase full words joined by underscores (`DIRT_ROAD`), not copied from the `name`. No abbreviations. Test documents start with `ZZ_`. Check it is free on **both** servers (`list_collection`, `collection: tile_defs`, `filters: { id }`, `limit: 1`), because promotion matches on `id` and the sandbox is behind the real database. If taken, say so and pick another.
 - `name`: short human label. `description`: one plain sentence, in the voice of the existing tiles ("Towering trees block out the sun overhead.").
 - `moveCost`: required, 0 or more.
 - `isWalkable`: **always set it**. Absent reads as "No" in the inspector, while the form defaults to `true`. Use `false` only for ground nobody can enter (deep water, lava, a chasm).
 - `encounterRate`: 0 to 1 (the schema doesn't enforce it). Leave it out for ground that can't be entered. `encounterTableKey` is not used; encounter tables aren't designed.
 - `spriteId`: optional, a sprite's `_id`. See Sprites.
-- Don't send `symbol`, `color` or `bg` at the top level; they live inside `glyph`. A misspelt or unknown field is dropped silently by the MCP, so read the stored copy it returns and check nothing is missing.
+- Don't send `symbol`, `color` or `bg` at the top level; they live inside `glyph`. A misspelt or unknown top-level field is dropped, and the MCP names it in a `Warnings:` block after the stored copy: read it, and fix the spelling.
 
 ## Match what exists
 
@@ -41,7 +41,7 @@ Read the existing terrain before inventing numbers: `list_collection` on the **r
 Shown when there is no sprite, and the backfill when a sprite is missing, so it is always required.
 
 - `symbol`: 1 or 2 characters. Existing tiles use a doubled character (`::`, `♠♠`, `▲▲`).
-- `color` and `bg` must come from the palette, because anything else isn't in the safelist and renders uncoloured (in the game for certain):
+- `color` and `bg` must come from the palette, because anything else isn't in the safelist and renders uncoloured (in the game for certain). The MCP refuses other classes, so check against this list before writing:
   - `color`: `text-white`, `text-black`, or `text-<hue>-<300|400|500|600>` with an optional `/70`.
   - `bg`: `bg-black`, `bg-white`, or `bg-<hue>-<700|800|900|950>` with an optional `/30` or `/60`.
   - hues: zinc, red, orange, amber, yellow, lime, green, emerald, teal, cyan, sky, blue, violet, purple, pink, rose, stone.

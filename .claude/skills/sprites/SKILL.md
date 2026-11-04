@@ -39,7 +39,7 @@ node .claude/skills/sprites/rows-to-pixels.mjs <<'EOF'
 EOF
 ```
 
-The MCP validates against `spriteSchema` and returns a readable error for a bad document. Ignore the "NOT validated" wording in the write tools' descriptions; it is out of date.
+The MCP validates against `spriteSchema` and returns a readable error for a bad document.
 
 ## Drawing
 

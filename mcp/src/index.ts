@@ -4,9 +4,23 @@ import { z } from 'zod'
 // The frontend's schemas, imported as they are (run through tsx, see
 // ARCHITECTURE.md 6.1). Type-only `@/` imports inside them resolve via the
 // `paths` entry in tsconfig.json.
-import { defSchema } from '../../frontend/src/schemas/contentSchemas'
+import {
+	creatureDefSchema,
+	defSchema,
+	itemDefSchema,
+	objectDefSchema,
+	portalDefSchema,
+	tileDefSchema,
+} from '../../frontend/src/schemas/contentSchemas'
 import { spriteSchema } from '../../frontend/src/schemas/spriteSchema'
 import { zoneSchema } from '../../frontend/src/schemas/zoneSchema'
+import {
+	HUES,
+	NEUTRALS,
+	OPACITIES,
+	SHADES,
+	type ColorKind,
+} from '../../frontend/src/lib/types/colorPalette'
 
 const API_URL = process.env.RC_API_URL ?? 'http://localhost:8080'
 
@@ -26,8 +40,19 @@ const server = new McpServer({ name: 'ragged-crown', version: '0.1.0' })
 
 type ToolResult = { content: { type: 'text'; text: string }[]; isError?: true }
 
-const ok = (data: unknown): ToolResult => ({
-	content: [{ type: 'text', text: JSON.stringify(data, null, 2) }],
+// Warnings come as a second block, so the first stays the plain document.
+const ok = (data: unknown, warnings: string[] = []): ToolResult => ({
+	content: [
+		{ type: 'text', text: JSON.stringify(data, null, 2) },
+		...(warnings.length > 0
+			? [
+					{
+						type: 'text' as const,
+						text: `Warnings:\n${warnings.map((w) => `- ${w}`).join('\n')}`,
+					},
+				]
+			: []),
+	],
 })
 
 const fail = (message: string): ToolResult => ({
@@ -44,12 +69,44 @@ const KINDS_BY_COLLECTION: Partial<
 	entities: ['object', 'creature', 'portal'],
 }
 
-// Checks a document against the frontend's schema for its collection and
-// returns the parsed copy, which is what gets sent: the same shape the
-// frontend would save. Unknown keys are stripped silently (zod's default),
-// which is a known boundary case. `events` is a placeholder with no schema.
-function validate(collection: (typeof COLLECTIONS)[number], doc: unknown) {
-	if (collection === 'events') return doc
+// The glyph classes the colour picker can produce, which are the only ones in
+// the Tailwind safelist (ARCHITECTURE.md 4.4). Any other class renders
+// uncoloured, in the game too.
+const paletteClasses = (kind: ColorKind) =>
+	new Set<string>([
+		...NEUTRALS[kind],
+		...HUES.flatMap((hue) =>
+			SHADES[kind].flatMap((shade) =>
+				OPACITIES[kind].map((opacity) => `${kind}-${hue}-${shade}${opacity}`),
+			),
+		),
+	])
+const PALETTE = { text: paletteClasses('text'), bg: paletteClasses('bg') }
+
+// The top-level fields each kind of document has, to report keys that zod
+// strips. Nested keys are not checked.
+const DEF_SHAPES = {
+	terrain: tileDefSchema.shape,
+	object: objectDefSchema.shape,
+	item: itemDefSchema.shape,
+	creature: creatureDefSchema.shape,
+	portal: portalDefSchema.shape,
+}
+const SERVER_FIELDS = new Set(['_id', 'updated_at'])
+
+// Checks a document against the frontend's schema for its collection, plus two
+// rules that only the forms enforce, and returns the parsed copy, which is
+// what gets sent: the same shape the frontend would save.
+//   - `create`: a def needs an `id` (the schema leaves it optional).
+//   - a def's glyph classes must be in the palette.
+// Unknown top-level keys are still stripped (zod's default), but come back as
+// warnings. `events` is a placeholder with no schema.
+function validate(
+	collection: (typeof COLLECTIONS)[number],
+	doc: unknown,
+	{ create = false } = {},
+) {
+	if (collection === 'events') return { data: doc, warnings: [] as string[] }
 
 	const allowed = KINDS_BY_COLLECTION[collection]
 	const kind = (doc as { kind?: unknown } | null)?.kind
@@ -69,7 +126,43 @@ function validate(collection: (typeof COLLECTIONS)[number], doc: unknown) {
 		)
 		throw new Error(`Invalid document:\n${lines.join('\n')}`)
 	}
-	return result.data
+
+	const data = result.data as {
+		id?: string
+		kind?: keyof typeof DEF_SHAPES
+		glyph?: { color: string; bg: string }
+	}
+	const problems: string[] = []
+	if (create && allowed && !data.id) {
+		problems.push('- id: required when creating a def')
+	}
+	if (data.glyph) {
+		for (const [field, kind] of [
+			['color', 'text'],
+			['bg', 'bg'],
+		] as const) {
+			if (!PALETTE[kind].has(data.glyph[field])) {
+				problems.push(
+					`- glyph.${field}: '${data.glyph[field]}' is not in the palette ` +
+						`(frontend/src/lib/types/colorPalette.ts); it would render uncoloured`,
+				)
+			}
+		}
+	}
+	if (problems.length > 0) {
+		throw new Error(`Invalid document:\n${problems.join('\n')}`)
+	}
+
+	const [shape, what] =
+		collection === 'sprites'
+			? [spriteSchema.shape, 'a sprite']
+			: collection === 'zones'
+				? [zoneSchema.shape, 'a zone']
+				: [DEF_SHAPES[data.kind!], `a ${data.kind} def`]
+	const warnings = Object.keys((doc ?? {}) as object)
+		.filter((k) => !(k in shape) && !SERVER_FIELDS.has(k))
+		.map((k) => `'${k}' is not a field of ${what} and was dropped`)
+	return { data: result.data, warnings }
 }
 
 // GET only. The API answers errors as {"error": "..."}.
@@ -226,8 +319,11 @@ server.registerTool(
 		description:
 			'Create one document (POST /collection/{collection}). Create only: ' +
 			'it never changes an existing document. The server generates _id and ' +
-			'updated_at and ignores any _id in the body. The content is NOT ' +
-			'validated; the backend stores whatever it is given. Sandbox only.',
+			'updated_at and ignores any _id in the body. The document is ' +
+			"validated with the frontend's schemas first, and a def must have an " +
+			'id and glyph classes from the palette; problems come back as a ' +
+			'list. A top-level key the schema does not have is dropped and ' +
+			'reported as a warning. Sandbox only.',
 		inputSchema: {
 			collection,
 			doc: z.record(z.string(), z.unknown()),
@@ -236,11 +332,9 @@ server.registerTool(
 	},
 	async ({ collection, doc }) => {
 		try {
-			const res = await apiPost(
-				`/collection/${collection}`,
-				validate(collection, doc),
-			)
-			return ok(await res.json())
+			const { data, warnings } = validate(collection, doc, { create: true })
+			const res = await apiPost(`/collection/${collection}`, data)
+			return ok(await res.json(), warnings)
 		} catch (e) {
 			return fail((e as Error).message)
 		}
@@ -256,7 +350,10 @@ server.registerTool(
 			'field missing from doc is removed, so send the complete document, ' +
 			'normally read with get_doc first and then edited. _id and updated_at ' +
 			'in the body are ignored; the server keeps the _id and restamps ' +
-			'updated_at. The content is NOT validated. Sandbox only.',
+			"updated_at. The document is validated with the frontend's schemas " +
+			'first (a def needs glyph classes from the palette), and a ' +
+			'top-level key the schema does not have is dropped and reported as ' +
+			'a warning. Sandbox only.',
 		inputSchema: {
 			collection,
 			_id: z.string().regex(/^[0-9a-f]{24}$/i, 'Expected 24 hex characters'),
@@ -266,11 +363,9 @@ server.registerTool(
 	},
 	async ({ collection, _id, doc }) => {
 		try {
-			const res = await apiPut(
-				`/collection/${collection}/${_id}`,
-				validate(collection, doc),
-			)
-			return ok(await res.json())
+			const { data, warnings } = validate(collection, doc)
+			const res = await apiPut(`/collection/${collection}/${_id}`, data)
+			return ok(await res.json(), warnings)
 		} catch (e) {
 			return fail((e as Error).message)
 		}
