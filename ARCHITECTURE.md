@@ -264,7 +264,7 @@ pnpm install
 pnpm dev          # http://localhost:3000, needs NEXT_PUBLIC_API_URL=http://localhost:8080
 ```
 
-Makefile targets: `build`, `docker-up`, `docker-down`, `docker-restart`, `rc-build`, `rc-down`, `rc-restart` (the `rc-*` ones act on the API container only), `db-backup` (section 6.2), `db-indexes` and `sandbox-indexes` (section 6.3), `promote-sprites` (section 6.4).
+Makefile targets: `build`, `docker-up`, `docker-down`, `docker-restart`, `rc-build`, `rc-down`, `rc-restart` (the `rc-*` ones act on the API container only), `db-backup` and `sandbox-refresh` (section 6.2), `db-indexes` and `sandbox-indexes` (section 6.3), `promote-sprites` (section 6.4).
 
 ### 6.0 Sandbox stack
 
@@ -281,7 +281,7 @@ A second, disposable API + MongoDB that runs alongside the real one, so generate
 | Env file | `.env` | `.env.sandbox` |
 
 - `.env.sandbox` is created by hand (copy `.env`, then change `MONGO_DATABASE` and the Mongo credentials; the host in `MONGODB_URI` resolves inside the sandbox's own network, so `mongodb` works, but `rc_mongodb_sandbox` is preferred because it fails loudly instead of reaching real data if the API is ever attached to the wrong network). It must be git-ignored and is never read or committed by Claude.
-- Targets: `make sandbox-up`, `sandbox-down`, `sandbox-restart`, `sandbox-rc-restart` (rebuild the sandbox API only) and `sandbox-reset`. **`sandbox-reset` deletes the sandbox database volume** (`down -v` on the sandbox project only; it cannot touch the real volume). Confirm before every run.
+- Targets: `make sandbox-up`, `sandbox-down`, `sandbox-restart`, `sandbox-rc-restart` (rebuild the sandbox API only), `sandbox-reset` and `sandbox-refresh` (rebuild the sandbox from the real database, section 6.2). **`sandbox-reset` deletes the sandbox database volume** (`down -v` on the sandbox project only; it cannot touch the real volume). Confirm before every run.
 - The sandbox starts empty. Both stacks have the unique index on `id` (section 6.3), so a duplicate `id` returns `409` in either; after `sandbox-reset` run `make sandbox-indexes` again. A backup of the real database can be restored into it (section 6.2).
 - **Pointing things at it:** the MCP uses `RC_API_URL=http://localhost:8081`. The sandbox UI is `pnpm dev:sandbox` (in `frontend/`), on **:3001**, so it runs next to the normal `pnpm dev` on :3000. The script points it at the sandbox API (`NEXT_PUBLIC_API_URL=http://localhost:8081`) and gives it its own build folder, `.next-sandbox` (git-ignored; set through `NEXT_DIST_DIR` in `next.config.ts`), because Next allows only one `next dev` per folder.
 - **CORS for the second UI:** the API allows `localhost:3001` and `127.0.0.1:3001` as well as :3000. The list is still hard-coded in `server.go` (Known gap 6). After changing it, `make sandbox-rc-restart` rebuilds the sandbox API; the real API only picks it up on its next rebuild, and doesn't need it.
@@ -342,6 +342,20 @@ docker exec -i rc_mongodb_sandbox mongorestore --archive --gzip \
 - The container name decides which server receives the data; the remap decides which database. Both must be right.
 - Restoring over existing documents with the same `_id` skips them by default; `--drop` would replace the collections, so only add it deliberately.
 
+**`make sandbox-refresh` does the whole thing in order** ([Infra 19]), so the steps and the remap don't have to be remembered:
+
+```bash
+make sandbox-refresh            # dry run: prints what would change, writes nothing
+make sandbox-refresh APPLY=1    # does it
+```
+
+- **The dry run** compares the two databases through their APIs (`scripts/compare-databases.mjs`), matching documents by `id`. Per collection it shows how many documents will be added, which exist **only in the sandbox and will be lost**, and which have the same `id` but different content, where the real copy replaces the sandbox's. Promote or re-create anything wanted before applying.
+- **`APPLY=1`** (`scripts/refresh-sandbox.sh`): backs up the real database (it restores that exact file, not "the latest"), runs `sandbox-reset`, starts the sandbox and waits until its MongoDB is healthy, runs `sandbox-indexes`, restores with the remap, then checks that the sandbox and real database hold the same documents and that each collection has `id_unique`.
+- **The restore** adds `--nsInclude 'ragged_crown.*'`, because the archive holds every database on the instance (it includes `admin.system.version`) and only the app database should reach the sandbox.
+- **It only ever writes to the sandbox.** The real stack gets one dump. It refuses if `.env.sandbox` is missing, if either MongoDB container isn't running, or if the two API addresses are the same, and it stops at the first failing step and names it. After a failure past the reset, run it again.
+- **Destructive on the sandbox, so confirm every time:** `APPLY=1` is the same switch as `make promote-sprites`. Claude runs the dry run freely and `APPLY=1` only after an explicit go-ahead.
+- The sandbox API and the MCP need no restart afterwards. `COLLECTIONS` in the script is another copy of the collection list (section 6.3); a collection missing from it is still restored, but left out of the report and the final check.
+
 ### 6.3 Indexes
 
 ```bash
@@ -357,7 +371,7 @@ Both pipe `scripts/ensure-indexes.js` into `mongosh` inside the container (`ragg
 - **Mongo lifecycle:** a collection comes into being on first insert or first `createIndex`, so there is no "table before index" order. The script can run on a brand-new empty database, and `ErrDuplicate` starts firing as soon as the index exists.
 - **Idempotent, and fails soft:** re-running does nothing. A failure on one collection (typically existing duplicate `id` values, which block building a unique index) is printed and the others still run; the exit code is 1 if anything failed. Changing an index definition later is a deliberate drop and recreate, not something the script does.
 - **When to run it:** after the sandbox is created or reset, after the real database is recreated, and after adding a collection. A restore from a backup brings the indexes back with it (section 6.2), so a restore alone doesn't need it.
-- **New collections:** the collection list in the script is another copy of `validCollections` (with `middleware.go` and `mcp/src/index.ts`). Adding a collection means adding it to all three; section 7 step 2 is the reminder. A shared list that all of them read (a JSON file, say) is a possible later cleanup and would touch the backend, the MCP and the script.
+- **New collections:** the collection list in the script is another copy of `validCollections` (with `middleware.go` and `mcp/src/index.ts`). Adding a collection means adding it to all three; section 7 step 2 is the reminder. `scripts/refresh-sandbox.sh` (section 6.2) keeps a fourth copy, but a collection missing there only drops out of its report and final check. A shared list that all of them read (a JSON file, say) is a possible later cleanup and would touch the backend, the MCP and the script.
 
 ### 6.4 Generating content with Claude (review flow)
 

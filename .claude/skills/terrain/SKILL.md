@@ -11,6 +11,8 @@ A terrain def is the ground a zone is painted with (DATA-MODEL.md 1.3, 1.5). It 
 
 Sandbox only: `mcp__ragged-crown-sandbox__create_doc` and `replace_doc`, collection `tile_defs`, `kind: "terrain"`. The real server (`mcp__ragged-crown__*`) is read-only. Nothing here reaches the real database yet; there is no def promotion (Skills 11), so an approved tile is re-created by the owner in the real UI.
 
+If the sandbox looks stale next to the real database (real tiles or sprites missing), say so before a big batch: `make sandbox-refresh` rebuilds it. Run it as a dry run only; `APPLY=1` deletes the sandbox volume and needs the owner's go-ahead.
+
 ## Document
 
 ```json

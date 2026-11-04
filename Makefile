@@ -63,6 +63,16 @@ sandbox-rc-restart:
 sandbox-reset:
 	$(SANDBOX) down -v
 
+# Rebuild the SANDBOX database from the real one (ARCHITECTURE.md 6.2). A dry run
+# unless APPLY=1, which backs up the real database, then deletes the sandbox
+# volume and restores the backup into it.
+sandbox-refresh:
+ifeq ($(APPLY),1)
+	bash scripts/refresh-sandbox.sh --apply
+else
+	bash scripts/refresh-sandbox.sh
+endif
+
 # Promote reviewed sprites from the sandbox to the REAL database (ARCHITECTURE.md 6.4).
 # IDS="STONE_WALL,GRASS" is required. A dry run unless APPLY=1, which takes a
 # backup first and then writes.

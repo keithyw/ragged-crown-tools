@@ -11,6 +11,8 @@ A sprite is 16x16 pixels in the 16 EGA colours, one tile, no multi-tile objects 
 
 Sandbox only: `mcp__ragged-crown-sandbox__create_doc` and `replace_doc`. The real server (`mcp__ragged-crown__*`) is read-only. The only way a sprite reaches the real database is `make promote-sprites` (see Promoting), and only after the owner approves it.
 
+If the sandbox looks stale next to the real database (real sprites missing, so a style check has nothing to compare with), say so before a big batch: `make sandbox-refresh` rebuilds it. Run it as a dry run only; `APPLY=1` deletes the sandbox volume and needs the owner's go-ahead.
+
 ## The text form
 
 16 rows of 16 characters. `0`-`F` is the palette index, `.` is an empty cell.
