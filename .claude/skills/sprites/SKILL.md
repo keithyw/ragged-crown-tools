@@ -24,22 +24,15 @@ That is the standard EGA order. If `EGA_PALETTE` in `frontend/src/lib/types/spri
 ## Document
 
 ```json
-{ "id": "FARM_HAND", "name": "Farm hand", "category": "object", "background": "transparent", "pixels": [256 entries] }
+{ "id": "FARM_HAND", "name": "Farm hand", "category": "object", "background": "transparent", "rows": ["................", "...16 strings of 16 characters..."] }
 ```
 
 - `category`: `terrain`, `object`, `item` or `portal`.
 - `id` is required and unique in `sprites`. Write it like a constant in code: uppercase full words joined by underscores (`FARM_HAND`, `GOLD_COINS`, never hyphens). It is not copied from the `name`. The `name` is the human label; the `id` only has to be semi-readable and short, because code may eventually refer to it. No abbreviations, no padding. Check it is free first: `list_collection` with `filters: { id: "<id>" }`, `limit: 1`. If it is taken, say so and pick another.
 - `background` is `"transparent"` unless asked otherwise (or a palette index).
-- `pixels` is the 256 entries row by row, a palette index or `null`. Never type the array by hand: pipe the rows through the helper, which checks the size and characters.
+- `rows` is the text form from above as an array of 16 strings of 16 characters. Send it **instead of** `pixels`: the MCP turns it into the 256-entry array itself, so you never type that array (typing it by hand has failed before, always on the long runs of empty cells). A wrong row count, a short row or a stray character is refused with the row and column. Sending both `rows` and `pixels` is refused.
 
-```bash
-export PATH="$HOME/.nvm/versions/node/v22.17.0/bin:$PATH"
-node .claude/skills/sprites/rows-to-pixels.mjs <<'EOF'
-<the 16 rows>
-EOF
-```
-
-The MCP validates against `spriteSchema` and returns a readable error for a bad document.
+The MCP validates against `spriteSchema` and returns a readable error for a bad document. Its reply shows the stored sprite as `rows` too, not the 256-entry array.
 
 ## Drawing
 
@@ -53,10 +46,9 @@ The MCP validates against `spriteSchema` and returns a readable error for a bad 
 
 1. Check the `id` is free.
 2. Draw the 16 rows. Check them: 16 rows of 16 characters, only `0-F` and `.`.
-3. Run the helper to get `pixels`.
-4. Look at it: render the rows to a PNG in the scratchpad and open it with Read (see Looking at a sprite). Fix what you can see is wrong (lopsided, stray row, clashing colours) before going on.
-5. `create_doc` into `sprites` on the sandbox.
-6. Report to the owner: the `id`s made, the rows in a code block (so they can import them to the real builder if wanted), choices made and doubts. Review is in the sandbox UI: `pnpm dev:sandbox` in `frontend/`, on :3001, next to the normal dev server (ARCHITECTURE.md 6.0, 6.4).
+3. Look at it: render the rows to a PNG in the scratchpad and open it with Read (see Looking at a sprite). Fix what you can see is wrong (lopsided, stray row, clashing colours) before going on.
+4. `create_doc` into `sprites` on the sandbox, with the rows as `rows`.
+5. Report to the owner: the `id`s made, the rows in a code block (so they can import them to the real builder if wanted), choices made and doubts. Review is in the sandbox UI: `pnpm dev:sandbox` in `frontend/`, on :3001, next to the normal dev server (ARCHITECTURE.md 6.0, 6.4).
 
 ## Looking at a sprite
 
@@ -85,7 +77,7 @@ Never run `APPLY=1` without that go-ahead, never promote "everything", and don't
 
 ## Fixing one
 
-Find it with `list_collection` (`filters: { id }`) to get its `_id`, change the rows, and `replace_doc` with the **whole** document (PUT replaces everything: send `id`, `name`, `category`, `background` and `pixels`). Keep the same `id`, so the owner is still judging the same sprite.
+Find it with `list_collection` (`filters: { id }`) to get its `_id`, change the rows, and `replace_doc` with the **whole** document (PUT replaces everything: send `id`, `name`, `category`, `background` and the changed `rows`). `list_collection` still returns `pixels`; turn them into rows rather than sending that array back by hand. Keep the same `id`, so the owner is still judging the same sprite.
 
 ## Don't
 

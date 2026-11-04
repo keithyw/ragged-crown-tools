@@ -13,6 +13,10 @@ import {
 	tileDefSchema,
 } from '../../frontend/src/schemas/contentSchemas'
 import { SPRITE_CATEGORIES } from '../../frontend/src/lib/types/sprite'
+import {
+	parseSpritePixels,
+	spritePixelsToText,
+} from '../../frontend/src/lib/utils/sprite'
 import { spriteSchema } from '../../frontend/src/schemas/spriteSchema'
 import { zoneSchema } from '../../frontend/src/schemas/zoneSchema'
 import {
@@ -55,6 +59,39 @@ const ok = (data: unknown, warnings: string[] = []): ToolResult => ({
 			: []),
 	],
 })
+
+// A sprite may be sent as `rows` (16 strings of 16 characters, 0-F or '.', the
+// text form the sprite builder uses) instead of the 256-entry `pixels` array,
+// which is easy to mistype. They are turned into `pixels` before validation,
+// with the frontend's own parser.
+function spriteFromRows(collection: string, doc: unknown) {
+	if (collection !== 'sprites' || typeof doc !== 'object' || doc === null) {
+		return doc
+	}
+	if (!('rows' in doc)) return doc
+
+	const { rows, ...rest } = doc as Record<string, unknown>
+	if ('pixels' in rest) {
+		throw new Error('Invalid document:\n- rows: send rows or pixels, not both')
+	}
+	const text = Array.isArray(rows) ? rows.join('\n') : rows
+	if (typeof text !== 'string') {
+		throw new Error('Invalid document:\n- rows: expected 16 strings of 16')
+	}
+	const parsed = parseSpritePixels(text)
+	if (!parsed.ok) throw new Error(`Invalid document:\n- rows: ${parsed.error}`)
+	return { ...rest, pixels: parsed.pixels }
+}
+
+// A stored sprite is shown as its 16 text rows, not the 256-entry array.
+const shown = (collection: string, stored: Record<string, unknown>) =>
+	collection === 'sprites' && Array.isArray(stored.pixels)
+		? {
+				...stored,
+				pixels: undefined,
+				rows: spritePixelsToText(stored.pixels).split('\n'),
+			}
+		: stored
 
 const fail = (message: string): ToolResult => ({
 	content: [{ type: 'text', text: message }],
@@ -445,7 +482,9 @@ server.registerTool(
 			"validated with the frontend's schemas first, and a def must have an " +
 			'id and glyph classes from the palette; problems come back as a ' +
 			'list. A top-level key the schema does not have is dropped and ' +
-			'reported as a warning. Sandbox only.',
+			'reported as a warning. For a sprite, send rows (16 strings of 16 ' +
+			'characters, 0-F or ".") instead of pixels; the reply shows rows. ' +
+			'Sandbox only.',
 		inputSchema: {
 			collection,
 			doc: z.record(z.string(), z.unknown()),
@@ -454,10 +493,14 @@ server.registerTool(
 	},
 	async ({ collection, doc }) => {
 		try {
-			const { data, warnings } = validate(collection, doc, { create: true })
+			const { data, warnings } = validate(
+				collection,
+				spriteFromRows(collection, doc),
+				{ create: true },
+			)
 			await checkReferences(data)
 			const res = await apiPost(`/collection/${collection}`, data)
-			return ok(await res.json(), warnings)
+			return ok(shown(collection, await res.json()), warnings)
 		} catch (e) {
 			return fail((e as Error).message)
 		}
@@ -476,7 +519,8 @@ server.registerTool(
 			"updated_at. The document is validated with the frontend's schemas " +
 			'first (a def needs glyph classes from the palette), and a ' +
 			'top-level key the schema does not have is dropped and reported as ' +
-			'a warning. Sandbox only.',
+			'a warning. For a sprite, send rows (16 strings of 16 characters, ' +
+			'0-F or ".") instead of pixels; the reply shows rows. Sandbox only.',
 		inputSchema: {
 			collection,
 			_id: z.string().regex(/^[0-9a-f]{24}$/i, 'Expected 24 hex characters'),
@@ -486,10 +530,13 @@ server.registerTool(
 	},
 	async ({ collection, _id, doc }) => {
 		try {
-			const { data, warnings } = validate(collection, doc)
+			const { data, warnings } = validate(
+				collection,
+				spriteFromRows(collection, doc),
+			)
 			await checkReferences(data)
 			const res = await apiPut(`/collection/${collection}/${_id}`, data)
-			return ok(await res.json(), warnings)
+			return ok(shown(collection, await res.json()), warnings)
 		} catch (e) {
 			return fail((e as Error).message)
 		}

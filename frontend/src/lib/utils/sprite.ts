@@ -1,4 +1,6 @@
-import { SPRITE_SIZE, type SpritePixels } from '@/lib/types'
+// Relative on purpose: the MCP runs this file through tsx, which can't resolve
+// a runtime `@/` import (ARCHITECTURE.md 6.1).
+import { SPRITE_SIZE, type SpritePixels } from '../types/sprite'
 
 // The text form of a sprite's pixels: SPRITE_SIZE rows of SPRITE_SIZE
 // characters. 0-F is the palette index (EGA_PALETTE order, 0 black to F white)
