@@ -70,6 +70,19 @@ Over the cap, say so and propose the most useful ones up to the cap, or split it
 
 A single thing asked for by name needs no table, but it still goes through the Sprites steps before it is created.
 
+## Simple interactions
+
+Objects can talk (portals use the same shape, but only the objects skill does this so far). The owner's rule (2026-11-05): **start simple, and widen only after a basic interaction has been generated in bulk (about 5) and the owner has checked them.** So far that means one thing:
+
+- **A fixed line of dialog.** One interaction: `{ "id": "<uuid>", "on": "BUMP_INTERACT", "actions": [{ "type": "SHOW_DIALOG", "text": "Howdy!" }] }`.
+- **`on`:** `BUMP_INTERACT` for a person or sign the player walks into (the existing `PERSON` and `SIGN` use it). Leave `TALK` to the owner until a talk command exists.
+- **`id`:** the editor makes a UUID, so make one the same way: `uuidgen | tr A-Z a-z`. It only has to be unique within the def.
+- **The text:** the owner's own words when the request gives them ("only say Howdy!"), verbatim. Otherwise one short line in the character's voice, shown in the proposal for the owner to approve like a name.
+- **Different per placement** (a sign that says something else wherever it stands): send `{ "type": "SHOW_DIALOG", "custom": true }` with **no** `text` and **no** `slot` (the schema makes the slot). The owner fills the text in on each placement in the zone builder.
+- **Not yet, even when the request implies it:** `conditions`, `hint`, `limit`, and any action other than `SHOW_DIALOG` (`GIVE_ITEM`, `TAKE_ITEM`, `SPAWN`, `MODIFY_ATTRIBUTE`, `REMOVE_SELF` and the rest). Create the object with what is allowed and say what you left out. An object that only needs a body gets no interactions.
+
+When the owner widens this, change this section, not the skills that point at it.
+
 ## Fixing one
 
 `list_collection` with `filters: { id }` to get the document, change what is wrong, and `replace_doc` with the **whole** document (PUT replaces everything). If it has `interactions`, **send them back unchanged**, or the replace deletes them. Keep the same `id`, so the owner is still judging the same thing.

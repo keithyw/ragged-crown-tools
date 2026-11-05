@@ -1,6 +1,6 @@
 ---
 name: objects
-description: Make, redo or adjust Ragged Crown object definitions (solid objects such as a wall or a bar counter, and spaces such as a rug or fire, placed on the map) in the sandbox so the owner can review them. Use when asked to create or tweak objects, furniture, scenery or spaces. Does not create interactions.
+description: Make, redo or adjust Ragged Crown object definitions (solid objects such as a wall or a bar counter, and spaces such as a rug or fire, placed on the map) in the sandbox so the owner can review them. Use when asked to create or tweak objects, furniture, scenery, spaces or simple talking characters. Creates only simple dialog interactions.
 ---
 
 # Objects
@@ -12,10 +12,10 @@ An object def is something placed on top of the terrain: scenery, furniture, a c
 - Collection: `entities`, `kind: "object"`. The collection also holds creatures and portals; don't touch those here.
 - Sprite category: `object`.
 - Batch cap: the default, 10.
-- Extra proposal columns: solid or space (and `moveCost` if set), `container` capacity if any, the behaviour you are leaving out if the request implied one.
+- Extra proposal columns: solid or space (and `moveCost` if set), `container` capacity if any, what it says when bumped (the line, if it has dialog), the behaviour you are leaving out if the request implied one.
 - Sandbox UI page: object definitions.
 
-**This skill does not create interactions** (dialogue, keys, effects, quest givers). A def made here is a body: it blocks, decorates or holds things, and does nothing when the player bumps it. When a request needs behaviour, create the body, say plainly what behaviour was left out, and let the owner add it in the interaction editor in the UI. Interactions get their own skill later (Trello [Skills 9], v2).
+**Interactions: simple dialog only.** An NPC or sign can say a fixed line, or leave the line to each placement; the rules are in "Simple interactions" in `RULES.md` (Trello [Skills 14]). Everything else (keys, items given or taken, conditions, limits, stat effects, quest givers) is **not created here yet**: make the body, say plainly what behaviour was left out, and let the owner add it in the interaction editor in the UI. Other objects get no interactions at all.
 
 ## Object, space or item?
 
@@ -39,7 +39,22 @@ An object def is something placed on top of the terrain: scenery, furniture, a c
 - `moveCost`: spaces only. Leave it out for a solid object (the forms drop it) and leave it out for an ordinary space too, since it defaults to 1. Set it only when entering should be harder (quicksand, deep mud): a whole number, 0 or more.
 - `numberOfUses`: how many times the thing can be used before it disappears; 1 or more; absent is unlimited. Nothing uses an object until it has interactions, so leave it out unless asked.
 - `container`: `{ "capacity": n }` for a chest, barrel, cabinet or corpse that holds things, `capacity` 1 or more. `maxDepth` only if it may hold other containers, counting itself (2 holds a bag that holds items); the engine caps it at 3. Leave it out for anything that doesn't hold things.
-- Don't send `interactions`.
+- `interactions`: only the simple dialog from `RULES.md`, and only on something that talks. A person who says "Howdy!":
+
+```json
+{
+  "id": "FARMER", "kind": "object", "name": "Farmer",
+  "description": "A weathered farmer in a straw hat.",
+  "glyph": { "symbol": "👨", "color": "text-yellow-600", "bg": "bg-black" },
+  "spriteId": "<the _id of its sprite>",
+  "isSolid": true,
+  "interactions": [
+    { "id": "<uuid>", "on": "BUMP_INTERACT", "actions": [{ "type": "SHOW_DIALOG", "text": "Howdy!" }] }
+  ]
+}
+```
+
+A person is solid (DATA-MODEL 1.3). The sprite is a person, so it follows the sprite steps like any other object.
 
 ## Match what exists
 
@@ -57,4 +72,4 @@ A single symbol on `bg-black`, often an emoji, as the existing objects do.
 
 ## Fixing one
 
-Many existing objects carry `interactions`, so this is the case the shared rule about sending them back is for. Don't change them.
+Many existing objects carry `interactions` far beyond the simple dialog (keys, chests, quest givers), so this is the case the shared rule about sending them back is for. Send them back unchanged, and don't add to them.
