@@ -238,7 +238,7 @@ A text-heavy entity (e.g. characters) could reuse `useCollection` and the same c
 
 - Top-level sections live in `MainNavbar` (`URLS` constants in `lib/constants/urls.ts`).
 - Create/edit screens use `Breadcrumbs` (passed down via `CreateFormLayout`/`EditFormLayout`) and a Cancel button.
-- `CrudLayout` has an optional subnavbar for domains with sibling sections; unused so far.
+- `CrudLayout` has an optional subnavbar for domains with sibling sections. The zone section uses it for Zones and Zone Specs; a section's child routes inherit it through the layout.
 - Subnavbar- There is a concept of a subnavbar for CRUD apps which is a carry over from an older code base that had more entities (e.g. the indentity section
   possessed users, permissions and roles). The idea can be used here if we have a domain with other entities living under it.
 
