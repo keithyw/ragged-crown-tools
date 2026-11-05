@@ -41,7 +41,7 @@ The MCP validates against `spriteSchema` and returns a readable error for a bad 
 
 1. Check the `id` is free.
 2. Draw the 16 rows. Check them: 16 rows of 16 characters, only `0-F` and `.`.
-3. Look at it: render the rows to a PNG in the scratchpad and open it with Read (see Looking at a sprite). Fix what you can see is wrong (lopsided, stray row, clashing colours) before going on.
+3. Look at it: render the rows to a PNG in `frontend/.sandbox/` and open it with Read (see Looking at a sprite). Fix what you can see is wrong (lopsided, stray row, clashing colours) before going on.
 4. `create_doc` into `sprites` on the sandbox, with the rows as `rows`.
 5. Report to the owner: the `id`s made, the rows in a code block (so they can import them to the real builder if wanted), choices made and doubts. Review is in the sandbox UI: `pnpm dev:sandbox` in `frontend/`, on :3001, next to the normal dev server (ARCHITECTURE.md 6.0, 6.4).
 
@@ -50,12 +50,12 @@ The MCP validates against `spriteSchema` and returns a readable error for a bad 
 `render-sprite.mjs` turns the text rows into an enlarged PNG you can open with Read. It is your own pre-check; the owner still judges quality and style, and a clean render doesn't replace their review.
 
 ```bash
-node .claude/skills/sprites/render-sprite.mjs <scratchpad>/new.png <<'EOF'
+node .claude/skills/sprites/render-sprite.mjs frontend/.sandbox/new.png <<'EOF'
 <the 16 rows>
 EOF
 ```
 
-- Put the PNG in the scratchpad, never the repo.
+- Put the PNG in `frontend/.sandbox/` (gitignored scratch space), never elsewhere in the repo or in `/tmp`.
 - Several sprites separated by a blank line are drawn side by side. Use it for a style check: pass your new rows after the rows of one or two existing sprites of the same category (turn their `pixels` back into rows; don't read the 256 numbers by eye).
 - Empty cells show as a light checkerboard. An optional second argument sets the scale (default 16).
 

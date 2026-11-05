@@ -179,6 +179,26 @@ Leaving across a zone's edge needs no portal. When the player stands on an edge 
 
 To stop players leaving anywhere, the designer walls most of the edge off and leaves narrow gaps. Rows of portals along an edge are the wrong tool.
 
+### 2.3 Zone specs
+
+A zone spec is a request for a generated zone: the designer fills one in on a plain form, and the zone skill reads it from the sandbox ([Tools: Zone Specs 1]). Specs live in `zone_specs`, in both databases. They are tools only: the game never reads one, so the type is not in `map.ts`.
+
+```ts
+interface ZoneSpec {
+	id: string // the generated zone takes the same id
+	name: string
+	width: number // 1 to 16; the form defaults to 16
+	height: number // 1 to 16; the form defaults to 16
+	dangerLevel: number // 0 to 10, as on a zone
+	description: string // a pseudo prompt: the general idea of the zone
+	status: 'pending' | 'processed' // defaults to pending
+}
+```
+
+- **Small on purpose.** The aim is to see how much can be built from a description. A field is added when a real zone shows the need for it. Set sizes by category (castle, town, village) may come later.
+- **`status` belongs to the designer.** The skill sets `processed` once the zone is approved, and the designer can set it back when a spec needs to change.
+- **Specs are easy to rebuild.** Losing the sandbox's copies to `make sandbox-refresh` is acceptable. Keeping them is useful as a record of what worked, not as content.
+
 ---
 
 ## 3. Placements

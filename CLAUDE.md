@@ -25,6 +25,7 @@ I'm an experienced developer (25+ years) who still wants to write code and keep 
 - Never touch MongoDB data or Docker volumes without asking. Never read, print or commit `.env`.
 - Don't commit or push. I do that myself.
 - Don't install or upgrade dependencies without asking.
+- Scratch files (throwaway scripts, checks, rendered images, saved responses) go in `frontend/.sandbox/`, never in `/tmp` or elsewhere in the repo. `.sandbox/` is gitignored at any depth, so `backend/.sandbox/` works the same way, and ESLint skips the frontend one. Say when you add a file there. Don't delete anything in it; I clear it.
 
 ## Commands
 
