@@ -19,6 +19,7 @@ import {
 } from '../../frontend/src/lib/utils/sprite'
 import { spriteSchema } from '../../frontend/src/schemas/spriteSchema'
 import { zoneSchema } from '../../frontend/src/schemas/zoneSchema'
+import { zoneSpecSchema } from '../../frontend/src/schemas/zoneSpecSchema'
 import {
 	HUES,
 	NEUTRALS,
@@ -36,6 +37,7 @@ const COLLECTIONS = [
 	'entities',
 	'zones',
 	'sprites',
+	'zone_specs',
 	'events',
 ] as const
 
@@ -155,8 +157,15 @@ function validate(
 		)
 	}
 
+	// Anything not named here would be checked as a zone.
 	const schema =
-		collection === 'sprites' ? spriteSchema : allowed ? defSchema : zoneSchema
+		collection === 'sprites'
+			? spriteSchema
+			: collection === 'zone_specs'
+				? zoneSpecSchema
+				: allowed
+					? defSchema
+					: zoneSchema
 	const result = schema.safeParse(doc)
 	if (!result.success) {
 		const lines = result.error.issues.map(
@@ -194,9 +203,11 @@ function validate(
 	const [shape, what] =
 		collection === 'sprites'
 			? [spriteSchema.shape, 'a sprite']
-			: collection === 'zones'
-				? [zoneSchema.shape, 'a zone']
-				: [DEF_SHAPES[data.kind!], `a ${data.kind} def`]
+			: collection === 'zone_specs'
+				? [zoneSpecSchema.shape, 'a zone spec']
+				: collection === 'zones'
+					? [zoneSchema.shape, 'a zone']
+					: [DEF_SHAPES[data.kind!], `a ${data.kind} def`]
 	const warnings = Object.keys((doc ?? {}) as object)
 		.filter((k) => !(k in shape) && !SERVER_FIELDS.has(k))
 		.map((k) => `'${k}' is not a field of ${what} and was dropped`)
