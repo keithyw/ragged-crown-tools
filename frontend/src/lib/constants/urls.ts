@@ -7,4 +7,5 @@ export const URLS = {
 	PORTAL_DEFINITIONS: '/portal-definitions',
 	SPRITES: '/sprites',
 	ZONE: '/zone',
+	ZONE_SPECS: '/zone/specs',
 }

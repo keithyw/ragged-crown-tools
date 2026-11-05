@@ -176,7 +176,11 @@ export const FormInput = <
 		case 'textarea':
 			return (
 				<>
-					<TextareaInput {...inputProps} {...dynamicInputProps} />
+					<TextareaInput
+						{...field.textAreaAttrs}
+						{...inputProps}
+						{...dynamicInputProps}
+					/>
 					<InputErrorMessage errorMessage={errorMessage as string} />
 				</>
 			)
