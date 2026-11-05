@@ -5,13 +5,9 @@ description: Make, redo or adjust a Ragged Crown sprite (16x16 EGA pixel art for
 
 # Sprites
 
-A sprite is 16x16 pixels in the 16 EGA colours, one tile, no multi-tile objects (DATA-MODEL.md 1.2). The look is Ultima 5 / Magic Candle. The owner judges quality and style; you draw, they review.
+**Read `.claude/skills/shared/RULES.md` first.** It holds the rules every creation skill follows: the hierarchy and reuse, where you may write, ids, batches (the cap is 10, drawn as a set) and what not to do. This file is only what is particular to sprites, which sit at the bottom of the hierarchy: they depend on nothing, so they have no sprite step of their own.
 
-## Where you may write
-
-Sandbox only: `mcp__ragged-crown-sandbox__create_doc` and `replace_doc`. The real server (`mcp__ragged-crown__*`) is read-only. The only way a sprite reaches the real database is `make promote-sprites` (see Promoting), and only after the owner approves it.
-
-If the sandbox looks stale next to the real database (real sprites missing, so a style check has nothing to compare with), say so before a big batch: `make sandbox-refresh` rebuilds it. Run it as a dry run only; `APPLY=1` deletes the sandbox volume and needs the owner's go-ahead.
+A sprite is 16x16 pixels in the 16 EGA colours, one tile, no multi-tile objects (DATA-MODEL.md 1.2). The look is Ultima 5 / Magic Candle. The owner judges quality and style; you draw, they review. The only way a sprite reaches the real database is `make promote-sprites` (see Promoting), and only after the owner approves it.
 
 ## The text form
 
@@ -28,7 +24,6 @@ That is the standard EGA order. If `EGA_PALETTE` in `frontend/src/lib/types/spri
 ```
 
 - `category`: `terrain`, `object`, `item` or `portal`.
-- `id` is required and unique in `sprites`. Write it like a constant in code: uppercase full words joined by underscores (`FARM_HAND`, `GOLD_COINS`, never hyphens). It is not copied from the `name`. The `name` is the human label; the `id` only has to be semi-readable and short, because code may eventually refer to it. No abbreviations, no padding. Check it is free first: `list_collection` with `filters: { id: "<id>" }`, `limit: 1`. If it is taken, say so and pick another.
 - `background` is `"transparent"` unless asked otherwise (or a palette index).
 - `rows` is the text form from above as an array of 16 strings of 16 characters. Send it **instead of** `pixels`: the MCP turns it into the 256-entry array itself, so you never type that array (typing it by hand has failed before, always on the long runs of empty cells). A wrong row count, a short row or a stray character is refused with the row and column. Sending both `rows` and `pixels` is refused.
 
@@ -81,6 +76,4 @@ Find it with `list_collection` (`filters: { id }`) to get its `_id`, change the 
 
 ## Don't
 
-- Don't create sprites with no `id`, or write to the real server.
-- Don't leave test sprites around; use an `id` starting `ZZ_` for tests. There is no delete: cleanup is `make sandbox-reset`, which needs the owner's confirmation.
-- Don't touch defs that use a sprite. Picking a sprite on a def is the owner's step in the UI.
+- Don't change existing defs that use a sprite. Linking a new sprite to a new def is the def skill's step, after the owner approves the sprite.
