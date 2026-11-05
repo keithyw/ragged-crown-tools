@@ -32,6 +32,8 @@ The MCP validates against `spriteSchema` and returns a readable error for a bad 
 ## Drawing
 
 - Plain and readable at 16x16: a clear silhouette, a few colours, no noise. Centre it with a pixel or two of margin.
+- **Fill the tile (owner, 2026-11-05).** A sprite is shown small on the map and doesn't scale up, so it must be visible and discernible to the player at that size. Draw the thing large: it should take up most of the 16x16 area, not a few pixels in the middle (a mug 6 pixels wide gets lost; one about 10 wide and 12 tall reads). Leave the margin only where the silhouette needs it.
+- **Walls and floors tile.** A sprite meant to sit beside copies of itself or other walls (a wall, a fireplace set into one) should reach all four edges, with no transparent border, so painted contiguously it reads as one continuous image.
 - The palette has no skin tone. Use light red `C` or brown `6`, and say which you used.
 - Figures face front. Details that don't survive at this size are left out.
 - For a new category, or when the owner asks for consistency, look at one or two existing sprites first (`list_collection` on `sprites`, `filters: { category }`, `limit: 2`; the real server works too) and match their outline, shading and colour use. Don't do this every time: a sprite is large to read.
