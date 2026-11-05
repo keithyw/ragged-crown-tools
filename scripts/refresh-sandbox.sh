@@ -25,7 +25,7 @@ export REAL_API_URL SANDBOX_API_URL
 # KEEP IN SYNC with scripts/ensure-indexes.js (and validCollections in
 # backend/internal/collection/middleware.go, mcp/src/index.ts). `events` is
 # left out: it is reserved and unused.
-COLLECTIONS="tile_defs items entities zones sprites"
+COLLECTIONS="tile_defs items entities zones sprites zone_specs"
 
 step="checking the setup"
 reset_done=0

@@ -11,7 +11,7 @@
 // reserved and unused. To run only some collections:
 //   make db-indexes COLLECTIONS="new_thing other_thing"
 
-const all = ['tile_defs', 'items', 'entities', 'zones', 'sprites']
+const all = ['tile_defs', 'items', 'entities', 'zones', 'sprites', 'zone_specs']
 const only = (process.env.RC_COLLECTIONS || '').split(' ').filter(Boolean)
 const names = only.length > 0 ? only : all
 
