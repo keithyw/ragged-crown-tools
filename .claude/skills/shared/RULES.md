@@ -48,7 +48,7 @@ Every new def gets a sprite (owner, 2026-11-04). The MCP checks the sprite exist
    for p in 8080 8081; do curl -s "localhost:$p/collection/sprites?category=<category>" | node -e 'let s="";process.stdin.on("data",d=>s+=d).on("end",()=>console.log(JSON.parse(s).map(d=>d.id+" ("+d.name+")").join(", ")))'; done
    ```
    Suitable means it really is that thing, not merely close (a rake is not a spear). Reusing one is fine, for example one sprite for two defs; say which and why. Use that sprite's `_id` from the server you are writing to (the sandbox).
-2. **Otherwise draw a new one** with the sprites skill, in that category, and read its `_id` from the create result. Match the existing sprites of that category in outline and colour use.
+2. **Otherwise have a new one drawn by the `sprite-artist` subagent** (Agent tool, `subagent_type: "sprite-artist"`), not in the main session, so the drawing and renders stay out of its context (Trello [Skills 15]). Hand it every new sprite in the batch at once, after the owner approves the proposal: for each, the `id`, `name`, category and what it should show. Use the `_id`s from its report. Redraws go to it too: the `id` and the owner's feedback. Only when the owner asks for a sprite to be drawn in the main session, use the sprites skill directly.
 3. **Stop and have the owner approve the sprites in the sandbox UI before creating any def.** Redo one that isn't approved (same `id`) and ask again. Only then create the def with `spriteId`.
 
 If the owner says a def needs no sprite, leave `spriteId` out.
@@ -64,7 +64,7 @@ If the owner says a def needs no sprite, leave `spriteId` out.
 Over the cap, say so and propose the most useful ones up to the cap, or split it into rounds, each reviewed before the next.
 
 1. Read what exists, then **propose first**: a table with `id`, name, the columns the skill lists, the sprite (reuse an existing one, new, or none), and a one-line reason it earns its place. Merge entries that differ only by name. Every entry needs a reason the player would see it or use it; "fills the list" isn't one.
-2. Wait for the owner to approve or trim the table. Then follow the Sprites steps: create the new sprites, render the batch side by side and check the style as a set, and stop for their review.
+2. Wait for the owner to approve or trim the table. Then follow the Sprites steps: the `sprite-artist` subagent creates the new sprites and checks them as a set, and you stop for the owner's review.
 3. After the sprites are approved, create exactly the approved list.
 4. Report the `id`s in the same order, with what you left out and any doubts. Review is in the sandbox UI: `pnpm dev:sandbox` in `frontend/`, on :3001, on the page the skill names.
 
