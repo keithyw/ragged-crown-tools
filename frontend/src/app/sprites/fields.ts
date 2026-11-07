@@ -29,17 +29,3 @@ export const fields: FormField<SpriteFormData>[] = [
 		],
 	},
 ]
-
-// Edit page only: the create form doesn't offer it (a hand-drawn sprite is
-// saved as approved). No `redo` here: that needs a note, so it is set by the
-// send-for-review action ([Sprite 18]), not by hand.
-export const statusField: FormField<SpriteFormData> = {
-	name: 'status',
-	label: 'Review status',
-	type: 'select',
-	placeholder: 'No status',
-	options: [
-		{ value: 'review', label: 'Review' },
-		{ value: 'approved', label: 'Approved' },
-	],
-}

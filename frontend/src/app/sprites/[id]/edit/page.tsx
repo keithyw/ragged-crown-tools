@@ -8,6 +8,7 @@ import {
 	Button,
 	CancelSubmitButton,
 	FormInput,
+	SelectDropdown,
 	ServerErrorMessages,
 	SpinnerSection,
 	SpriteEditor,
@@ -17,7 +18,19 @@ import { URLS } from '@/lib/constants'
 import { collectionService } from '@/lib/services'
 import { emptySpriteArt, Sprite } from '@/lib/types'
 import { spriteSchema, type SpriteFormData } from '@/schemas'
-import { fields, statusField } from '@/app/sprites/fields'
+import { fields } from '@/app/sprites/fields'
+
+const STATUS_LABELS: Record<string, string> = {
+	review: 'Review',
+	redo: 'Redo',
+	approved: 'Approved',
+}
+// No `redo`: it needs a note, so it is set by sending a sprite back for redo
+// (review page, [Sprite 18]), not by hand.
+const STATUS_CHOICES = [
+	{ value: 'review', label: 'Review' },
+	{ value: 'approved', label: 'Approved' },
+]
 
 const EditSpritePage = () => {
 	const params = useParams()
@@ -62,6 +75,14 @@ const EditSpritePage = () => {
 		name: 'background',
 	}).field
 
+	// Not a select showing the stored value: `redo` isn't one of the options, so
+	// a select would show (and save) something else. The text is the value that
+	// will be saved; the select only changes it.
+	const status = useController({
+		control: editController.control,
+		name: 'status',
+	}).field
+
 	if (editController.isLoading) {
 		return <SpinnerSection spinnerMessage='Loading sprite...' />
 	}
@@ -89,7 +110,7 @@ const EditSpritePage = () => {
 					}}
 					details={
 						<section>
-							{[...fields, statusField].map((f, idx) => (
+							{fields.map((f, idx) => (
 								<FormInput
 									key={idx}
 									control={editController.control}
@@ -100,6 +121,19 @@ const EditSpritePage = () => {
 									}
 								/>
 							))}
+							<p className='mb-2 text-sm font-bold text-gray-700'>
+								Review status:{' '}
+								<span className='font-normal'>
+									{STATUS_LABELS[status.value ?? ''] ?? 'None'}
+								</span>
+							</p>
+							<SelectDropdown
+								label='Change review status'
+								options={STATUS_CHOICES}
+								selectedValue={null}
+								placeholder='Keep current'
+								onSelect={(v) => v && status.onChange(v)}
+							/>
 						</section>
 					}
 					footer={
