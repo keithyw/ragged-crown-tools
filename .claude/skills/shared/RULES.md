@@ -4,7 +4,7 @@ Every creation skill (sprites, terrain, items, objects, portals, and whatever co
 
 ## The hierarchy
 
-Things are built from other things: a def needs a sprite, a zone needs defs and sprites. **Whatever a thing needs that doesn't exist yet goes through its own creation flow first, from the bottom up, approved at each level, before anything that depends on it is created.** A rejected sprite is a cheap redo; a def or zone already pointing at it is not.
+Things are built from other things: a def needs a sprite, a zone needs defs and sprites. **Whatever a thing needs that doesn't exist yet is created first, from the bottom up, before anything that depends on it.** Sprites are the exception to "approved at each level" (owner, 2026-11-06): the owner reviews them afterwards, in a queue, and a rejected one is redrawn under the same `id`, so a def or zone already pointing at it shows the new art. Zones are still reviewed on their own.
 
 **Reuse before creating.** A new thing has to differ in what it does or in how it reads at tile size. A blue flower when a flower already exists is not a new thing. For each thing needed, the choice is: reuse this one, or create a new one and say why. The owner decides.
 
@@ -48,8 +48,8 @@ Every new def gets a sprite (owner, 2026-11-04). The MCP checks the sprite exist
    for p in 8080 8081; do curl -s "localhost:$p/collection/sprites?category=<category>" | node -e 'let s="";process.stdin.on("data",d=>s+=d).on("end",()=>console.log(JSON.parse(s).map(d=>d.id+" ("+d.name+")").join(", ")))'; done
    ```
    Suitable means it really is that thing, not merely close (a rake is not a spear). Reusing one is fine, for example one sprite for two defs; say which and why. Use that sprite's `_id` from the server you are writing to (the sandbox).
-2. **Otherwise have a new one drawn by the `sprite-artist` subagent** (Agent tool, `subagent_type: "sprite-artist"`), not in the main session, so the drawing and renders stay out of its context (Trello [Skills 15]). Hand it every new sprite in the batch at once, after the owner approves the proposal: for each, the `id`, `name`, category and what it should show. Use the `_id`s from its report. Redraws go to it too: the `id` and the owner's feedback. Only when the owner asks for a sprite to be drawn in the main session, use the sprites skill directly.
-3. **Stop and have the owner approve the sprites in the sandbox UI before creating any def.** Redo one that isn't approved (same `id`) and ask again. Only then create the def with `spriteId`.
+2. **Otherwise have a new one drawn by the `sprite-artist` subagent** (Agent tool, `subagent_type: "sprite-artist"`), not in the main session, so the drawing and renders stay out of its context (Trello [Skills 15]). Hand it every new sprite in the batch at once, after the owner approves the proposal: for each, the `id`, `name`, category and what it should show. Use the `_id`s from its report. It writes them with `status: "review"`. Only when the owner asks for a sprite to be drawn in the main session, use the sprites skill directly.
+3. **Don't stop for sprite approval.** Create the def with `spriteId` straight away, pointing at the new sprite while it is in review. The owner approves or sends it back on the review page afterwards. Redraws happen in a redo round (the sprites skill), from the owner's notes, not in the middle of a run.
 
 If the owner says a def needs no sprite, leave `spriteId` out.
 
@@ -64,11 +64,13 @@ If the owner says a def needs no sprite, leave `spriteId` out.
 Over the cap, say so and propose the most useful ones up to the cap, or split it into rounds, each reviewed before the next.
 
 1. Read what exists, then **propose first**: a table with `id`, name, the columns the skill lists, the sprite (reuse an existing one, new, or none), and a one-line reason it earns its place. Merge entries that differ only by name. Every entry needs a reason the player would see it or use it; "fills the list" isn't one.
-2. Wait for the owner to approve or trim the table. Then follow the Sprites steps: the `sprite-artist` subagent creates the new sprites and checks them as a set, and you stop for the owner's review.
-3. After the sprites are approved, create exactly the approved list.
-4. Report the `id`s in the same order, with what you left out and any doubts. Review is in the sandbox UI: `pnpm dev:sandbox` in `frontend/`, on :3001, on the page the skill names.
+2. Wait for the owner to approve or trim the table. Then follow the Sprites steps: the `sprite-artist` subagent creates the new sprites and checks them as a set. You don't stop for their review.
+3. Create exactly the approved list, with the new sprites linked.
+4. Report the `id`s in the same order, with what you left out and any doubts, and end with **the sprites now waiting for review** (their `id`s). Review is in the sandbox UI: `pnpm dev:sandbox` in `frontend/`, on :3001: the page the skill names for the defs, and Sprites, "Review Generated Sprites" for the sprites.
 
-A single thing asked for by name needs no table, but it still goes through the Sprites steps before it is created.
+A single thing asked for by name needs no table, but it still goes through the Sprites steps.
+
+For object requests, the `object-scout` subagent can do step 1 (read what exists, return the proposal table and sprite briefs) so the listings stay out of the main session (Trello [Skills 15]). It writes nothing; you present its table to the owner.
 
 ## Simple interactions
 
@@ -84,6 +86,8 @@ Objects can talk (portals use the same shape, but only the objects skill does th
 When the owner widens this, change this section, not the skills that point at it.
 
 ## Fixing one
+
+(Sprites in the redo queue have their own procedure: the sprites skill's Redo round.)
 
 `list_collection` with `filters: { id }` to get the document, change what is wrong, and `replace_doc` with the **whole** document (PUT replaces everything). If it has `interactions`, **send them back unchanged**, or the replace deletes them. Keep the same `id`, so the owner is still judging the same thing.
 

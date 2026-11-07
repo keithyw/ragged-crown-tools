@@ -7,7 +7,7 @@ description: Make, redo or adjust a Ragged Crown sprite (16x16 EGA pixel art for
 
 **Read `.claude/skills/shared/RULES.md` first.** It holds the rules every creation skill follows: the hierarchy and reuse, where you may write, ids, batches (the cap is 10, drawn as a set) and what not to do. This file is only what is particular to sprites, which sit at the bottom of the hierarchy: they depend on nothing, so they have no sprite step of their own.
 
-A sprite is 16x16 pixels in the 16 EGA colours, one tile, no multi-tile objects (DATA-MODEL.md 1.2). The look is Ultima 5 / Magic Candle. The owner judges quality and style; you draw, they review. The only way a sprite reaches the real database is `make promote-sprites` (see Promoting), and only after the owner approves it.
+A sprite is 16x16 pixels in the 16 EGA colours, one tile, no multi-tile objects (DATA-MODEL.md 1.2). The look is Ultima 5 / Magic Candle. The owner judges quality and style; you draw, they review (see Review). The only way a sprite reaches the real database is `make promote-sprites` (see Promoting), and only after the owner approves it.
 
 ## The text form
 
@@ -20,11 +20,12 @@ That is the standard EGA order. If `EGA_PALETTE` in `frontend/src/lib/types/spri
 ## Document
 
 ```json
-{ "id": "FARM_HAND", "name": "Farm hand", "category": "object", "background": "transparent", "rows": ["................", "...16 strings of 16 characters..."] }
+{ "id": "FARM_HAND", "name": "Farm hand", "category": "object", "background": "transparent", "status": "review", "rows": ["................", "...16 strings of 16 characters..."] }
 ```
 
 - `category`: `terrain`, `object`, `item` or `portal`.
 - `background` is `"transparent"` unless asked otherwise (or a palette index).
+- `status` is `"review"` on every sprite you create or redraw (see Review below). Never `"approved"`: only the owner approves.
 - `rows` is the text form from above as an array of 16 strings of 16 characters. Send it **instead of** `pixels`: the MCP turns it into the 256-entry array itself, so you never type that array (typing it by hand has failed before, always on the long runs of empty cells). A wrong row count, a short row or a stray character is refused with the row and column. Sending both `rows` and `pixels` is refused.
 
 The MCP validates against `spriteSchema` and returns a readable error for a bad document. Its reply shows the stored sprite as `rows` too, not the 256-entry array.
@@ -46,6 +47,28 @@ The MCP validates against `spriteSchema` and returns a readable error for a bad 
 3. Look at it: render the rows to a PNG in `frontend/.sandbox/` and open it with Read (see Looking at a sprite). Fix what you can see is wrong (lopsided, stray row, clashing colours) before going on.
 4. `create_doc` into `sprites` on the sandbox, with the rows as `rows`.
 5. Report to the owner: the `id`s made, the rows in a code block (so they can import them to the real builder if wanted), choices made and doubts. Review is in the sandbox UI: `pnpm dev:sandbox` in `frontend/`, on :3001, next to the normal dev server (ARCHITECTURE.md 6.0, 6.4).
+
+## Review
+
+Sprites carry a review status (Trello [Sprite 12]). You set `review` and leave the rest to the owner, who approves in the sandbox UI (Sprites, "Review Generated Sprites"). Creation runs do **not** stop for sprite approval: a def points at a sprite that is still in review, and the run ends by listing the sprites waiting.
+
+| Status | Meaning | Who sets it |
+| --- | --- | --- |
+| `review` | Waiting for the owner | You, on create and after a redo |
+| `redo` | The owner left a note; queued for you | The owner |
+| `approved` | Done; the only status that gets promoted | The owner (hand-drawn sprites are saved as approved) |
+
+## Redo round
+
+When asked to work through the redo queue (or to redo specific sprites from their notes):
+
+1. List them: `list_collection` on the sandbox `sprites` with `filters: { status: "redo" }` (add `id` to narrow). Each has a `reviewNote`: what the owner wants changed. That note is the brief; there is no other feedback.
+2. Redraw each from its note, same `id`, following Drawing and the render step. Several at once go to the `sprite-artist` subagent, one line per sprite in its report.
+3. `replace_doc` the **whole** document: the same `id`, `name`, `category` and `background`, the new `rows`, `status: "review"`, and **no** `reviewNote` (it is answered; leaving it out clears it, and the owner writes a fresh one if it still isn't right). Keeping the same document means defs and zones already pointing at it show the new art.
+4. If a note is unclear or can't be drawn at 16x16, leave that sprite in `redo`, don't replace it, and say why in the report.
+5. Report the `id`s redone, one line each on what you changed, and any left in `redo`. The owner reviews them on the review page again.
+
+Never touch a sprite that isn't in `redo` during a round.
 
 ## Looking at a sprite
 
@@ -74,8 +97,8 @@ Never run `APPLY=1` without that go-ahead, never promote "everything", and don't
 
 ## Fixing one
 
-Find it with `list_collection` (`filters: { id }`) to get its `_id`, change the rows, and `replace_doc` with the **whole** document (PUT replaces everything: send `id`, `name`, `category`, `background` and the changed `rows`). `list_collection` still returns `pixels`; turn them into rows rather than sending that array back by hand. Keep the same `id`, so the owner is still judging the same sprite.
+Find it with `list_collection` (`filters: { id }`) to get its `_id`, change the rows, and `replace_doc` with the **whole** document (PUT replaces everything: send `id`, `name`, `category`, `background`, `status` and the changed `rows`; set `status` to `review`, and drop `reviewNote`, as in a redo round). For a redo from the queue use the Redo round above. `list_collection` still returns `pixels`; turn them into rows rather than sending that array back by hand. Keep the same `id`, so the owner is still judging the same sprite.
 
 ## Don't
 
-- Don't change existing defs that use a sprite. Linking a new sprite to a new def is the def skill's step, after the owner approves the sprite.
+- Don't change existing defs that use a sprite. Linking a new sprite to a new def is the def skill's step, and it needn't wait for the sprite's approval.
