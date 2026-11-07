@@ -11,6 +11,8 @@ interface DataTableProps<T> {
 	rowKey: keyof T
 	actions?: TableRowAction<T>[]
 	emptyMessage?: string
+	// Makes rows clickable. Controls inside a row should stop propagation.
+	onRowClick?: (row: T) => void
 
 	// pagination (the pager only shows when onPageChange is given)
 	currentPage?: number
@@ -34,6 +36,7 @@ function DataTableComponent<T extends Record<string, any>>({
 	rowKey,
 	actions,
 	emptyMessage = 'No data available',
+	onRowClick,
 
 	// pagination props
 	currentPage = 1,
@@ -160,7 +163,8 @@ function DataTableComponent<T extends Record<string, any>>({
 						data.map((row) => (
 							<tr
 								key={String(row[rowKey])}
-								className='border-b bg-white hover:bg-gray-50'
+								className={`border-b bg-white hover:bg-gray-50 ${onRowClick ? 'cursor-pointer' : ''}`}
+								onClick={onRowClick ? () => onRowClick(row) : undefined}
 							>
 								{columns.map((col, colIndex) => (
 									<td

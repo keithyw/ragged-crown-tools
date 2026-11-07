@@ -8,6 +8,7 @@ import {
 	DataTable,
 	SpinnerSection,
 	SpriteImage,
+	SpriteRedoModal,
 } from '@/components'
 import { useCollection } from '@/hooks'
 import { URLS } from '@/lib/constants'
@@ -32,6 +33,7 @@ const SpritesReviewPage = () => {
 	const [page, setPage] = useState(1)
 	const [pageSize, setPageSize] = useState(10)
 	const [isApproving, setIsApproving] = useState(false)
+	const [redoTarget, setRedoTarget] = useState<StoredSprite | null>(null)
 
 	const rows = sprites.slice((page - 1) * pageSize, page * pageSize)
 	// Keep the page valid after approving the last rows of the final page.
@@ -72,6 +74,26 @@ const SpritesReviewPage = () => {
 		refresh()
 	}
 
+	// Saves the note and queues the sprite for Claude (whole-document PUT).
+	const sendForRedo = async (note: string) => {
+		if (!redoTarget) return
+		const { _id, updated_at: _updated, ...sprite } = redoTarget
+		void _updated
+		try {
+			await collectionService.put<Sprite>('sprites', _id, {
+				...sprite,
+				status: 'redo',
+				reviewNote: note,
+			})
+		} catch {
+			toast.error('Could not save the note')
+			return
+		}
+		toast.success(`${sprite.name} queued for redo`)
+		setRedoTarget(null)
+		refresh()
+	}
+
 	const columns: TableColumn<StoredSprite>[] = [
 		{
 			header: 'Approve',
@@ -80,6 +102,7 @@ const SpritesReviewPage = () => {
 					type='checkbox'
 					checked={checked.has(s._id)}
 					onChange={() => toggle(s._id)}
+					onClick={(e) => e.stopPropagation()}
 					aria-label={`Select ${s.name}`}
 				/>
 			),
@@ -139,7 +162,16 @@ const SpritesReviewPage = () => {
 				totalCount={sprites.length}
 				onPageChange={setPage}
 				onPageSizeChange={setPageSize}
+				onRowClick={setRedoTarget}
 			/>
+			{redoTarget && (
+				<SpriteRedoModal
+					key={redoTarget._id}
+					sprite={redoTarget}
+					onSave={sendForRedo}
+					onClose={() => setRedoTarget(null)}
+				/>
+			)}
 		</>
 	)
 }
