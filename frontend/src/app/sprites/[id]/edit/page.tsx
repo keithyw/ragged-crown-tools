@@ -17,7 +17,7 @@ import { URLS } from '@/lib/constants'
 import { collectionService } from '@/lib/services'
 import { emptySpriteArt, Sprite } from '@/lib/types'
 import { spriteSchema, type SpriteFormData } from '@/schemas'
-import { fields } from '@/app/sprites/fields'
+import { fields, statusField } from '@/app/sprites/fields'
 
 const EditSpritePage = () => {
 	const params = useParams()
@@ -36,8 +36,8 @@ const EditSpritePage = () => {
 		errorLoadingMessage: 'Failed to load sprite',
 		redirectUrl: URLS.SPRITES,
 		schema: spriteSchema,
-		// Every field of a sprite is in the form, so the full-replace PUT drops
-		// nothing.
+		// Every field of a sprite is in the form (the review note is carried as a
+		// hidden value), so the full-replace PUT drops nothing.
 		handleFetchCallback: useCallback(
 			(s: Sprite) => ({
 				id: s.id ?? '',
@@ -45,6 +45,8 @@ const EditSpritePage = () => {
 				category: s.category,
 				background: s.background,
 				pixels: s.pixels,
+				status: s.status,
+				reviewNote: s.reviewNote,
 			}),
 			[],
 		),
@@ -87,7 +89,7 @@ const EditSpritePage = () => {
 					}}
 					details={
 						<section>
-							{fields.map((f, idx) => (
+							{[...fields, statusField].map((f, idx) => (
 								<FormInput
 									key={idx}
 									control={editController.control}

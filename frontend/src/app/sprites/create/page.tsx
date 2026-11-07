@@ -30,6 +30,9 @@ const CreateSpritePage = () => {
 			id: '',
 			name: '',
 			category: 'terrain',
+			// Not on the form: a sprite drawn by hand is approved (Claude's are
+			// `review`, set by the sprite-artist).
+			status: 'approved',
 			...emptySpriteArt(),
 		},
 		createFn: collectionService.create,

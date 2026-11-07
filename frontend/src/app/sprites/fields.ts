@@ -29,3 +29,17 @@ export const fields: FormField<SpriteFormData>[] = [
 		],
 	},
 ]
+
+// Edit page only: the create form doesn't offer it (a hand-drawn sprite is
+// saved as approved).
+export const statusField: FormField<SpriteFormData> = {
+	name: 'status',
+	label: 'Review status',
+	type: 'select',
+	placeholder: 'No status',
+	options: [
+		{ value: 'review', label: 'Review' },
+		{ value: 'redo', label: 'Redo' },
+		{ value: 'approved', label: 'Approved' },
+	],
+}

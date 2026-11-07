@@ -30,6 +30,11 @@ export const SPRITE_CATEGORIES = [
 ] as const
 export type SpriteCategory = (typeof SPRITE_CATEGORIES)[number]
 
+// Where a sprite is in review (Trello [Sprite 12]). `review`: waiting for the
+// owner. `redo`: the owner left a note, queued for Claude. `approved`: done.
+export const SPRITE_STATUSES = ['review', 'redo', 'approved'] as const
+export type SpriteStatus = (typeof SPRITE_STATUSES)[number]
+
 // Row-major, SPRITE_SIZE * SPRITE_SIZE entries: a palette index, or null for
 // an empty cell (which shows the background).
 export type SpritePixels = (number | null)[]
@@ -52,4 +57,9 @@ export interface Sprite extends SpriteArt {
 	id?: string
 	name: string
 	category: SpriteCategory
+	// Absent on sprites made before review existed. A hand-drawn one is saved
+	// as `approved`; Claude's are `review`.
+	status?: SpriteStatus
+	// What the owner wants changed, read by Claude on a `redo` round.
+	reviewNote?: string
 }

@@ -5,6 +5,7 @@ import {
 	EGA_PALETTE,
 	SPRITE_CATEGORIES,
 	SPRITE_SIZE,
+	SPRITE_STATUSES,
 } from '../lib/types/sprite'
 
 const paletteIndex = z
@@ -21,6 +22,14 @@ export const spriteSchema = z.object({
 	category: z.enum(SPRITE_CATEGORIES, { error: 'Pick a category' }),
 	background: z.union([z.literal('transparent'), paletteIndex]),
 	pixels: z.array(paletteIndex.nullable()).length(SPRITE_SIZE * SPRITE_SIZE),
+	// Optional so older sprites and the MCP's writes stay valid. The forms carry
+	// both as hidden values so the full-replace PUT never drops them.
+	status: z.enum(SPRITE_STATUSES).optional(),
+	// An empty note is stored as absent.
+	reviewNote: z
+		.string()
+		.optional()
+		.transform((v) => v?.trim() || undefined),
 })
 
 export type SpriteFormData = z.infer<typeof spriteSchema>

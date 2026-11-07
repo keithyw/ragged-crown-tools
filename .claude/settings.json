@@ -18,5 +18,18 @@
       "mcp__ragged-crown__create_doc",
       "mcp__ragged-crown__replace_doc"
     ]
+  },
+  "hooks": {
+    "SessionStart": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "\"$CLAUDE_PROJECT_DIR\"/.claude/hooks/sandbox-reminder.sh 2>/dev/null || true",
+            "timeout": 10
+          }
+        ]
+      }
+    ]
   }
 }
