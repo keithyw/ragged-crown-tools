@@ -7,12 +7,20 @@ interface SpriteInspectorProps {
 	sprite: Sprite
 	onEdit: () => void
 	onDelete: () => void
+	onSendForReview: () => void
+}
+
+const STATUS_LABELS = {
+	review: 'Review',
+	redo: 'Redo',
+	approved: 'Approved',
 }
 
 export const SpriteInspector = ({
 	sprite,
 	onEdit,
 	onDelete,
+	onSendForReview,
 }: SpriteInspectorProps) => {
 	const details = [
 		{
@@ -25,6 +33,10 @@ export const SpriteInspector = ({
 				sprite.background === 'transparent'
 					? 'Transparent'
 					: EGA_PALETTE[sprite.background].name,
+		},
+		{
+			key: 'Review status',
+			val: sprite.status ? STATUS_LABELS[sprite.status] : 'None',
 		},
 	]
 	return (
@@ -47,6 +59,9 @@ export const SpriteInspector = ({
 					Delete
 				</Button>
 			</div>
+			<Button actionType='neutral' className='w-full' onClick={onSendForReview}>
+				Send for review
+			</Button>
 		</div>
 	)
 }

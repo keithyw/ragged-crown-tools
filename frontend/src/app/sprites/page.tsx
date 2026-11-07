@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import toast from 'react-hot-toast'
 import { useRouter } from 'next/navigation'
 import {
 	Breadcrumbs,
@@ -9,6 +10,7 @@ import {
 	SpinnerSection,
 	SpriteCard,
 	SpriteInspector,
+	SpriteRedoModal,
 } from '@/components'
 import { useCollection, useDeleteRecord } from '@/hooks'
 import { URLS } from '@/lib/constants'
@@ -19,6 +21,7 @@ const SpritesPage = () => {
 	const router = useRouter()
 	const [selectedSprite, setSelectedSprite] =
 		useState<StoredDoc<Sprite> | null>(null)
+	const [redoTarget, setRedoTarget] = useState<StoredDoc<Sprite> | null>(null)
 	const {
 		items: sprites,
 		isLoading,
@@ -33,6 +36,27 @@ const SpritesPage = () => {
 		onSuccess: refresh,
 		itemNameProp: 'name',
 	})
+
+	// Saves the note and queues the sprite for Claude (whole-document PUT).
+	const sendForRedo = async (note: string) => {
+		if (!redoTarget) return
+		const { _id, updated_at: _updated, ...sprite } = redoTarget
+		void _updated
+		try {
+			const saved = await collectionService.put<Sprite>('sprites', _id, {
+				...sprite,
+				status: 'redo',
+				reviewNote: note,
+			})
+			setSelectedSprite(saved)
+		} catch {
+			toast.error('Could not save the note')
+			return
+		}
+		toast.success(`${sprite.name} queued for redo`)
+		setRedoTarget(null)
+		refresh()
+	}
 
 	if (isLoading) {
 		return <SpinnerSection spinnerMessage='Loading Sprites' />
@@ -73,6 +97,7 @@ const SpritesPage = () => {
 									deleteController.openDeleteModal(selectedSprite)
 									setSelectedSprite(null)
 								}}
+								onSendForReview={() => setRedoTarget(selectedSprite)}
 							/>
 						) : (
 							<p className='text-sm text-gray-500'>
@@ -87,6 +112,14 @@ const SpritesPage = () => {
 					No sprites have been created yet. Click on <em>Create Sprite</em> to
 					start drawing.
 				</div>
+			)}
+			{redoTarget && (
+				<SpriteRedoModal
+					key={redoTarget._id}
+					sprite={redoTarget}
+					onSave={sendForRedo}
+					onClose={() => setRedoTarget(null)}
+				/>
 			)}
 			<ConfirmationModal
 				isOpen={deleteController.isModalOpen}
