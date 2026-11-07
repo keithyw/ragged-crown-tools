@@ -1,4 +1,4 @@
-// Promotes reviewed sprites from the sandbox API to the real API
+// Promotes approved sprites from the sandbox API to the real API
 // (ARCHITECTURE.md 6.4). Usage, from the repo root:
 //
 //   make promote-sprites IDS="STONE_WALL,GRASS"            dry run, writes nothing
@@ -74,6 +74,8 @@ function describeChanges(next: Sprite, current: Stored) {
 	if (!same(next.name, current.name)) changes.push('name')
 	if (!same(next.category, current.category)) changes.push('category')
 	if (!same(next.background, current.background)) changes.push('background')
+	// The real copy takes the sandbox's status (approved), so it carries one.
+	if (!same(next.status, current.status)) changes.push('status')
 	if (!same(next.pixels, current.pixels)) {
 		const was = Array.isArray(current.pixels) ? current.pixels : []
 		const n = next.pixels.filter((p, i) => p !== (was[i] ?? undefined)).length
@@ -103,6 +105,15 @@ async function plan(): Promise<Step[]> {
 					parsed.error.issues
 						.map((i) => `${i.path.join('.') || '(sprite)'} ${i.message}`)
 						.join('; '),
+			)
+			continue
+		}
+
+		// Only approved sprites are promoted ([Sprite 12], [Sprite 17]). A sprite
+		// with no status counts as not approved: backfill it first.
+		if (parsed.data.status !== 'approved') {
+			problems.push(
+				`${id}: status is ${parsed.data.status ?? 'not set'}, not approved`,
 			)
 			continue
 		}

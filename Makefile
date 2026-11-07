@@ -84,3 +84,14 @@ ifeq ($(APPLY),1)
 else
 	node mcp/node_modules/tsx/dist/cli.mjs scripts/promote-sprites.ts "$(IDS)"
 endif
+
+# One-off ([Sprite 17]): give every sprite with no review status one, in both
+# databases. A dry run unless APPLY=1, which takes a backup first. STATUS=... is
+# the value (default approved).
+backfill-sprite-status:
+ifeq ($(APPLY),1)
+	$(MAKE) db-backup
+	node mcp/node_modules/tsx/dist/cli.mjs scripts/backfill-sprite-status.ts --apply $(STATUS)
+else
+	node mcp/node_modules/tsx/dist/cli.mjs scripts/backfill-sprite-status.ts $(STATUS)
+endif

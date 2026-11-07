@@ -86,7 +86,7 @@ EOF
 
 ## Promoting
 
-Only when the owner has approved specific sprites, and only those `id`s. From the repo root:
+Only sprites whose status is `approved`, and only the `id`s the owner names. The script refuses anything else. From the repo root:
 
 1. Dry run: `make promote-sprites IDS="STONE_WALL,GRASS"`. It writes nothing and prints `CREATE`, `UPDATE` (with what differs) or `unchanged` per id.
 2. Show the owner that output. An `UPDATE` overwrites a sprite that already exists in the real database (for example one they imported by hand), so say what would change.

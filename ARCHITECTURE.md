@@ -265,7 +265,7 @@ pnpm install
 pnpm dev          # http://localhost:3000, needs NEXT_PUBLIC_API_URL=http://localhost:8080
 ```
 
-Makefile targets: `build`, `docker-up`, `docker-down`, `docker-restart`, `rc-build`, `rc-down`, `rc-restart` (the `rc-*` ones act on the API container only), `db-backup` and `sandbox-refresh` (section 6.2), `db-indexes` and `sandbox-indexes` (section 6.3), `promote-sprites` (section 6.4).
+Makefile targets: `build`, `docker-up`, `docker-down`, `docker-restart`, `rc-build`, `rc-down`, `rc-restart` (the `rc-*` ones act on the API container only), `db-backup` and `sandbox-refresh` (section 6.2), `db-indexes` and `sandbox-indexes` (section 6.3), `promote-sprites` and `backfill-sprite-status` (section 6.4).
 
 ### 6.0 Sandbox stack
 
@@ -389,6 +389,8 @@ Why promotion is keyed on `id`: the server generates `_id` and strips any `_id` 
 - **This makes `id` a cross-database key for promotion only.** Everywhere else it stays a display label (section 3.4).
 - **`make promote-sprites IDS="STONE_WALL,GRASS"`** (`scripts/promote-sprites.ts`, run through the MCP's `tsx`) is a **dry run**: for each `id` it prints `CREATE`, `UPDATE` (with what differs: name, category, background, or how many pixels) or `unchanged`, and writes nothing. Add **`APPLY=1`** to write: it runs `make db-backup` first, then creates or replaces.
 - **It refuses before writing anything** if an `id` isn't in the sandbox, is invalid against `spriteSchema`, matches more than one sprite on either side, or if the sandbox and real API addresses are the same. A failure part-way through a write stops and says how many were written; re-running is safe, because sprites already written show up as `unchanged`.
+- **Only `approved` sprites are promoted** ([Sprite 17]). A sprite with another status, or none, is refused with its status named, and nothing is written. An `UPDATE` also copies the status, so the real copy carries `approved`. Sprites have a review status (`review`, `redo`, `approved`) and a `reviewNote`; the sprite pages, the review page and the redo round use them ([Sprite 12]).
+- **`make backfill-sprite-status`** is the one-off that gave the sprites that existed before review a status, in both databases. A dry run lists each sprite and the value it would get (`STATUS=` sets it, default `approved`); `APPLY=1` backs up the real database first, then writes whole documents. Only sprites with no status are touched, so re-running is safe.
 - **An update replaces the real sprite in place** and keeps its real `_id`, so anything referencing it keeps working. Read the dry run's `UPDATE` lines: a hand-imported sprite with the same `id` is overwritten by the sandbox's version.
 - **The gate is the owner's go-ahead.** The script talks to the two APIs over HTTP, not through the MCP, so the real MCP's `create_doc` and `replace_doc` stay denied in `.claude/settings.json` and still guard the generic path. Claude runs the dry run, shows the plan, and runs `APPLY=1` only after an explicit approval. Don't add `make promote-sprites` to a permission allow list.
 - The addresses come from `SANDBOX_API_URL` and `REAL_API_URL` (defaults `:8081` and `:8080`).
