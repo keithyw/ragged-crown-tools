@@ -47,8 +47,16 @@ const SpritesReviewPage = () => {
 			return next
 		})
 
-	const selectPage = () =>
-		setChecked((prev) => new Set([...prev, ...rows.map((s) => s._id)]))
+	const allChecked = rows.length > 0 && rows.every((s) => checked.has(s._id))
+	const someChecked = rows.some((s) => checked.has(s._id))
+
+	// Checks every row on this page, or clears them if all are already checked.
+	const togglePage = () =>
+		setChecked((prev) => {
+			const next = new Set(prev)
+			rows.forEach((s) => (allChecked ? next.delete(s._id) : next.add(s._id)))
+			return next
+		})
 
 	const approve = async () => {
 		const chosen = sprites.filter((s) => checked.has(s._id))
@@ -96,15 +104,36 @@ const SpritesReviewPage = () => {
 
 	const columns: TableColumn<StoredSprite>[] = [
 		{
-			header: 'Approve',
+			header: (
+				<label
+					className='flex cursor-pointer items-center gap-2'
+					title='Select all on this page'
+				>
+					<input
+						type='checkbox'
+						className='h-5 w-5 cursor-pointer'
+						checked={allChecked}
+						ref={(el) => {
+							if (el) el.indeterminate = someChecked && !allChecked
+						}}
+						onChange={togglePage}
+					/>
+					All
+				</label>
+			),
+			// The label fills the cell (cancelling its padding), so a click
+			// anywhere in it toggles the box, and none reaches the row.
+			stopRowClick: true,
 			render: (s) => (
-				<input
-					type='checkbox'
-					checked={checked.has(s._id)}
-					onChange={() => toggle(s._id)}
-					onClick={(e) => e.stopPropagation()}
-					aria-label={`Select ${s.name}`}
-				/>
+				<label className='-mx-6 -my-4 flex cursor-pointer items-center px-6 py-4'>
+					<input
+						type='checkbox'
+						className='h-5 w-5 cursor-pointer'
+						checked={checked.has(s._id)}
+						onChange={() => toggle(s._id)}
+						aria-label={`Select ${s.name}`}
+					/>
+				</label>
 			),
 		},
 		{
@@ -131,9 +160,6 @@ const SpritesReviewPage = () => {
 			/>
 			<div className='mb-4 flex items-center justify-end gap-3'>
 				<span className='text-sm text-gray-600'>{checked.size} selected</span>
-				<Button actionType='neutral' type='button' onClick={selectPage}>
-					Select this page
-				</Button>
 				<Button
 					actionType='neutral'
 					type='button'

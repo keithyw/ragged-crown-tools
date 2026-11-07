@@ -119,7 +119,7 @@ function DataTableComponent<T extends Record<string, any>>({
 							<th
 								scope='col'
 								className={`px-6 py-3 ${col.sortable ? 'cursor-pointer' : ''}`}
-								key={col.header || idx}
+								key={idx}
 								onClick={() => {
 									if (col.sortable && (col.sortField || col.accessor)) {
 										if (onSort) {
@@ -170,6 +170,9 @@ function DataTableComponent<T extends Record<string, any>>({
 									<td
 										className='px-6 py-4'
 										key={String(row[rowKey]) + '-' + colIndex}
+										onClick={
+											col.stopRowClick ? (e) => e.stopPropagation() : undefined
+										}
 									>
 										{col.render
 											? col.render(row)
