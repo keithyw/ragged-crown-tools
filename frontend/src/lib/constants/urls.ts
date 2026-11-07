@@ -6,6 +6,7 @@ export const URLS = {
 	ITEM_DEFINITIONS: '/item-definitions',
 	PORTAL_DEFINITIONS: '/portal-definitions',
 	SPRITES: '/sprites',
+	SPRITES_REVIEW: '/sprites/review',
 	ZONE: '/zone',
 	ZONE_SPECS: '/zone/specs',
 }
