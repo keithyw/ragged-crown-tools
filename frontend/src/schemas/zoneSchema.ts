@@ -1,5 +1,6 @@
 import { z } from 'zod'
 import type { Zone } from '@/lib/types'
+import { ZONE_STATUSES } from '../lib/types/zoneReview'
 import { placementSchema, positionSchema } from './contentSchemas'
 
 // The zone the builder saves: details, terrain, starting position and
@@ -37,6 +38,15 @@ const zoneBaseSchema = z.object({
 			z.array(placementSchema).min(1, 'A cell with no placements has no key'),
 		)
 		.optional(),
+	// Review state (tools only, see lib/types/zoneReview.ts). Optional: a zone
+	// drawn by hand has none. The builder doesn't edit them; the edit page
+	// merges the loaded zone back in so a save keeps them.
+	status: z.enum(ZONE_STATUSES).optional(),
+	// An empty note is stored as absent.
+	reviewNote: z
+		.string()
+		.optional()
+		.transform((v) => v?.trim() || undefined),
 })
 
 export const zoneSchema = zoneBaseSchema.superRefine((zone, ctx) => {
@@ -59,6 +69,14 @@ export const zoneSchema = zoneBaseSchema.superRefine((zone, ctx) => {
 				message: `A placement at ${key} is outside the map`,
 			})
 		}
+	}
+	// Without a note Claude can't tell what is being redone, or why.
+	if (zone.status === 'redo' && !zone.reviewNote) {
+		ctx.addIssue({
+			code: 'custom',
+			path: ['reviewNote'],
+			message: 'A redo needs a note',
+		})
 	}
 }) satisfies z.ZodType<Zone>
 

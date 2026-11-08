@@ -18,8 +18,8 @@ A document in `zone_specs` (`list_collection`, `filters: { status: "pending" }`,
 1. **Read the spec and what exists**: terrain (`tile_defs`), objects, portals and items (names only, see the object skill's command), and sprites. Reuse before creating (`RULES.md`).
 2. **Decide the plan, and don't stop for approval** (owner, 2026-11-07). A long run that waits on the owner needs them watching, so, as with sprites, build first and review afterwards. Write the plan (defs to reuse, new ones and why, a layout grid) at the top of your report instead of asking. This overrides the "propose, then wait" steps in `RULES.md` Batches for zones. The 10-def cap still applies: over it, build the most useful ones and say what you left for a second round.
 3. **Create the missing parts bottom-up**, following the matching skill for each kind (terrain, objects, items, portals): sprites first via the `sprite-artist` subagent, then the defs. Nothing is held up for review.
-4. **Compose the zone** and write it with `create_doc` on `zones` (or `replace_doc` with the whole document when redoing; keep the same `id`).
-5. **Report**: the plan as built, the zone `id`, a character grid, every def and sprite created (the owner reviews the new defs and sprites afterwards, so list them by `id`), what the spec asked for that the model can't hold, and doubts. Leave the spec `pending`: the owner marks it `processed` once approved. Corrections come back as a redo of the same zone.
+4. **Compose the zone** and write it with `create_doc` on `zones`, with `"status": "review"` so it lands in the owner's review queue.
+5. **Report**: the plan as built, the zone `id`, a character grid, every def and sprite created (the owner reviews the new defs and sprites afterwards, so list them by `id`), what the spec asked for that the model can't hold, and doubts. Then mark the spec `processed` (`get_doc`, then `replace_doc` with the whole spec and `status: "processed"`; keep every other field): it only means a zone now exists for it. **Review is on the zone, not the spec.** The owner approves the zone or sends it back with a note, see Redo round.
 6. **Append an entry to `LESSONS.md`** (see its header). Do this every run, success or not.
 
 ## Document
@@ -28,6 +28,7 @@ A document in `zone_specs` (`list_collection`, `filters: { status: "pending" }`,
 {
   "id": "SMALL_HUT", "name": "small hut", "dangerLevel": 0,
   "startingPosition": { "x": 3, "y": 6 },
+  "status": "review",
   "terrain": [["<terrain _id>", "..."], ["..."]],
   "placements": {
     "3,7": [{ "uid": "<uuid>", "defKind": "portal", "defId": "<portal _id>" }],
@@ -49,6 +50,18 @@ A document in `zone_specs` (`list_collection`, `filters: { status: "pending" }`,
 
 A zone is hundreds of lines, so build it with a throwaway script instead of by hand: put it in `frontend/.sandbox/` (say that you added it), have it print the JSON, and send that. The MCP validates it with the frontend's zone schema and says what is wrong.
 
-## Fixing one
+## Redo round
 
-When the owner reviews the zone and wants changes, `get_doc` it, change what is wrong and `replace_doc` the **whole** document, keeping the `id` and every unchanged `uid`. Add a line to its `LESSONS.md` entry saying what the owner corrected.
+Started by a prompt like "work through the zone redo queue". The owner sends a zone back with a note, from the zone review page (Zones, Review Generated Zones) or the zone's inspector in the zone builder. That sets the **zone's** `status` to `redo` and stores its `reviewNote` (the same fields and idea as a sprite). The zone's spec is not touched: it stays as the base prompt. For each zone with `status: "redo"` (`list_collection` on `zones`, `filters: { status: "redo" }`):
+
+1. **Read the zone's `reviewNote`, and its spec** (`list_collection` on `zone_specs` with `filters: { id }`, the zone's `id`) as the original request. The note says what to change; the spec says what the zone was meant to be. If there is no spec (a hand-built zone), the note and the zone are all there is.
+2. **Do what the note asks.** A redo is about **contents and placement**: objects the owner expected and didn't get, a room that feels thin, things badly placed. Create missing defs and sprites through the matching skills, as in a first run. A def the owner thinks is wrong is theirs to fix, and sprites have their own queue: don't redraw or edit existing defs here unless the note asks for it by name.
+3. **Replace the zone**: `get_doc` it, change what the note asks for, and `replace_doc` the **whole** document. Keep its `_id` (it is in the URL), `id`, and every unchanged placement `uid`. Don't touch the rest of the layout. Set `status: "review"` and **remove `reviewNote`**. (The MCP refuses `redo` with no note, so a zone in the queue always has one.)
+4. **Update `LESSONS.md`**: add what was corrected to the zone's entry, and what it suggests.
+5. **Report** per zone: the note, what you changed, any new defs and sprites (the sprites are now waiting for review), and doubts. The owner approves from the review page, or sends it back again.
+
+A zone that needs scrapping isn't redone: the owner deletes it and rewrites the spec.
+
+## Fixing one outside the queue
+
+If the owner asks for a change in conversation instead of a note, do steps 2 to 4 above and leave the zone's `status` alone (unless it is `redo`, then step 3 applies as written).

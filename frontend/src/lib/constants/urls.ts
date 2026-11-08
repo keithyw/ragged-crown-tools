@@ -9,4 +9,5 @@ export const URLS = {
 	SPRITES_REVIEW: '/sprites/review',
 	ZONE: '/zone',
 	ZONE_SPECS: '/zone/specs',
+	ZONE_REVIEW: '/zone/review',
 }

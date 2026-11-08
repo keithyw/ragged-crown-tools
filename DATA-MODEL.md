@@ -197,7 +197,18 @@ interface ZoneSpec {
 ```
 
 - **Small on purpose.** The aim is to see how much can be built from a description. A field is added when a real zone shows the need for it. Set sizes by category (castle, town, village) may come later.
-- **`status` belongs to the designer.** The skill sets `processed` once the zone is approved, and the designer can set it back when a spec needs to change.
+- **`status` belongs to the spec, not the review.** `pending`: no zone built from it yet. `processed`: the zone skill built one (set when it writes the zone). The designer can set it back when a spec needs to change. It says nothing about whether the zone is any good: that is the zone's own review state (below).
+- **A spec and its zone are linked by `id`**: the zone takes the spec's. The spec stays as the base prompt: on a redo the skill reads it together with the zone's review note.
+
+### 2.4 Zone review state
+
+A generated zone carries a **review state**, the same idea as a sprite's ([Skills 18]):
+
+- `status`: `review` (built by Claude, waiting for the owner), `redo` (the owner left a note; queued for Claude) or `approved`. Absent on a zone drawn by hand.
+- `reviewNote`: the owner's one current note for a redo, with no history, cleared once Claude has acted on it. A `redo` without a note is refused (Claude can't tell what is being redone).
+
+These are **tools only**, like the sprite's: the type is `ReviewedZone` in `lib/types/zoneReview.ts`, not in `map.ts`, so the game's `Zone` is unchanged and ignores the two fields. The zone skill writes `review`; the owner approves from the zone review page or sends a zone back from the zone's inspector in the builder; a redo round replaces the same zone (same `_id`, `id` and unchanged placement `uid`s) and sets it back to `review`.
+
 - **Specs are easy to rebuild.** Losing the sandbox's copies to `make sandbox-refresh` is acceptable. Keeping them is useful as a record of what worked, not as content.
 
 ---

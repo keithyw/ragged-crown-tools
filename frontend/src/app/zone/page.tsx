@@ -11,10 +11,10 @@ import {
 import { useCollection, useDeleteRecord } from '@/hooks'
 import { URLS } from '@/lib/constants'
 import { collectionService, StoredDoc } from '@/lib/services'
-import { TableColumn, TableRowAction, Zone } from '@/lib/types'
+import { ReviewedZone, TableColumn, TableRowAction } from '@/lib/types'
 import { gridSize } from '@/lib/utils'
 
-type StoredZone = StoredDoc<Zone>
+type StoredZone = StoredDoc<ReviewedZone>
 
 const ZONE_COLUMNS: TableColumn<StoredZone>[] = [
 	{ header: 'Name', accessor: 'name' },
@@ -27,6 +27,8 @@ const ZONE_COLUMNS: TableColumn<StoredZone>[] = [
 		},
 	},
 	{ header: 'Danger Level', accessor: 'dangerLevel' },
+	// Only generated zones have a review status.
+	{ header: 'Status', render: (z) => z.status ?? '' },
 ]
 
 const ZonePage = () => {
@@ -36,7 +38,7 @@ const ZonePage = () => {
 		isLoading,
 		error,
 		refresh,
-	} = useCollection<Zone>('zones', { sort: 'name' })
+	} = useCollection<ReviewedZone>('zones', { sort: 'name' })
 
 	const deleteController = useDeleteRecord<StoredZone>({
 		collectionName: 'zones',

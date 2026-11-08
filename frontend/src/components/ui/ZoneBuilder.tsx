@@ -22,6 +22,7 @@ import {
 	SelectDropdown,
 	ServerErrorMessages,
 	SpinnerSection,
+	ZoneRedoModal,
 	StackDrawer,
 	NoticeModal,
 	TilePickerModal,
@@ -38,6 +39,8 @@ import type {
 	PortalDef,
 	Position,
 	TileDef,
+	ReviewedZone,
+	ZoneStatus,
 	Zone,
 } from '@/lib/types'
 import {
@@ -68,6 +71,11 @@ type Tool = 'paint' | 'start' | 'object' | 'item' | 'portal' | 'stack'
 // sections.
 type PlaceTool = Exclude<Tool, 'start' | 'stack'>
 
+const STATUS_CHOICES = [
+	{ value: 'review', label: 'Review' },
+	{ value: 'approved', label: 'Approved' },
+]
+
 const PLACE_TOOLS: { value: PlaceTool; label: string }[] = [
 	{ value: 'paint', label: 'Paint terrain' },
 	{ value: 'object', label: 'Place object' },
@@ -82,6 +90,11 @@ interface ZoneBuilderProps {
 	initialZone?: Zone
 	// The saved zone's _id (Edit only); a new zone has none to point at.
 	zoneId?: string
+	// The saved zone's review state (Edit only; absent on a hand-drawn zone), and
+	// how to send the zone back for redo with a note. The page saves it and
+	// passes the new state back in.
+	review?: Pick<ReviewedZone, 'status' | 'reviewNote'>
+	onSendForRedo?: (note: string) => Promise<void>
 	// Saves the assembled zone: Create POSTs it, Edit PUTs it. A thrown error is
 	// shown on the form.
 	onSave: (zone: Zone) => Promise<void>
@@ -92,6 +105,8 @@ export const ZoneBuilder = ({
 	cancelUrl,
 	initialZone,
 	zoneId,
+	review,
+	onSendForRedo,
 	onSave,
 }: ZoneBuilderProps) => {
 	const {
@@ -127,6 +142,11 @@ export const ZoneBuilder = ({
 		initialZone?.terrain ?? null,
 	)
 	const [isModalOpen, setIsModalOpen] = useState(false)
+	const [isRedoOpen, setIsRedoOpen] = useState(false)
+	// A status picked here, saved with the zone. Null keeps the current one. No
+	// `redo` in the choices: it needs a note, so it is set by sending the zone
+	// back for redo (as for sprites).
+	const [statusChoice, setStatusChoice] = useState<ZoneStatus | null>(null)
 	const [isPickerOpen, setIsPickerOpen] = useState(false)
 	const [isObjectPickerOpen, setIsObjectPickerOpen] = useState(false)
 	const [isItemPickerOpen, setIsItemPickerOpen] = useState(false)
@@ -397,6 +417,10 @@ export const ZoneBuilder = ({
 			terrain: grid,
 			startingPosition,
 			placements,
+			// The builder doesn't edit the note, but sends it back with the status
+			// so the zone keeps both.
+			status: statusChoice ?? review?.status,
+			reviewNote: review?.reviewNote,
 		})
 		if (!parsed.success) {
 			toast.error(parsed.error.issues[0].message)
@@ -414,6 +438,7 @@ export const ZoneBuilder = ({
 	})
 
 	const sz = grid ? gridSize(grid) : null
+	const shownStatus = statusChoice ?? review?.status
 
 	if (isLoading) {
 		return (
@@ -473,6 +498,43 @@ export const ZoneBuilder = ({
 							</p>
 						)}
 					</section>
+					{onSendForRedo && (
+						<section>
+							<h3 className='mb-2 text-sm font-bold text-gray-700'>Review</h3>
+							<dl className='text-sm'>
+								<div className='flex justify-between'>
+									<dt className='text-gray-500'>Status</dt>
+									<dd className='capitalize'>{shownStatus ?? 'none'}</dd>
+								</div>
+							</dl>
+							<SelectDropdown
+								id='review-status'
+								label='Change review status'
+								options={STATUS_CHOICES}
+								selectedValue={null}
+								placeholder='Keep current'
+								onSelect={(v) => v && setStatusChoice(v as ZoneStatus)}
+							/>
+							{statusChoice && (
+								<p className='mt-1 text-xs text-gray-500'>
+									Saved with the zone.
+								</p>
+							)}
+							{shownStatus === 'redo' && review?.reviewNote && (
+								<p className='mt-2 text-sm whitespace-pre-line text-gray-600'>
+									{review.reviewNote}
+								</p>
+							)}
+							<Button
+								type='button'
+								actionType='neutral'
+								className='mt-2'
+								onClick={() => setIsRedoOpen(true)}
+							>
+								{review?.status === 'redo' ? 'Edit redo note' : 'Send for redo'}
+							</Button>
+						</section>
+					)}
 					<section>
 						<h3 className='mb-2 text-sm font-bold text-gray-700'>Details</h3>
 						{detailFields.map((field) => (
@@ -692,6 +754,22 @@ export const ZoneBuilder = ({
 				onClose={() => setIsModalOpen(false)}
 				onSubmit={handleDraw}
 			/>
+			{isRedoOpen && onSendForRedo && (
+				<ZoneRedoModal
+					zone={{
+						name: initialZone?.name ?? '',
+						id: initialZone?.id ?? '',
+						reviewNote: review?.reviewNote,
+					}}
+					onSave={async (note) => {
+						await onSendForRedo(note)
+						// The zone now has the new status; drop any pending choice.
+						setStatusChoice(null)
+						setIsRedoOpen(false)
+					}}
+					onClose={() => setIsRedoOpen(false)}
+				/>
+			)}
 		</>
 	)
 }

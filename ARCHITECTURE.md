@@ -383,6 +383,8 @@ Agreed 2026-10-29. All four steps work for **sprites** ([Skills 4]); promoting a
 3. **Fix or approve.** A fix is Claude replacing the same sandbox document, so the reviewer judges the same item each time. Back to step 2.
 4. **Promote.** Only the `id`s that were reviewed are copied into the real database, with `make promote-sprites` (below). Never "everything in the sandbox".
 
+**Zones follow the same loop** ([Skills 18]): the zone skill builds a zone with `status: review`; the owner approves it or sends it back with a note (`redo`) on the zone review page (Zones, Review Generated Zones) or from the zone's inspector in the builder; a redo round replaces the same zone, reading the zone's spec (same `id`) as the original request. The review fields are on the zone itself but tools-only (`ReviewedZone`, `lib/types/zoneReview.ts`, not `map.ts`), so the game's copy is unchanged. Zones can't be promoted yet (they reference sandbox `_id`s, [Skills 6]).
+
 Why promotion is keyed on `id`: the server generates `_id` and strips any `_id` in a request, so a copied document always gets a new one, and `_id` can't link a sandbox document to its real twin.
 
 - **Promotion is an upsert by `id`:** create it if the real database has no document with that `id`, otherwise replace that one. The unique index on `id` (section 6.3) turns an accidental duplicate into a `409`.
