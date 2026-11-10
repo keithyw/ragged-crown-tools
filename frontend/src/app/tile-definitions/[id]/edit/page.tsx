@@ -33,9 +33,10 @@ const EditTileDefinitionPage = () => {
 		// Everything the doc holds except _id/updated_at, so the full-replace
 		// PUT keeps fields the form doesn't show (encounterTableKey).
 		handleFetchCallback: useCallback(
-			(t: TileDef) => ({
+			(t: TileDef & { code?: string }) => ({
 				kind: 'terrain' as const,
 				id: t.id ?? '',
+				code: t.code,
 				name: t.name,
 				description: t.description,
 				glyph: t.glyph,

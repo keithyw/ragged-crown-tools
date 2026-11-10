@@ -63,7 +63,7 @@ The legacy category types that used to be in `map.ts` (`TileType`, `TileType2`, 
 
 | Kind       | Collection  | Kind-specific fields                                                                 |
 | ---------- | ----------- | ------------------------------------------------------------------------------------ |
-| `terrain`  | `tile_defs` | Today's `TileDef` fields minus the glyph and `isConsumable`: `moveCost`, `isWalkable?`, `encounterRate?`, `encounterTableKey?` |
+| `terrain`  | `tile_defs` | Today's `TileDef` fields minus the glyph and `isConsumable`: `moveCost`, `isWalkable?`, `encounterRate?`, `encounterTableKey?`, `code?` (tools only, below) |
 | `object`   | `entities`  | `isSolid`, `moveCost?` (spaces only, default 1), `numberOfUses?`, `container?`, `interactions?` |
 | `item`     | `items`     | `maxQuantity?`, `numberOfUses?`, `container?`, `interactions?` (reserved for item use, deferred). More as the inventory design settles; `category` is deferred |
 | `creature` | `entities`  | Stub for now. Used by random encounters, not placed on the map                       |
@@ -98,6 +98,8 @@ Entering a town, castle or dungeon normally lands the player on its `startingPos
 
 **Terrain has no interactions.** Its only behavior beyond movement is the chance of a random encounter, from its `encounterRate` and an encounter table chosen by the region's difficulty (zone `dangerLevel`) and the terrain. A dirt road in a low-level zone gives rats, deer or goblins; the same road in Hell gives demons.
 
+**Terrain code (`code`, owner, 2026-11-10).** A short key for writing a zone's terrain as a grid instead of 256 long `_id`s ([Terrain 1], [Infra 23]): exactly two lowercase letters or digits (`gr` grass, `sw` swamp), unique across `tile_defs` (index `code_unique`). Typed uppercase, it is stored lowercase. It is not the `id` (that stays the full-word label and the promotion key) and not the glyph (shown when there is no sprite). Optional in the schema so older defs still validate; every terrain in the game's set gets one. Stored zones still hold `_id`s. Tools only for now, not in `map.ts`.
+
 **Uses (`numberOfUses`, name provisional).** Replaces `isConsumable`. How many times an object or item can be used before it disappears; absent means unlimited. Examples: a wheat field (Ultima 5) is used once, disappears, and gives 1 food; a torch is consumed when used; a wand has charges; a healing fountain has N uses. This is the lifetime of the **thing**; an interaction's `limit` (section 4.2) is the lifetime of one **interaction**. Remaining uses are runtime/save state, never zone data.
 
 **Max quantity (`maxQuantity`, items only; owner, 2026-10-31).** Replaces the `stackable` flag. How many of the item fit in one pile: gold, a quiver of arrows, a thief's lockpicks, throwing spears. Absent means only one. This is not `numberOfUses`: a wand with 100 charges is one thing with 100 uses, while 100 arrows are 100 things in one pile. Whole number, 2 or more. What the game does with an overflow (a second pile) is the inventory's decision. Existing items stored with `stackable: false` need no migration: that reads as no `maxQuantity`.
@@ -122,6 +124,8 @@ Terrain and objects/spaces are distinct for the designer: terrain is **painted**
 Terrain is the ground layer and does not change. It is where **random encounters** live (`encounterRate`, `encounterTableKey`), so it dominates the open world. Objects and spaces are things placed on top, mostly decoration, so they dominate towns and buildings.
 
 Some things could be either. A tree is normally terrain (it can carry an encounter rate), but it can also be an object when placed as decoration. A dangerous town that needs encounters uses special objects or spaces that start a set or random encounter, rather than encounter-bearing terrain.
+
+**Impassable ground is terrain, not a space** (owner, 2026-11-10). Lava, deep water and mountains could look like spaces, but the difference that matters is **mass painting**: terrain is the lowest, default layer a whole zone can be painted with (a zone of lava), while a space is one placement on top of it. A lava space with special behavior can still be made as an object when needed. Lava and deep water are `isWalkable: false`; crossing them, or climbing mountains, with special equipment is out of scope for now (no check exists).
 
 ### 1.6 Containers
 

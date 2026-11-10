@@ -278,8 +278,25 @@ const baseDefSchema = z.object({
 	spriteId: optionalText, // a sprite's _id
 })
 
+// A terrain's short key for writing a zone's terrain as a grid (Trello
+// [Terrain 1], [Infra 23]). Two lowercase letters or digits, unique per
+// tile_defs (index `code_unique`). Tools only for now: not in map.ts.
+const terrainCode = z
+	.string()
+	.trim()
+	.toLowerCase()
+	.transform((v) => v || undefined)
+	.pipe(
+		z
+			.string()
+			.regex(/^[a-z0-9]{2}$/, 'Two lowercase letters or digits')
+			.optional(),
+	)
+	.optional()
+
 export const tileDefSchema = baseDefSchema.extend({
 	kind: z.literal('terrain'),
+	code: terrainCode,
 	moveCost: z.number().min(0, 'Cannot be negative'),
 	isWalkable: z.boolean().optional(),
 	encounterRate: z.number().optional(),

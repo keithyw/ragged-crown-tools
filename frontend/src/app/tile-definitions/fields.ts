@@ -10,6 +10,12 @@ export const fields: FormField<TileDefinitionFormData>[] = [
 		required: true,
 	},
 	{
+		name: 'code',
+		label: 'Code (two letters, for zone grids)',
+		placeholder: 'e.g. gr',
+		inputAttrs: { maxLength: 2 },
+	},
+	{
 		name: 'name',
 		label: 'Name',
 		placeholder: 'Enter Name',

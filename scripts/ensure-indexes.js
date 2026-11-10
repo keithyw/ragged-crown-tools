@@ -28,6 +28,17 @@ for (const name of names) {
 				partialFilterExpression: { id: { $type: 'string' } },
 			},
 		)
+		// Terrain also has a short `code` for zone grids ([Terrain 1]).
+		if (name === 'tile_defs') {
+			db.getCollection(name).createIndex(
+				{ code: 1 },
+				{
+					name: 'code_unique',
+					unique: true,
+					partialFilterExpression: { code: { $type: 'string' } },
+				},
+			)
+		}
 		print(`ok      ${db.getName()}.${name}`)
 	} catch (e) {
 		failed++

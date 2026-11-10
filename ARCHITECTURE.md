@@ -367,7 +367,7 @@ make db-indexes COLLECTIONS="new_thing"  # only the named collection(s)
 
 Both pipe `scripts/ensure-indexes.js` into `mongosh` inside the container (`ragged_crown` and `ragged_crown_sandbox`; override with `REAL_DB` / `SANDBOX_DB`). The backend does not create indexes, on purpose: it stays a dumb store and is often left running between changes, so it is not a good moment to hook this to.
 
-- **What it creates:** a unique index named `id_unique` on `id`, **per collection** (not per `kind`), for `tile_defs`, `items`, `entities`, `zones`, `sprites` and `zone_specs`. `events` is skipped: it is reserved and unused.
+- **What it creates:** a unique index named `id_unique` on `id`, **per collection** (not per `kind`), for `tile_defs`, `items`, `entities`, `zones`, `sprites` and `zone_specs`. `events` is skipped: it is reserved and unused. `tile_defs` also gets `code_unique` on `code` (a terrain's two-letter grid key, DATA-MODEL.md 1.3), partial in the same way.
 - **Partial:** the index only covers documents whose `id` is a string. `id` is optional, and without this every document lacking one would count as `null` and collide with the others.
 - **Mongo lifecycle:** a collection comes into being on first insert or first `createIndex`, so there is no "table before index" order. The script can run on a brand-new empty database, and `ErrDuplicate` starts firing as soon as the index exists.
 - **Idempotent, and fails soft:** re-running does nothing. A failure on one collection (typically existing duplicate `id` values, which block building a unique index) is printed and the others still run; the exit code is 1 if anything failed. Changing an index definition later is a deliberate drop and recreate, not something the script does.
