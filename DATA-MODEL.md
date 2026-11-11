@@ -54,7 +54,7 @@ There is no separate "invisible" concept: a thing meant to go unnoticed uses a g
 - Sprites live in their own `sprites` collection (section 6): `{ _id, id?, name, category, background, pixels, status?, reviewNote? }`. `pixels` is 256 palette indices (`null` = empty), `background` is `'transparent'` (the default) or a palette index, and `category` is a def kind (terrain, object, item, portal; creature and portraits later). There are no tags.
 - A def references its sprite by the sprite's `_id` (`spriteId`), not by sheet coordinates. A def **with a sprite draws the sprite instead of its glyph**. The glyph stays as the backfill for a def with no sprite (or a missing one), and its default is `??` in `text-white` on `bg-black`, saved into the data, so a def always has something to draw. The legacy `spriteCoords` is retired (no data uses it). The terrain, object, item and portal forms can pick a sprite of their own category ([Tools 17], [Tools 18], [Tools: Portals 2]). Drawing the sprite in place of the glyph is [Sprite 10].
 - Saving a sprite writes only its document. Making sprites available to the game (what "published" means, and the sheet image plus a manifest from `_id` to position) is separate and undecided ([Sprite 8], [Sprite 9]).
-- **Review status** ([Sprite 12]). `status` is `review` (waiting for the owner), `redo` (the owner left a note; queued for Claude) or `approved`; absent on a sprite that predates review (all existing ones were backfilled to `approved`, [Sprite 17]). `reviewNote` is the owner's one current note for a redo, cleared once Claude redraws it; there is no history. A sprite drawn by hand on the create form is saved as `approved`; Claude's are written as `review`. Creation runs don't stop for sprite approval: a def points at a sprite that is still in review, and the owner works through the queue later (the review page, or "send for review" on the sprites page). A redraw keeps the sprite's `_id`, so defs and zones show the new art. Only `approved` sprites are promoted (ARCHITECTURE.md 6.4). These fields are tools only, not in the game's `map.ts`.
+- **Review status** ([Sprite 12]). `status` is `review` (waiting for the owner), `redo` (the owner left a note; queued for Claude) or `approved`; absent on a sprite that predates review (all existing ones were backfilled to `approved`, [Sprite 17]). `reviewNote` is the owner's one current note for a redo, cleared once Claude redraws it; there is no history. A sprite drawn by hand on the create form is saved as `approved`; Claude's are written as `review`. Creation runs don't stop for sprite approval: a def points at a sprite that is still in review, and the owner works through the queue later (the review page, or "send for review" on the sprites page). A redraw keeps the sprite's `_id`, so defs and zones show the new art. Only `approved` sprites are promoted (ARCHITECTURE.md 6.4). These fields are tools only, not in the shared types the game copies (`lib/types/shared.ts`).
 - Built so far: the pixel editor ([Sprite 7]), including a text form for import/export (16 rows of 16 characters, `0`-`F` for the palette index and `.` for empty), and the sprite list, create and edit pages.
 
 The legacy category types that used to be in `map.ts` (`TileType`, `TileType2`, `TerrainTile`, `BuildingTile`, `CreatureTile`, `InventoryItemTile`, `StationaryTile`) were glyph and category information mixed into `TileDef`. They are removed (still in git history and the game repo): appearance is the `glyph`, and the category is the `kind` (item categories come later, see Open questions).
@@ -98,7 +98,7 @@ Entering a town, castle or dungeon normally lands the player on its `startingPos
 
 **Terrain has no interactions.** Its only behavior beyond movement is the chance of a random encounter, from its `encounterRate` and an encounter table chosen by the region's difficulty (zone `dangerLevel`) and the terrain. A dirt road in a low-level zone gives rats, deer or goblins; the same road in Hell gives demons.
 
-**Terrain code (`code`, owner, 2026-11-10).** A short key for writing a zone's terrain as a grid instead of 256 long `_id`s ([Terrain 1], [Infra 23]): exactly two lowercase letters or digits (`gr` grass, `sw` swamp), unique across `tile_defs` (index `code_unique`). Typed uppercase, it is stored lowercase. It is not the `id` (that stays the full-word label and the promotion key) and not the glyph (shown when there is no sprite). Optional in the schema so older defs still validate; every terrain in the game's set gets one. Stored zones still hold `_id`s. Tools only for now, not in `map.ts`.
+**Terrain code (`code`, owner, 2026-11-10).** A short key for writing a zone's terrain as a grid instead of 256 long `_id`s ([Terrain 1], [Infra 23]): exactly two lowercase letters or digits (`gr` grass, `sw` swamp), unique across `tile_defs` (index `code_unique`). Typed uppercase, it is stored lowercase. It is not the `id` (that stays the full-word label and the promotion key) and not the glyph (shown when there is no sprite). Optional in the schema so older defs still validate; every terrain in the game's set gets one. Stored zones still hold `_id`s. Tools only for now, not in the shared types.
 
 **Uses (`numberOfUses`, name provisional).** Replaces `isConsumable`. How many times an object or item can be used before it disappears; absent means unlimited. Examples: a wheat field (Ultima 5) is used once, disappears, and gives 1 food; a torch is consumed when used; a wand has charges; a healing fountain has N uses. This is the lifetime of the **thing**; an interaction's `limit` (section 4.2) is the lifetime of one **interaction**. Remaining uses are runtime/save state, never zone data.
 
@@ -186,7 +186,7 @@ To stop players leaving anywhere, the designer walls most of the edge off and le
 
 ### 2.3 Zone specs
 
-A zone spec is a request for a generated zone: the designer fills one in on a plain form, and the zone skill reads it from the sandbox ([Tools: Zone Specs 1]). Specs live in `zone_specs`, in both databases. They are tools only: the game never reads one, so the type is not in `map.ts`.
+A zone spec is a request for a generated zone: the designer fills one in on a plain form, and the zone skill reads it from the sandbox ([Tools: Zone Specs 1]). Specs live in `zone_specs`, in both databases. They are tools only: the game never reads one, so the type is not in the shared types.
 
 ```ts
 interface ZoneSpec {
@@ -211,7 +211,7 @@ A generated zone carries a **review state**, the same idea as a sprite's ([Skill
 - `status`: `review` (built by Claude, waiting for the owner), `redo` (the owner left a note; queued for Claude) or `approved`. Absent on a zone drawn by hand.
 - `reviewNote`: the owner's one current note for a redo, with no history, cleared once Claude has acted on it. A `redo` without a note is refused (Claude can't tell what is being redone).
 
-These are **tools only**, like the sprite's: the type is `ReviewedZone` in `lib/types/zoneReview.ts`, not in `map.ts`, so the game's `Zone` is unchanged and ignores the two fields. The zone skill writes `review`; the owner approves from the zone review page or sends a zone back from the zone's inspector in the builder; a redo round replaces the same zone (same `_id`, `id` and unchanged placement `uid`s) and sets it back to `review`.
+These are **tools only**, like the sprite's: the type is `ReviewedZone` in `lib/types/zoneReview.ts`, not in the shared types (`lib/types/shared.ts`), so the game's `Zone` is unchanged and ignores the two fields. The zone skill writes `review`; the owner approves from the zone review page or sends a zone back from the zone's inspector in the builder; a redo round replaces the same zone (same `_id`, `id` and unchanged placement `uid`s) and sets it back to `review`.
 
 - **Specs are easy to rebuild.** Losing the sandbox's copies to `make sandbox-refresh` is acceptable. Keeping them is useful as a record of what worked, not as content.
 
@@ -405,7 +405,7 @@ Zone JSON is the **initial state only**. When a game starts, the player gets a r
 
 **Backend:** stays a schema-less generic store with one entry point. `GetAll` gains string equality filters, sort, and limit/offset ([Backend 2]). It knows nothing about `kind`.
 
-**Shared types:** `frontend/src/lib/types/map.ts` stays hand-copied to the game repo (no shared package, on purpose), so it must not import tools-only code. The game resolves everything by `_id`.
+**Shared types:** `frontend/src/lib/types/core.ts`, `defs.ts`, `interactions.ts` and `map.ts` (listed in `shared.ts`) stay hand-copied to the game repo (no shared package, on purpose), so none of them may import tools-only code. The game resolves everything by `_id`.
 
 ---
 

@@ -1,7 +1,7 @@
 import type { Zone } from './map'
 
 // Review state of a generated zone (ARCHITECTURE.md 6.4). Tools only, so it
-// lives here and not in map.ts, which is copied to the game: the game reads a
+// lives here and not in the shared types, which are copied to the game: the game reads a
 // Zone and ignores these two fields. Absent on a zone drawn by hand. Same idea
 // as the sprite's status.
 // review: built by Claude, waiting for the owner. redo: the owner left a note

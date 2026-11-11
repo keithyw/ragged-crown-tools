@@ -3,7 +3,7 @@
 		"target": "es2022",
 		"module": "esnext",
 		"moduleResolution": "bundler",
-		"paths": { "@/lib/types": ["../frontend/src/lib/types/map.ts"] },
+		"paths": { "@/lib/types": ["../frontend/src/lib/types/shared.ts"] },
 		"strict": true,
 		"noEmit": true,
 		"skipLibCheck": true,

@@ -1,6 +1,6 @@
 export * from './colorPalette'
 export * from './form'
-export * from './map'
+export * from './shared'
 export * from './sprite'
 export * from './table'
 export * from './zoneReview'

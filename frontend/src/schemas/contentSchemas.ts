@@ -19,7 +19,7 @@ import type {
 	TileDef,
 } from '@/lib/types'
 
-// Zod mirrors of the content model in lib/types/map.ts (DATA-MODEL.md).
+// Zod mirrors of the content model in the shared types, lib/types/shared.ts (DATA-MODEL.md).
 // Each `satisfies` makes tsc fail if a schema drifts from its type.
 // Container depth needs the defs, so it is checked in lib/utils/containers.ts.
 
@@ -280,7 +280,7 @@ const baseDefSchema = z.object({
 
 // A terrain's short key for writing a zone's terrain as a grid (Trello
 // [Terrain 1], [Infra 23]). Two lowercase letters or digits, unique per
-// tile_defs (index `code_unique`). Tools only for now: not in map.ts.
+// tile_defs (index `code_unique`). Tools only for now: not in the shared types.
 const terrainCode = z
 	.string()
 	.trim()
