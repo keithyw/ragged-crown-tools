@@ -29,7 +29,7 @@ A document in `zone_specs` (`list_collection`, `filters: { status: "pending" }`,
   "id": "SMALL_HUT", "name": "small hut", "dangerLevel": 0,
   "startingPosition": { "x": 3, "y": 6 },
   "status": "review",
-  "terrain": [["<terrain _id>", "..."], ["..."]],
+  "terrainRows": ["wf wf wf", "wf wf wf"],
   "placements": {
     "3,7": [{ "uid": "<uuid>", "defKind": "portal", "defId": "<portal _id>" }],
     "1,4": [{ "uid": "<uuid>", "defKind": "object", "defId": "<object _id>",
@@ -38,6 +38,8 @@ A document in `zone_specs` (`list_collection`, `filters: { status: "pending" }`,
 }
 ```
 
+- **Write terrain as `terrainRows`, not `terrain`** (Trello [Infra 23]): one string per row, each cell the terrain def's two-letter `code` (`gr`, `sw`, `wf`, ...), spaces between cells optional. `"terrainRows": ["gr gr sw", "gr sw sw"]`. The MCP turns the codes into `_id`s on the server you write to, refuses an unknown code with its row and `x`, and shows `terrainRows` back in its reply. Send `terrainRows` or `terrain`, never both. Read the codes from the terrain defs (`list_collection` on `tile_defs`, the `code` field), and don't make one up: a terrain with no `code` has to be created or given one first. A stored zone still holds `_id`s, and `get_doc` on a zone still returns `terrain` as `_id`s (a redo may send that back as `terrain` unchanged, or write `terrainRows` for the rows it changes).
+- **Write runs of the same def as `fills`**, not one placement each: `"fills": [{ "def": "WOODEN_WALL", "from": "0,0", "to": "15,0" }]`. `def` is the def's `id`; `from` and `to` are `"x,y"` corners of a rectangle (inclusive), so a row, a column or a block all work. Each cell gets a new placement on top, after any `placements` you wrote, in the order the fills are listed (a rug fill before the table fill puts the table on the rug). Fills only make new placements: use `placements` for anything with `contents`, `destination` or `customValues`, and on a redo send the existing placements unchanged and use fills only for what you add, so their `uid`s stay.
 - `terrain` is `[y][x]`, every row the same width, a terrain def `_id` in every cell. `width` and `height` come from the spec; `dimensions` isn't stored.
 - `placements` is keyed `"x,y"` (x first), only for cells with something, each stack ordered bottom to top. `defId` is the def's `_id`; `defKind` is `object`, `item` or `portal`. `uid` is a fresh UUID per placement.
 - `startingPosition` must be inside the map. Put it on a walkable cell.
@@ -48,7 +50,7 @@ A document in `zone_specs` (`list_collection`, `filters: { status: "pending" }`,
 
 ## Writing the document
 
-A zone is hundreds of lines, so build it with a throwaway script instead of by hand: put it in `frontend/.sandbox/` (say that you added it), have it print the JSON, and send that. The MCP validates it with the frontend's zone schema and says what is wrong.
+The terrain is short now (`terrainRows`), but explicit placements (a `uid` and two `_id`s each) are still long, so use `fills` for runs, and for a zone with many one-off placements build the document with a throwaway script instead of by hand: put it in `frontend/.sandbox/` (say that you added it), have it print the JSON, and send that. The MCP validates it with the frontend's zone schema and says what is wrong.
 
 ## Redo round
 
@@ -56,7 +58,7 @@ Started by a prompt like "work through the zone redo queue". The owner sends a z
 
 1. **Read the zone's `reviewNote`, and its spec** (`list_collection` on `zone_specs` with `filters: { id }`, the zone's `id`) as the original request. The note says what to change; the spec says what the zone was meant to be. If there is no spec (a hand-built zone), the note and the zone are all there is.
 2. **Do what the note asks.** A redo is about **contents and placement**: objects the owner expected and didn't get, a room that feels thin, things badly placed. Create missing defs and sprites through the matching skills, as in a first run. A def the owner thinks is wrong is theirs to fix, and sprites have their own queue: don't redraw or edit existing defs here unless the note asks for it by name.
-3. **Replace the zone**: `get_doc` it, change what the note asks for, and `replace_doc` the **whole** document. Keep its `_id` (it is in the URL), `id`, and every unchanged placement `uid`. Don't touch the rest of the layout. Set `status: "review"` and **remove `reviewNote`**. (The MCP refuses `redo` with no note, so a zone in the queue always has one.) **Check the reply after the write:** the stored copy must show `"status": "review"` and no `reviewNote`, and there must be no `Warnings:` block naming `status` or `reviewNote` as dropped (a stale MCP that predates the review fields does this, and the zone then falls out of both queues). If either is wrong, fix it before reporting: don't report the redo as done with the zone not in `review`. Never end a redo, or a first build, with a zone that has no status.
+3. **Change the zone with `replace_doc` and `changes`**, not a whole document: `replace_doc` with the zone's `_id` and `"changes": { "remove": [{ "from": "3,4", "def": "CHAIR" }], "add": { "5,2": [{ "defKind": "object", "defId": "<_id>" }] }, "fills": [...], "status": "review", "reviewNote": null }`. `remove` takes a rectangle (`from`, optional `to`) and an optional def `id` (no `def` clears the cells); `add` is for one-offs with `contents`, `destination` or `customValues` (a `uid` is made if you leave it out); `fills` as above. Order is remove, add, fills, and every placement you don't name keeps its `uid` untouched. You still `get_doc` first to see the layout, but never resend it. Set `status: "review"` and `reviewNote: null` in the changes. (The MCP refuses `redo` with no note, so a zone in the queue always has one.) **Check the reply after the write:** the stored copy must show `"status": "review"` and no `reviewNote`, and there must be no `Warnings:` block naming `status` or `reviewNote` as dropped (a stale MCP that predates the review fields does this, and the zone then falls out of both queues). If either is wrong, fix it before reporting: don't report the redo as done with the zone not in `review`. Never end a redo, or a first build, with a zone that has no status.
 4. **Update `LESSONS.md`**: add what was corrected to the zone's entry, and what it suggests.
 5. **Report** per zone: the note, what you changed, any new defs and sprites (the sprites are now waiting for review), and doubts. The owner approves from the review page, or sends it back again.
 
