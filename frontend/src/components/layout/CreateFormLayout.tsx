@@ -11,6 +11,7 @@ interface CreateFormLayoutProps {
 	submitText: string
 	submittingText: string
 	cancelUrl?: string
+	onCancel?: () => void
 	breadcrumbs?: Crumb[]
 	handleSubmit: React.SubmitEventHandler<HTMLFormElement>
 	children: React.ReactNode
@@ -22,6 +23,7 @@ export const CreateFormLayout = ({
 	submitText,
 	submittingText,
 	cancelUrl,
+	onCancel,
 	breadcrumbs,
 	handleSubmit,
 	children,
@@ -37,7 +39,9 @@ export const CreateFormLayout = ({
 						<Button actionType='submit' disabled={isSubmitting}>
 							{isSubmitting ? submittingText : submitText}
 						</Button>
-						{cancelUrl && <CancelSubmitButton cancelUrl={cancelUrl} />}
+						{cancelUrl && (
+							<CancelSubmitButton cancelUrl={cancelUrl} onCancel={onCancel} />
+						)}
 					</div>
 				</form>
 			</div>

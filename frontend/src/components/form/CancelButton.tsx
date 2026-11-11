@@ -5,15 +5,18 @@ import { Button } from '@/components'
 
 interface CancelSubmitButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
 	cancelUrl: string
+	onCancel?: () => void
 }
 
 export const CancelSubmitButton = ({
 	cancelUrl,
+	onCancel,
 	...props
 }: CancelSubmitButtonProps) => {
 	const router = useRouter()
 
 	const handleCancel = () => {
+		onCancel?.()
 		router.push(cancelUrl)
 	}
 
