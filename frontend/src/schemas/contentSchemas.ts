@@ -42,10 +42,13 @@ export const positionSchema = z.object({
 	y: z.number().int().min(0),
 }) satisfies z.ZodType<Position>
 
-export const destinationSchema = z.object({
-	zoneId: z.string().min(1, 'Pick a zone'),
-	pos: positionSchema.optional(),
-}) satisfies z.ZodType<Destination>
+export const destinationSchema = z.union([
+	z.object({
+		zoneId: z.string().min(1, 'Pick a zone'),
+		pos: positionSchema.optional(),
+	}),
+	z.object({ back: z.literal(true) }),
+]) satisfies z.ZodType<Destination>
 
 export const glyphSchema = z.object({
 	symbol: z.string().min(1, 'Symbol is required').max(2, 'Max 2 characters'),

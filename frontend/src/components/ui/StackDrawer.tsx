@@ -124,6 +124,7 @@ export const StackDrawer = ({
 		)
 
 	const describeDestination = (d: Destination) => {
+		if ('back' in d) return 'Back to where the player entered from'
 		const z =
 			destinationPicker.zones.find((z) => z._id === d.zoneId) ??
 			(d.zoneId === destinationPicker.thisZone._id

@@ -39,7 +39,7 @@ export interface DestinationPickerData {
 	placedDefs: ReadonlyMap<string, { glyph: Glyph }>
 }
 
-type Mode = 'other' | 'this'
+type Mode = 'other' | 'this' | 'back'
 
 interface DestinationFormProps extends DestinationPickerData {
 	initial?: Destination
@@ -59,16 +59,21 @@ const DestinationForm = ({
 	onConfirm,
 }: DestinationFormProps) => {
 	const canPickThis = Boolean(thisZone._id && thisZone.grid)
+	const initialZone = initial && 'zoneId' in initial ? initial : undefined
 	const [mode, setMode] = useState<Mode>(
-		initial && thisZone._id && initial.zoneId === thisZone._id
-			? 'this'
-			: 'other',
+		initial && 'back' in initial
+			? 'back'
+			: initialZone && thisZone._id && initialZone.zoneId === thisZone._id
+				? 'this'
+				: 'other',
 	)
 	const [zoneId, setZoneId] = useState(
-		initial && initial.zoneId !== thisZone._id ? initial.zoneId : '',
+		initialZone && initialZone.zoneId !== thisZone._id
+			? initialZone.zoneId
+			: '',
 	)
-	const [pos, setPos] = useState<Position | null>(initial?.pos ?? null)
-	const [useStart, setUseStart] = useState(!initial?.pos)
+	const [pos, setPos] = useState<Position | null>(initialZone?.pos ?? null)
+	const [useStart, setUseStart] = useState(!initialZone?.pos)
 
 	const otherZone = zones.find((z) => z._id === zoneId)
 	const source: MapSource | null =
@@ -76,12 +81,14 @@ const DestinationForm = ({
 			? thisZone.grid
 				? { ...thisZone, grid: thisZone.grid }
 				: null
-			: otherZone
+			: mode === 'other' && otherZone
 				? { grid: otherZone.terrain, ...otherZone }
 				: null
-	const targetId = mode === 'this' ? thisZone._id : otherZone?._id
+	const targetId =
+		mode === 'this' ? thisZone._id : mode === 'other' ? otherZone?._id : ''
 	const hasMap = Boolean(source && source.grid.length > 0)
-	const canConfirm = Boolean(targetId && hasMap && (useStart || pos))
+	const canConfirm =
+		mode === 'back' || Boolean(targetId && hasMap && (useStart || pos))
 
 	// A different map means the old landing cell means nothing.
 	const resetLanding = () => {
@@ -90,6 +97,10 @@ const DestinationForm = ({
 	}
 
 	const confirm = () => {
+		if (mode === 'back') {
+			onConfirm({ back: true })
+			return
+		}
 		if (!targetId) return
 		onConfirm(
 			useStart || !pos ? { zoneId: targetId } : { zoneId: targetId, pos },
@@ -132,6 +143,18 @@ const DestinationForm = ({
 						}}
 					/>
 					This zone (a teleport square)
+				</label>
+				<label className='flex items-center gap-2'>
+					<input
+						type='radio'
+						name='destination-mode'
+						checked={mode === 'back'}
+						onChange={() => {
+							setMode('back')
+							resetLanding()
+						}}
+					/>
+					Back to where the player came from (a shared interior&apos;s exit)
 				</label>
 				{!canPickThis && (
 					<p className='text-xs text-gray-500'>

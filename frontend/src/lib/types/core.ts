@@ -9,7 +9,11 @@ export interface Position {
 
 export type Kind = 'terrain' | 'object' | 'item' | 'creature' | 'portal'
 
-export interface Destination {
-	zoneId: string // the target zone's _id
-	pos?: Position // absent = the target zone's startingPosition
-}
+export type Destination =
+	| {
+			zoneId: string // the target zone's _id
+			pos?: Position // absent = the target zone's startingPosition
+	  }
+	// Go back to where the player entered from (the engine remembers it at
+	// runtime), so one shared interior can lead back to any building.
+	| { back: true }
