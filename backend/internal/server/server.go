@@ -17,7 +17,7 @@ func NewServer(store database.Mongo, log *slog.Logger) http.Handler {
 	r := chi.NewRouter()
 
 	r.Use(cors.Handler(cors.Options{
-		AllowedOrigins:   []string{"http://localhost:3000", "http://127.0.0.1:3000", "http://localhost:3001", "http://127.0.0.1:3001", "http://localhost:5173", "http://127.0.0.1:5173"}, // 3001 is the sandbox UI (pnpm dev:sandbox), 5173 is the game (Vite); probably need to move this into config
+		AllowedOrigins:   []string{"http://localhost:3000", "http://127.0.0.1:3000", "http://localhost:3001", "http://127.0.0.1:3001", "http://localhost:5173", "http://127.0.0.1:5173", "http://localhost:5174", "http://127.0.0.1:5174"}, // 3001 is the sandbox UI (pnpm dev:sandbox), 5173 is the game (Vite), 5174 the sandbox game (pnpm dev:sandbox); probably need to move this into config
 		AllowedMethods:   []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"},
 		AllowedHeaders:   []string{"Accept", "Authorization", "Content-Type"},
 		ExposedHeaders:   []string{"X-Total-Count"}, // so the browser can read the paging total
