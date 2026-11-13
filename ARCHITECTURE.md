@@ -246,7 +246,7 @@ A text-heavy entity (e.g. characters) could reuse `useCollection` and the same c
 
 ## 5. Data contract with the game
 
-- The shared types are `lib/types/core.ts`, `defs.ts`, `interactions.ts` and `map.ts` (zones, placements; listed together in `lib/types/shared.ts`) and mirror the game's `types/` (`TileDef`, `Zone`, `Placement`, `Interaction`, `Position`, ...). **The files are copies and can drift.** Tools-only types (`sprite.ts`, `zoneSpec.ts`, `zoneReview.ts`, ...) are not in that list on purpose, and nothing in it imports them. A new shared area (inventory, character) gets its own file and a line in `shared.ts`, not an entry in `map.ts` ([Debt 2]).
+- The shared types are `lib/types/core.ts`, `defs.ts`, `interactions.ts` and `map.ts` (zones, placements; listed together in `lib/types/shared.ts`) and are the game's types too (`TileDef`, `Zone`, `Placement`, `Interaction`, `Position`, ...): the game imports them through a `@shared/types` path alias to `shared.ts` ([Game 10]), so there is one copy. **They must stay types-only** (the game imports them with `import type`; runtime helpers are copied into the game) **and the two repos must sit side by side.** A change here can break the game's `tsc -b`. Tools-only types (`sprite.ts`, `zoneSpec.ts`, `zoneReview.ts`, ...) are not in that list on purpose, and nothing in it imports them. A new shared area (inventory, character) gets its own file and a line in `shared.ts`, not an entry in `map.ts` ([Debt 2]).
 - The tool's `tileDefinitionSchema` covers a subset of `TileDef`. Not yet in the form: `type`, `spriteCoords`, `encounterTableKey`.
 - Planned change: a zone's `terrain` (`string[][]`) should reference tiles by Mongo `_id`, not the legacy `T001` keys. The game's map/tile loaders will need to resolve by `_id`.
 - Things on the map (objects, items) and their interactions live in a zone's `placements`, keyed by `"x,y"`, not in an `events` collection. See `DATA-MODEL.md`.
@@ -423,7 +423,7 @@ Things the code currently does that are worth a decision. Verified against the r
 5. **Stale type.** `SaveResponse` in `collection.ts` is left over from the earlier upsert design and is unused.
 6. **Hard-coded CORS origins** in `server.go`.
 7. **Encounter rate validation** (0 to 1) is commented out in the tile schema.
-8. **Shared types are copied by hand** between the tools and the game.
+8. **Shared types.** _Resolved ([Game 10])._ The game reads them through a tsconfig path alias instead of a hand copy; the game's old `src/types/map.ts` goes away as [Game 1] ports it.
 9. **Referential integrity.** Once zones reference tile `_id`s, deleting a tile that is in use will leave dangling references.
 10. **`useCollection` has no create/delete awareness**; the list page relies on `refresh` after deletes.
 11. **Two tile renderers.** _Resolved ([Debt 1])._ `TileGlyph` is now the only renderer, with a `card` variant (tile list and inspectors) and a `cell` variant (zone grid, pickers); `TileCell` is gone. The `card` base is still `bg-black` and the `cell` base `bg-slate-950`, kept as they were. Sprite support (section 4.5, Roadmap) now has one place to change.

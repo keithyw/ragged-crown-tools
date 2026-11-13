@@ -405,7 +405,7 @@ Zone JSON is the **initial state only**. When a game starts, the player gets a r
 
 **Backend:** stays a schema-less generic store with one entry point. `GetAll` gains string equality filters, sort, and limit/offset ([Backend 2]). It knows nothing about `kind`.
 
-**Shared types:** `frontend/src/lib/types/core.ts`, `defs.ts`, `interactions.ts` and `map.ts` (listed in `shared.ts`) stay hand-copied to the game repo (no shared package, on purpose), so none of them may import tools-only code. The game resolves everything by `_id`.
+**Shared types:** `frontend/src/lib/types/core.ts`, `defs.ts`, `interactions.ts` and `map.ts` (listed in `shared.ts`) are read by the game repo through a `@shared/types` path alias to `shared.ts` ([Game 10]; no shared package, on purpose), so none of them may import tools-only code or runtime values. The game resolves everything by `_id`.
 
 ---
 

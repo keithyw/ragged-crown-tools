@@ -1,5 +1,5 @@
 // Zones and what is placed on them (DATA-MODEL.md 2 and 3).
-// Shared with the game: copied by hand, so keep tools-only fields out
+// Shared with the game (imported there via @shared/types): types only, keep tools-only fields out
 // (see ARCHITECTURE.md 5).
 
 import type { Destination, Kind, Position } from './core'

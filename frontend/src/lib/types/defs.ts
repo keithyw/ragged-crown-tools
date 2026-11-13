@@ -1,5 +1,5 @@
 // Definitions: the reusable kinds of thing (DATA-MODEL.md 1).
-// Shared with the game: copied by hand, so keep tools-only fields out
+// Shared with the game (imported there via @shared/types): types only, keep tools-only fields out
 // (see ARCHITECTURE.md 5).
 
 import type { Kind } from './core'
