@@ -50,6 +50,7 @@ export interface ObjectDef extends BaseDef {
 // Category (weapon, armor, ...) is deferred: see DATA-MODEL.md, open questions.
 export interface ItemDef extends BaseDef {
 	kind: 'item'
+	weight: number // of one item; a pile is weight x quantity. At most 2 decimals
 	maxQuantity?: number // how many fit in one pile; absent = only one. Not numberOfUses
 	numberOfUses?: number // absent = unlimited
 	container?: ContainerSpec

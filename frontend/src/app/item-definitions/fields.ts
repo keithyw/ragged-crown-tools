@@ -25,6 +25,14 @@ export const fields: FormField<ItemDefinitionFormData>[] = [
 	},
 	...glyphFields<ItemDefinitionFormData>(),
 	{
+		name: 'weight',
+		label: 'Weight (of one; up to 2 decimals, 0.3 is fine)',
+		type: 'number',
+		required: true,
+		inputWidth: 'xs',
+		inputAttrs: { min: 0, step: 0.01 },
+	},
+	{
 		name: 'maxQuantity',
 		label: 'Max Quantity (blank = only one; "4 spears", 99 gold)',
 		type: 'number',

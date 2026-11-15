@@ -95,3 +95,14 @@ ifeq ($(APPLY),1)
 else
 	node mcp/node_modules/tsx/dist/cli.mjs scripts/backfill-sprite-status.ts $(STATUS)
 endif
+
+# One-off ([Inventory 12]): give every item with no weight the one in the table
+# in the script, in both databases. A dry run unless APPLY=1, which takes a
+# backup first.
+backfill-item-weights:
+ifeq ($(APPLY),1)
+	$(MAKE) db-backup
+	node mcp/node_modules/tsx/dist/cli.mjs scripts/backfill-item-weights.ts --apply
+else
+	node mcp/node_modules/tsx/dist/cli.mjs scripts/backfill-item-weights.ts
+endif

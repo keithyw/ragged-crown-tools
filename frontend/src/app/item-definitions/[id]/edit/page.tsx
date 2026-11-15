@@ -39,6 +39,7 @@ const EditItemDefinitionPage = () => {
 				description: i.description,
 				glyph: i.glyph,
 				spriteId: i.spriteId,
+				weight: i.weight,
 				maxQuantity: i.maxQuantity,
 				numberOfUses: i.numberOfUses,
 				container: {

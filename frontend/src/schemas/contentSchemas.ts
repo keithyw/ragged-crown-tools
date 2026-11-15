@@ -317,6 +317,11 @@ export const objectDefSchema = baseDefSchema.extend({
 
 export const itemDefSchema = baseDefSchema.extend({
 	kind: z.literal('item'),
+	// Of one item. Rounded to 2 decimals here, so what is stored never has more.
+	weight: z
+		.number({ error: 'Weight must be a number' })
+		.min(0, 'Cannot be negative')
+		.transform((v) => Math.round(v * 100) / 100),
 	maxQuantity: z
 		.number()
 		.int()

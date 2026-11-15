@@ -15,6 +15,7 @@ export const ItemInspector = ({
 	onDelete,
 }: ItemInspectorProps) => {
 	const details = [
+		{ key: 'Weight', val: item.weight.toString() },
 		{ key: 'Max quantity', val: item.maxQuantity?.toString() ?? 'One' },
 		{ key: 'Color', val: item.glyph.color },
 		{ key: 'Background', val: item.glyph.bg },
