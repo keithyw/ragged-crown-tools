@@ -1,6 +1,9 @@
 import { z } from 'zod'
+// Relative, not '@/': the MCP runs this file through tsx (ARCHITECTURE.md 6.1).
+import { ARMOR_TYPES, DICE, WEAPON_TYPES } from '../lib/constants/gear'
 import type {
 	Action,
+	ArmorDef,
 	CharacterStat,
 	Condition,
 	ContainerSpec,
@@ -17,6 +20,7 @@ import type {
 	PortalDef,
 	Position,
 	TileDef,
+	WeaponDef,
 } from '@/lib/types'
 
 // Zod mirrors of the content model in the shared types, lib/types/shared.ts (DATA-MODEL.md).
@@ -33,6 +37,8 @@ export const kindSchema = z.enum([
 	'terrain',
 	'object',
 	'item',
+	'weapon',
+	'armor',
 	'creature',
 	'portal',
 ]) satisfies z.ZodType<Kind>
@@ -315,8 +321,8 @@ export const objectDefSchema = baseDefSchema.extend({
 	interactions: z.array(interactionSchema).optional(),
 }) satisfies z.ZodType<ObjectDef>
 
-export const itemDefSchema = baseDefSchema.extend({
-	kind: z.literal('item'),
+// What items, weapons and armor all have (CarriedDef).
+const carriedShape = {
 	// Of one item. Rounded to 2 decimals here, so what is stored never has more.
 	weight: z
 		.number({ error: 'Weight must be a number' })
@@ -328,9 +334,42 @@ export const itemDefSchema = baseDefSchema.extend({
 		.min(2, 'Leave blank for a single item, or enter 2 or more')
 		.optional(),
 	numberOfUses: z.number().int().min(1).optional(),
-	container: containerSpecSchema.optional(),
 	interactions: z.array(interactionSchema).optional(),
+}
+
+export const itemDefSchema = baseDefSchema.extend({
+	kind: z.literal('item'),
+	...carriedShape,
+	container: containerSpecSchema.optional(),
 }) satisfies z.ZodType<ItemDef>
+
+export const weaponDefSchema = baseDefSchema.extend({
+	kind: z.literal('weapon'),
+	...carriedShape,
+	type: z.enum(WEAPON_TYPES),
+	damage: z.object({
+		count: z
+			.number({ error: 'Count must be a number' })
+			.int('Count must be a whole number')
+			.min(1, 'At least 1'),
+		die: z.literal(DICE),
+	}),
+	isTwoHanded: z.boolean().optional(),
+	isMissile: z.boolean().optional(),
+	isThrown: z.boolean().optional(),
+}) satisfies z.ZodType<WeaponDef>
+
+export const armorDefSchema = baseDefSchema.extend({
+	kind: z.literal('armor'),
+	...carriedShape,
+	type: z.enum(ARMOR_TYPES),
+	defenseValue: z
+		.number({ error: 'Defense value must be a number' })
+		.int('Defense value must be a whole number')
+		.min(0, 'Cannot be negative')
+		// A ceiling, not a design: the owner isn't sure 100 is the right top yet.
+		.max(100, 'At most 100'),
+}) satisfies z.ZodType<ArmorDef>
 
 export const creatureDefSchema = baseDefSchema.extend({
 	kind: z.literal('creature'),
@@ -346,6 +385,8 @@ export const defSchema = z.discriminatedUnion('kind', [
 	tileDefSchema,
 	objectDefSchema,
 	itemDefSchema,
+	weaponDefSchema,
+	armorDefSchema,
 	creatureDefSchema,
 	portalDefSchema,
 ])

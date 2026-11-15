@@ -25,7 +25,7 @@ const ItemDefinitionsPage = () => {
 		isLoading,
 		error,
 		refresh,
-	} = useCollection<ItemDef>('items')
+	} = useCollection<ItemDef>('items', { filter: { kind: 'item' } })
 
 	const deleteController = useDeleteRecord<StoredDoc<ItemDef>>({
 		collectionName: 'items',

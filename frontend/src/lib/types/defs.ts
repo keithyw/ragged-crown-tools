@@ -3,6 +3,7 @@
 // (see ARCHITECTURE.md 5).
 
 import type { Kind } from './core'
+import type { ArmorDef, WeaponDef } from './gear'
 import type { Interaction } from './interactions'
 
 // What a thing looks like on the map. Composed into every def.
@@ -46,15 +47,19 @@ export interface ObjectDef extends BaseDef {
 	interactions?: Interaction[]
 }
 
-// Things that go in the inventory. Stored in items.
-// Category (weapon, armor, ...) is deferred: see DATA-MODEL.md, open questions.
-export interface ItemDef extends BaseDef {
-	kind: 'item'
-	weight: number // of one item; a pile is weight x quantity. At most 2 decimals
+// What every thing the player can carry has: items, weapons and armor extend it.
+export interface CarriedDef extends BaseDef {
+	weight: number // the base weight of one; a pile is weight x quantity. At most 2 decimals
 	maxQuantity?: number // how many fit in one pile; absent = only one. Not numberOfUses
 	numberOfUses?: number // absent = unlimited
-	container?: ContainerSpec
 	interactions?: Interaction[] // on USE
+}
+
+// Things that go in the inventory. Stored in items.
+// Weapons and armor (gear.ts) are stored there too, told apart by `kind`.
+export interface ItemDef extends CarriedDef {
+	kind: 'item'
+	container?: ContainerSpec
 }
 
 // Stub: used by random encounters, never placed on the map. Stored in entities.
@@ -69,4 +74,5 @@ export interface PortalDef extends BaseDef {
 	interactions?: Interaction[] // normally on WALK
 }
 
-export type Def = TileDef | ObjectDef | ItemDef | CreatureDef | PortalDef
+export type Def =
+	TileDef | ObjectDef | ItemDef | WeaponDef | ArmorDef | CreatureDef | PortalDef

@@ -4,5 +4,6 @@
 // UI types.
 export * from './core'
 export * from './defs'
+export * from './gear'
 export * from './interactions'
 export * from './map'

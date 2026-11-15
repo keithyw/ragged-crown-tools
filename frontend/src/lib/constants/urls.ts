@@ -4,6 +4,7 @@ export const URLS = {
 	TILE_DEFINITIONS: '/tile-definitions',
 	OBJECT_DEFINITIONS: '/object-definitions',
 	ITEM_DEFINITIONS: '/item-definitions',
+	WEAPON_DEFINITIONS: '/weapon-definitions',
 	PORTAL_DEFINITIONS: '/portal-definitions',
 	SPRITES: '/sprites',
 	SPRITES_REVIEW: '/sprites/review',

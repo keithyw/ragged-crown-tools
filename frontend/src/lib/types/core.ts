@@ -7,7 +7,8 @@ export interface Position {
 	y: number
 }
 
-export type Kind = 'terrain' | 'object' | 'item' | 'creature' | 'portal'
+export type Kind =
+	'terrain' | 'object' | 'item' | 'weapon' | 'armor' | 'creature' | 'portal'
 
 export type Destination =
 	| {
