@@ -36,6 +36,7 @@ Items are carried; objects stand on the map. A spear, a torch, a key, a bag of c
 - `maxQuantity`: only for things that **pile**: arrows, gold, lockpicks, throwing spears. A whole number, 2 or more; leave it out for a single item (never `1`). It is not charges: a wand with 100 charges is one thing with 100 uses (`numberOfUses`), while 100 arrows are 100 things in one pile.
 - `numberOfUses`: how many times the thing can be used before it is gone; a whole number, 1 or more; leave it out for unlimited. A torch burns out, a wand has charges.
 - `container`: `{ "capacity": n }` for a bag, pouch or quiver that holds other things, `capacity` 1 or more. `maxDepth` only if it may hold other containers: counting itself, so 2 holds a bag that holds items. Leave it out otherwise. The engine caps it at 3.
+- `isQuestItem`: `true` only for a thing a quest needs the player to hold and hand in (the goblin head, a delivered letter), so the game can protect it from being dropped or deleted by accident. Set it only when the owner says it is a quest item, or the request is plainly about a quest object; **never send `false`** (absent means false). Weapons and armor carry the same flag.
 - Don't send `stackable`: it is the retired predecessor of `maxQuantity`. Don't send `interactions`: using an item (a wand casting a spell) is a separate design that is deferred.
 
 ## Item, weapon or armor?

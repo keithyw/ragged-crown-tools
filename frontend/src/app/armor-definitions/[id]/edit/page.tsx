@@ -44,6 +44,7 @@ const EditArmorDefinitionPage = () => {
 				weight: a.weight,
 				maxQuantity: a.maxQuantity,
 				numberOfUses: a.numberOfUses,
+				isQuestItem: a.isQuestItem ?? false,
 				interactions: a.interactions,
 			}),
 			[],

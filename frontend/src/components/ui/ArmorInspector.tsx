@@ -20,6 +20,7 @@ export const ArmorInspector = ({
 		{ key: 'Weight', val: armor.weight.toString() },
 		{ key: 'Max quantity', val: armor.maxQuantity?.toString() ?? 'One' },
 		{ key: 'Uses', val: armor.numberOfUses?.toString() ?? 'Unlimited' },
+		{ key: 'Quest item', val: armor.isQuestItem ? 'Yes' : 'No' },
 		{ key: 'Description', val: armor.description ?? '-' },
 	]
 	return (

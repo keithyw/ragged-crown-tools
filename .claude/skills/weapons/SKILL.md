@@ -40,6 +40,7 @@ A weapon is something you hit or shoot with. A sword, a sling, a club: weapons, 
   - `isTwoHanded`: needs both hands (a two-handed sword, a great axe, a longbow).
   - `isMissile`: fires something (bows, slings, crossbows). They need ammo, which has no model yet; the ammo is a separate item.
   - `isThrown`: made to be thrown (a throwing dagger, a dart, a javelin).
+- `isQuestItem`: `true` only when the owner says the weapon is a quest item (the game protects it from accidental deletion); never `false`.
 - `maxQuantity`: only for things that pile, which for weapons means darts and similar thrown stacks. `numberOfUses`: leave out (no degradation). Don't send `interactions` or `container`.
 
 ## What makes two weapons different defs

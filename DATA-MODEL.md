@@ -27,7 +27,7 @@ Every def shares a base:
 | `spriteId`     | string?  | A sprite's `_id`. Drawn instead of the glyph (1.2).         |
 
 ```ts
-type Kind = 'terrain' | 'object' | 'item' | 'creature' | 'portal'
+type Kind = 'terrain' | 'object' | 'item' | 'weapon' | 'armor' | 'creature' | 'portal'
 ```
 
 JSON has no inheritance, so the kinds are modelled as a base type extended per kind (TS `extends`, zod `.extend`) plus a discriminated union on `kind`.
@@ -52,7 +52,7 @@ There is no separate "invisible" concept: a thing meant to go unnoticed uses a g
 
 - A sprite is **16×16** pixels drawn with the **16 EGA colours**, in the style of Ultima 5 / Magic Candle, built in an editor modelled on Adventure Construction Set's. One sprite fills one tile; there are no multi-tile objects.
 - Sprites live in their own `sprites` collection (section 6): `{ _id, id?, name, category, background, pixels, status?, reviewNote? }`. `pixels` is 256 palette indices (`null` = empty), `background` is `'transparent'` (the default) or a palette index, and `category` is a def kind (terrain, object, item, portal; creature and portraits later). There are no tags.
-- A def references its sprite by the sprite's `_id` (`spriteId`), not by sheet coordinates. A def **with a sprite draws the sprite instead of its glyph**. The glyph stays as the backfill for a def with no sprite (or a missing one), and its default is `??` in `text-white` on `bg-black`, saved into the data, so a def always has something to draw. The legacy `spriteCoords` is retired (no data uses it). The terrain, object, item and portal forms can pick a sprite of their own category ([Tools 17], [Tools 18], [Tools: Portals 2]). Drawing the sprite in place of the glyph is [Sprite 10].
+- A def references its sprite by the sprite's `_id` (`spriteId`), not by sheet coordinates. A def **with a sprite draws the sprite instead of its glyph**. The glyph stays as the backfill for a def with no sprite (or a missing one), and its default is `??` in `text-white` on `bg-black`, saved into the data, so a def always has something to draw. The legacy `spriteCoords` is retired (no data uses it). The terrain, object, item and portal forms can pick a sprite of their own category ([Tools 17], [Tools 18], [Tools: Portals 2]); weapons and armor use the `item` category. Drawing the sprite in place of the glyph is [Sprite 10].
 - Saving a sprite writes only its document. Making sprites available to the game (what "published" means, and the sheet image plus a manifest from `_id` to position) is separate and undecided ([Sprite 8], [Sprite 9]).
 - **Review status** ([Sprite 12]). `status` is `review` (waiting for the owner), `redo` (the owner left a note; queued for Claude) or `approved`; absent on a sprite that predates review (all existing ones were backfilled to `approved`, [Sprite 17]). `reviewNote` is the owner's one current note for a redo, cleared once Claude redraws it; there is no history. A sprite drawn by hand on the create form is saved as `approved`; Claude's are written as `review`. Creation runs don't stop for sprite approval: a def points at a sprite that is still in review, and the owner works through the queue later (the review page, or "send for review" on the sprites page). A redraw keeps the sprite's `_id`, so defs and zones show the new art. Only `approved` sprites are promoted (ARCHITECTURE.md 6.4). These fields are tools only, not in the shared types the game copies (`lib/types/shared.ts`).
 - Built so far: the pixel editor ([Sprite 7]), including a text form for import/export (16 rows of 16 characters, `0`-`F` for the palette index and `.` for empty), and the sprite list, create and edit pages.
@@ -65,13 +65,24 @@ The legacy category types that used to be in `map.ts` (`TileType`, `TileType2`, 
 | ---------- | ----------- | ------------------------------------------------------------------------------------ |
 | `terrain`  | `tile_defs` | Today's `TileDef` fields minus the glyph and `isConsumable`: `moveCost`, `isWalkable?`, `encounterRate?`, `encounterTableKey?`, `code?` (tools only, below) |
 | `object`   | `entities`  | `isSolid`, `moveCost?` (spaces only, default 1), `numberOfUses?`, `container?`, `interactions?` |
-| `item`     | `items`     | `maxQuantity?`, `numberOfUses?`, `container?`, `interactions?` (reserved for item use, deferred). More as the inventory design settles; `category` is deferred |
+| `item`     | `items`     | `weight`, `maxQuantity?`, `numberOfUses?`, `isQuestItem?`, `container?`, `interactions?` (reserved for item use, deferred). `category` is deferred |
+| `weapon`   | `items`     | The item core (`weight`, `maxQuantity?`, `numberOfUses?`, `isQuestItem?`, `interactions?`, no `container`) plus `type`, `damage`, `isTwoHanded?`, `isMissile?`, `isThrown?` (below) |
+| `armor`    | `items`     | The item core plus `type` (the slot it is worn in) and `defenseValue` (below) |
 | `creature` | `entities`  | Stub for now. Used by random encounters, not placed on the map                       |
 | `portal`   | `entities`  | `twoWay`, `interactions?`: always walkable; its destination is set per placement     |
 
 `entities` holds several kinds and is filtered by `kind` on the server ([Backend 2]).
 
 **Items** are things the player can pick up and keep in their inventory, which is what separates them from objects. The expected groups are weapons, armor, and usable items such as torches, keys, maps and magic items, but the item model is deliberately minimal for now (see Open questions). Nothing special happens to an item on the map: bumping into one picks it up if the player can carry it. That is engine behavior, not an interaction. A special **use** (a wand casting a spell, as with the single use option in Baldur's Gate, Ultima 5-6, Wizardry 6 and The Bard's Tale) is a separate piece of work that is deferred (see Open questions).
+
+**Weapons and armor** (owner, 2026-11-13 to 2026-11-16) are items the character **wields or wears**. They extend the item core (`CarriedDef` in `defs.ts`: `weight`, `maxQuantity?`, `numberOfUses?`, `isQuestItem?`, `interactions?`), not a category of item, and live in `items` told apart by `kind`; `GIVE_ITEM`, `HAS_ITEM` and `TAKE_ITEM` can name any of the three. They have their own builders, skills and shared-types file (`gear.ts`), and carry **no `container`** (a scabbard or quiver is a plain item). Each has exactly one `type`, from a list in code (`lib/constants/gear.ts`, not the database), kept short and grown as needed.
+
+- **Weapon:** `type` (sword, dagger, spear, polearm, bow, sling, crossbow, axe, mace, flail, staff, fist, hammer, club, dart), `damage` as dice (`{ count, die }`, so 2d4 is `{ 2, 4 }`; no size-dependent damage) and the flags `isTwoHanded`, `isMissile`, `isThrown` (absent = false; a bow is still flagged `isMissile` although its type implies it). Ammo, `requiredBy` and damage types are not designed.
+- **Armor:** `type` is the **slot** (head, chest, legs, hands, wrists, feet, shoulders, belt, cloak, shield, neck, ring, earring, brooch), which is what decides what a character can equip or replace. A shield is armor in the hand slot; the rule that it blocks a second or two-handed weapon is the engine's, not a field. `defenseValue` is a whole number, 0 or more, **with no ceiling**, small and progressive (cloth 1, leather 2, ...), with no multiplier. The style (leather, chain, plate) lives in the name, not a field.
+- **Quality, material and `+N` are instance data, not def data.** A def is the plain base ("long sword") with a base `weight`; the instance, created at game time, carries its quality (**Shoddy, Poor, Normal, Good, Superior**, Normal being the base and never written out), its material and any bonus, and the game computes the effective weight. Tools-side plan: Trello [Inventory 13], [Inventory 14], [Inventory 17].
+- **Sprites:** weapons and armor use the `item` sprite category.
+
+**Quest items** are a flag, not a kind (owner, 2026-11-16): `isQuestItem`, an optional boolean on the item core, so an item, weapon or armor piece can be one. Absent = false, never stored as `false`. It exists so the game can protect a quest item from being dropped or deleted from a character's inventory by accident (a hand-in with `TAKE_ITEM` is the intended way out). The tools only store it; the game's behaviour is Trello [Inventory 18].
 
 **Portals** are spaces with one specific job: moving the player to a `Destination`. They are their own kind because they are placed and validated differently from ordinary spaces.
 
@@ -395,7 +406,7 @@ Zone JSON is the **initial state only**. When a game starts, the player gets a r
 | Collection  | Holds                                                    |
 | ----------- | -------------------------------------------------------- |
 | `tile_defs` | Terrain defs                                             |
-| `items`     | Item defs                                                |
+| `items`     | Item, weapon and armor defs (by `kind`)                  |
 | `entities`  | Object, creature and portal defs (by `kind`)             |
 | `zones`     | Zones                                                    |
 | `sprites`   | Sprite art (section 1.2)                                 |
@@ -406,7 +417,7 @@ Zone JSON is the **initial state only**. When a game starts, the player gets a r
 
 **Backend:** stays a schema-less generic store with one entry point. `GetAll` gains string equality filters, sort, and limit/offset ([Backend 2]). It knows nothing about `kind`.
 
-**Shared types:** `frontend/src/lib/types/core.ts`, `defs.ts`, `interactions.ts` and `map.ts` (listed in `shared.ts`) are read by the game repo through a `@shared/types` path alias to `shared.ts` ([Game 10]; no shared package, on purpose), so none of them may import tools-only code or runtime values. The game resolves everything by `_id`.
+**Shared types:** `frontend/src/lib/types/core.ts`, `defs.ts`, `gear.ts`, `interactions.ts` and `map.ts` (listed in `shared.ts`) are read by the game repo through a `@shared/types` path alias to `shared.ts` ([Game 10]; no shared package, on purpose), so none of them may import tools-only code or runtime values. The game resolves everything by `_id`.
 
 ---
 
@@ -414,12 +425,12 @@ Zone JSON is the **initial state only**. When a game starts, the player gets a r
 
 - **Sprite details.** Still open: what "published" means and how the game receives sprites ([Sprite 8], [Sprite 9], [Game 6]); whether defs may pick unpublished sprites (the pickers offer every sprite of the right category today; [Sprite 8]); what happens to defs when their sprite is deleted (the glyph backfills; see [Integrity 1]); the palette and size for portraits ([Sprite 2]).
 - **Content delivery.** _Decided 2026-11-11: hybrid ([Game 8])._ The game reads through one two-method content source: the tools API in development, and exported files with the same shape as the API's responses in a published build. Dev runs against the real or the sandbox API depending on the game's port; exported files, when they exist, are committed in the game repo; sprites are an ordinary collection that the game draws with the tools' display logic. Nothing gates what is served yet (what belongs in the game is deferred), and the content version stamp is parked ([Game 9]).
-- **Item category and the item model.** Deferred on purpose; expect the item schema to change often while the inventory is designed one item type at a time. The real design depends on combat, character classes, skills and races, so it can only be settled while the game side is developed alongside it; until then an item is a name, a glyph and the minimal fields above. Tracked by the parked epic [Inventory 1]. Leanings so far:
-  - Categories live in the DB, not as a code enum, so adding one is data rather than a release. That would need a new allow-listed collection (the backend currently has no categories collection).
-  - No subcategories and no recursive category logic.
-  - Variants (sword vs long sword, chain mail vs elven chain mail +5) are extra attributes on an item, not an inheritance hierarchy. An armor item might carry a location (helmet, boots, ...) while staying in the armor category.
-  - The item builder may grow one form per category, with shared fields (weight, sale value) in common.
-  - Character skills (a "swords" skill covering all swords) come later; AD&D-style specialization is not decided.
+- **The item model.** Weapons and armor are settled as far as section 1.3 says; the rest of the inventory design depends on combat, character classes, skills and races, so it can only be settled while the game side is developed alongside it. Tracked by the epic [Inventory 1]. Still open:
+  - Ammo (arrows, bolts, stones) as its own concept, and a weapon's `requiredBy` check, made only in combat. `ARROWS` is a plain item until then.
+  - Damage types (slashing, piercing, crushing) and what armor does against them, the sharp/blunt flag, `magical`, and what to do with things hurled that fit no weapon type.
+  - The weapon and armor **material** lists and what allowed materials carry ([Inventory 14]), the shape of an item instance and where the game stores it ([Inventory 9], [Inventory 17]), and how a placement or `GIVE_ITEM` names a quality or material.
+  - What `isQuestItem` enforces in the game ([Inventory 18]).
+  - No subcategories and no recursive category logic (decided). Character skills (a "swords" skill covering all swords) come later; AD&D-style specialization is not decided.
 - **Gold and currency.** Deferred. Undecided whether currency is a pooled resource, a per-character stat, or an inventory item with weight, and whether the party can split across locations. `GIVE_CURRENCY` is a placeholder action until then, and gold can be a plain item with a large `maxQuantity` meanwhile.
 - **Item use.** What using an item does (a wand casting a spell; thieves' tools used on an NPC to get gold) and how it is described. Probably the same Interaction shape with `on: USE`, with conditions (a pickpocket check against the character's skill percentage) and a limit on uses (99, or 1d100). That is why `ItemDef.interactions` stays. Deferred; not part of the object interactions work.
 - **Portal rules.** `twoWay` exists on the def but is unused for now (section 1.3), and a key requirement is a `HAS_ITEM` condition on the def's `WALK` interaction. Still open: single use, blocking the player, and where those live in the data. Designed with the portals ([Tools: Portals 1]) when the first interior building is built.

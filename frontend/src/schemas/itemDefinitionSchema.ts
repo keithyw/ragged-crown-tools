@@ -24,9 +24,15 @@ export const itemDefinitionSchema = itemDefSchema
 			})
 			.optional(),
 	})
-	.transform(({ container, ...rest }) => ({
-		...rest,
-		container: container && container.capacity > 0 ? container : undefined,
+	// Typed as its own input, so the form keeps a plain boolean for the flag.
+	.transform((item): typeof item => ({
+		...item,
+		// A flag that is off is left out ("absent = false"), not saved as false.
+		isQuestItem: item.isQuestItem || undefined,
+		container:
+			item.container && item.container.capacity > 0
+				? item.container
+				: undefined,
 	}))
 
 export type ItemDefinitionFormData = z.infer<typeof itemDefinitionSchema>

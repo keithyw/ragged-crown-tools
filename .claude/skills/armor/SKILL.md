@@ -36,6 +36,7 @@ Armor is worn: it has a slot. A shield is armor (a hand slot), not a weapon. Jew
 - `type`: **required**, exactly one value from `ARMOR_TYPES` in `frontend/src/lib/constants/gear.ts` (read the file; it wins over any list here). It is the **slot**: where the piece is worn. Today: head, chest, legs, hands, wrists, feet, shoulders, belt, cloak, shield, neck, ring, earring, brooch. Don't invent a slot: if a request needs one the list lacks, make what fits, say it is missing, and let the owner add it.
 - `defenseValue`: **required**, a whole number, 0 or more, **no ceiling** (a character's total can get high, so values stay small and progressive). Use the starting table below and show it in the proposal for the owner to correct. No multipliers (owner, 2026-11-16).
 - `weight`: **required**, the weight of **one** piece, pound-sized (the items skill has the scale). Show it in the proposal and say when it is a guess.
+- `isQuestItem`: `true` only when the owner says the piece is a quest item (the game protects it from accidental deletion); never `false`.
 - `maxQuantity`, `numberOfUses`: leave out. No `interactions`, no `container`.
 
 ## Style is the name, not a field

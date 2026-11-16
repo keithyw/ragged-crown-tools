@@ -52,6 +52,7 @@ export interface CarriedDef extends BaseDef {
 	weight: number // the base weight of one; a pile is weight x quantity. At most 2 decimals
 	maxQuantity?: number // how many fit in one pile; absent = only one. Not numberOfUses
 	numberOfUses?: number // absent = unlimited
+	isQuestItem?: boolean // absent = false. The game protects it from being dropped or deleted by accident
 	interactions?: Interaction[] // on USE
 }
 

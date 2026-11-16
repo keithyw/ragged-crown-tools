@@ -89,6 +89,11 @@ export const fields: FormField<WeaponDefinitionFormData>[] = [
 		inputAttrs: { min: 1, step: 1 },
 	},
 	{
+		name: 'isQuestItem',
+		label: 'Quest item (the game protects it from accidental deletion)',
+		type: 'checkbox',
+	},
+	{
 		name: 'description',
 		label: 'Description',
 		placeholder: 'Enter Description',

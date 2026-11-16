@@ -27,6 +27,7 @@ const CreateWeaponDefinitionPage = () => {
 			isTwoHanded: false,
 			isMissile: false,
 			isThrown: false,
+			isQuestItem: false,
 			description: '',
 		},
 		createFn: collectionService.create,

@@ -20,6 +20,7 @@ export const ItemInspector = ({
 		{ key: 'Color', val: item.glyph.color },
 		{ key: 'Background', val: item.glyph.bg },
 		{ key: 'Uses', val: item.numberOfUses?.toString() ?? 'Unlimited' },
+		{ key: 'Quest item', val: item.isQuestItem ? 'Yes' : 'No' },
 		{
 			key: 'Container',
 			val: item.container

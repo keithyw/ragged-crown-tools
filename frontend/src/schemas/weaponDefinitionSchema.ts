@@ -18,6 +18,7 @@ export const weaponDefinitionSchema = weaponDefSchema
 		isTwoHanded: w.isTwoHanded || undefined,
 		isMissile: w.isMissile || undefined,
 		isThrown: w.isThrown || undefined,
+		isQuestItem: w.isQuestItem || undefined,
 	}))
 
 export type WeaponDefinitionFormData = z.infer<typeof weaponDefinitionSchema>

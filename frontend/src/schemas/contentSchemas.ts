@@ -334,6 +334,7 @@ const carriedShape = {
 		.min(2, 'Leave blank for a single item, or enter 2 or more')
 		.optional(),
 	numberOfUses: z.number().int().min(1).optional(),
+	isQuestItem: z.boolean().optional(),
 	interactions: z.array(interactionSchema).optional(),
 }
 

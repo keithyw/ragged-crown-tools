@@ -26,6 +26,7 @@ export const WeaponInspector = ({
 		{ key: 'Weight', val: weapon.weight.toString() },
 		{ key: 'Max quantity', val: weapon.maxQuantity?.toString() ?? 'One' },
 		{ key: 'Uses', val: weapon.numberOfUses?.toString() ?? 'Unlimited' },
+		{ key: 'Quest item', val: weapon.isQuestItem ? 'Yes' : 'No' },
 		{ key: 'Description', val: weapon.description ?? '-' },
 	]
 	return (

@@ -47,6 +47,11 @@ export const fields: FormField<ItemDefinitionFormData>[] = [
 		inputAttrs: { min: 1, step: 1 },
 	},
 	{
+		name: 'isQuestItem',
+		label: 'Quest item (the game protects it from accidental deletion)',
+		type: 'checkbox',
+	},
+	{
 		name: 'container.capacity',
 		label: 'Container Capacity (0 = not a container)',
 		type: 'number',

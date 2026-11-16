@@ -24,6 +24,7 @@ const CreateArmorDefinitionPage = () => {
 			// The backfill glyph, so a def can be saved before it has a sprite.
 			glyph: { symbol: '??', color: 'text-white', bg: 'bg-black' },
 			defenseValue: 0, // plain clothes defend nothing
+			isQuestItem: false,
 			description: '',
 		},
 		createFn: collectionService.create,

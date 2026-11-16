@@ -50,6 +50,7 @@ const EditWeaponDefinitionPage = () => {
 				weight: w.weight,
 				maxQuantity: w.maxQuantity,
 				numberOfUses: w.numberOfUses,
+				isQuestItem: w.isQuestItem ?? false,
 				interactions: w.interactions,
 			}),
 			[],
