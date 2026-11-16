@@ -66,5 +66,5 @@ export interface WeaponDef extends CarriedDef {
 export interface ArmorDef extends CarriedDef {
 	kind: 'armor'
 	type: ArmorType
-	defenseValue: number // whole number, 0 to 100 (the ceiling may change); the form defaults it to 0
+	defenseValue: number // whole number, 0 or more, no ceiling; the form defaults it to 0
 }

@@ -366,9 +366,8 @@ export const armorDefSchema = baseDefSchema.extend({
 	defenseValue: z
 		.number({ error: 'Defense value must be a number' })
 		.int('Defense value must be a whole number')
-		.min(0, 'Cannot be negative')
-		// A ceiling, not a design: the owner isn't sure 100 is the right top yet.
-		.max(100, 'At most 100'),
+		// No ceiling: a character's total defense can be high (owner, 2026-11-16).
+		.min(0, 'Cannot be negative'),
 }) satisfies z.ZodType<ArmorDef>
 
 export const creatureDefSchema = baseDefSchema.extend({

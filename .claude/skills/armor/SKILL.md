@@ -34,7 +34,7 @@ Armor is worn: it has a slot. A shield is armor (a hand slot), not a weapon. Jew
 ```
 
 - `type`: **required**, exactly one value from `ARMOR_TYPES` in `frontend/src/lib/constants/gear.ts` (read the file; it wins over any list here). It is the **slot**: where the piece is worn. Today: head, chest, legs, hands, wrists, feet, shoulders, belt, cloak, shield, neck, ring, earring, brooch. Don't invent a slot: if a request needs one the list lacks, make what fits, say it is missing, and let the owner add it.
-- `defenseValue`: **required**, a whole number, 0 to 100. Use the starting table below and show it in the proposal for the owner to correct. Plain clothes are 0.
+- `defenseValue`: **required**, a whole number, 0 or more, **no ceiling** (a character's total can get high, so values stay small and progressive). Use the starting table below and show it in the proposal for the owner to correct. No multipliers (owner, 2026-11-16).
 - `weight`: **required**, the weight of **one** piece, pound-sized (the items skill has the scale). Show it in the proposal and say when it is a guess.
 - `maxQuantity`, `numberOfUses`: leave out. No `interactions`, no `container`.
 
@@ -48,30 +48,19 @@ The owner's lists mix two things: **where** it is worn (the `type`) and **how it
 
 Differing in something the model holds (slot, `defenseValue`, `weight`), or in how they read at tile size. Give each piece its own sprite and share only where two truly read the same (a cap and a hood would). A chest piece, boots and gloves are always distinct.
 
-### Starting values (a guess from AD&D, scaled to 0 to 100)
+### Starting values (simple and progressive)
 
-Reference, not rules: show them in the proposal. AD&D's armor class bonus times 10, with small pieces worth much less. The ceiling of 100 may change, so leave headroom (no piece above about 80).
+Reference, not rules: show them in the proposal. The owner (2026-11-16): **no multipliers**, keep it simple and progressive: cloth 1, leather 2, and so on up the construction styles, one step each. The numbers are the same for every slot of a style (a cloth hat is as good as a cloth tunic); a piece may be one lower where it clearly covers less (a belt, sandals). Weights are pounds-sized guesses.
 
-| Piece | type | defenseValue | weight |
-| --- | --- | --- | --- |
-| Clothes / robes | chest | 0 | 2 to 4 |
-| Padded armor | chest | 10 | 10 |
-| Leather armor | chest | 20 | 15 |
-| Studded leather | chest | 30 | 25 |
-| Scale mail | chest | 40 | 40 |
-| Chain mail | chest | 50 | 40 |
-| Banded mail | chest | 60 | 35 |
-| Splint mail | chest | 60 | 45 |
-| Plate mail | chest | 70 | 50 |
-| Full plate | chest | 80 | 70 |
-| Helmet | head | 5 to 10 | 5 |
-| Gauntlets | hands | 5 | 3 |
-| Boots | feet | 5 | 4 |
-| Bracers | wrists | 5 | 2 |
-| Small shield | shield | 10 | 5 |
-| Large shield | shield | 20 | 10 |
+| Style | defenseValue |
+| --- | --- |
+| Cloth | 1 |
+| Leather | 2 |
+| Studded leather | 3 |
+| Chain | 4 |
+| Plate | 5 |
 
-A set's pieces scale with its chest piece (a leather cap is lower than an iron helmet). The model has no stacking rule yet, so don't add the numbers up for the owner.
+Weight guesses: cloth tunic 2, pants 1, hat 0.3, sandals 1, rope belt 0.3; leather armor 15, chain mail 40, plate mail 50; helmet 5, boots 4, gauntlets 3; small shield 5, large shield 10. The model has no stacking rule yet, so don't add the numbers up for the owner.
 
 A shield blocks a second or two-handed weapon in the engine; that is an equip rule, not a field. Say nothing about it in the data.
 

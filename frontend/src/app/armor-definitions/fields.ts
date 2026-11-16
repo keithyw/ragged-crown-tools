@@ -38,11 +38,11 @@ export const fields: FormField<ArmorDefinitionFormData>[] = [
 	...glyphFields<ArmorDefinitionFormData>(),
 	{
 		name: 'defenseValue',
-		label: 'Defense value (0 to 100; 0 for plain clothes)',
+		label: 'Defense value (whole number, 0 or more)',
 		type: 'number',
 		required: true,
 		inputWidth: 'xs',
-		inputAttrs: { min: 0, max: 100, step: 1 },
+		inputAttrs: { min: 0, step: 1 },
 	},
 	{
 		name: 'weight',
