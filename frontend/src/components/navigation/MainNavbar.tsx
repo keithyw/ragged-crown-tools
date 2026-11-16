@@ -9,6 +9,7 @@ const NAV_LINKS: NavLinkItem[] = [
 	{ label: 'Object Definitions', href: URLS.OBJECT_DEFINITIONS },
 	{ label: 'Item Definitions', href: URLS.ITEM_DEFINITIONS },
 	{ label: 'Weapon Definitions', href: URLS.WEAPON_DEFINITIONS },
+	{ label: 'Armor Definitions', href: URLS.ARMOR_DEFINITIONS },
 	{ label: 'Portal Definitions', href: URLS.PORTAL_DEFINITIONS },
 	{ label: 'Sprites', href: URLS.SPRITES },
 	{ label: 'Test', href: URLS.TEST },

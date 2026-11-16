@@ -40,7 +40,7 @@ Items are carried; objects stand on the map. A spear, a torch, a key, a bag of c
 
 ## Item, weapon or armor?
 
-**Weapons are their own kind** with their own skill (the weapons skill): a sword, dagger, bow, club or spear is a weapon, not an item. Armor has no skill yet ([Inventory 16]); leave a tunic or helmet out and say so. Ammo (arrows, bolts, sling stones) stays a plain item. `items` holds all three kinds, so always filter `list_collection` by `kind`.
+**Weapons are their own kind** with their own skill (the weapons skill): a sword, dagger, bow, club or spear is a weapon, not an item. Armor is its own kind too, with the armor skill: a helmet, boots, shield or ring is armor, not an item. Ammo (arrows, bolts, sling stones) stays a plain item. `items` holds all three kinds, so always filter `list_collection` by `kind`.
 
 Plain items from before the split may still be weapons or clothes (the sandbox `SPEAR`, `RAGGED_CLOTHES`). Leave them alone and tell the owner.
 

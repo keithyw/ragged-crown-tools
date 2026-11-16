@@ -17,7 +17,7 @@ A weapon is a def the player can carry **and wield**. It is its own kind, not a 
 
 ## Weapon, item or armor?
 
-A weapon is something you hit or shoot with. A sword, a sling, a club: weapons, made here. **Arrows, bolts and sling stones are items** (the items skill): ammo has no model yet. Shields, helmets and rings are armor, which has no skill yet ([Inventory 16]); say so and leave them out.
+A weapon is something you hit or shoot with. A sword, a sling, a club: weapons, made here. **Arrows, bolts and sling stones are items** (the items skill): ammo has no model yet. Shields, helmets and rings are armor, made by the armor skill; leave them out of a weapons request and say so.
 
 ## Document
 

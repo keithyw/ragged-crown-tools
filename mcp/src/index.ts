@@ -13,6 +13,7 @@ import {
 	portalDefSchema,
 	tileDefSchema,
 	weaponDefSchema,
+	armorDefSchema,
 } from '../../frontend/src/schemas/contentSchemas'
 import { SPRITE_CATEGORIES } from '../../frontend/src/lib/types/sprite'
 import {
@@ -483,7 +484,7 @@ const KINDS_BY_COLLECTION: Partial<
 	Record<(typeof COLLECTIONS)[number], string[]>
 > = {
 	tile_defs: ['terrain'],
-	items: ['item', 'weapon'], // armor joins with its builder (Inventory 16)
+	items: ['item', 'weapon', 'armor'],
 	entities: ['object', 'creature', 'portal'],
 }
 
@@ -508,6 +509,7 @@ const DEF_SHAPES = {
 	object: objectDefSchema.shape,
 	item: itemDefSchema.shape,
 	weapon: weaponDefSchema.shape,
+	armor: armorDefSchema.shape,
 	creature: creatureDefSchema.shape,
 	portal: portalDefSchema.shape,
 }
@@ -680,12 +682,12 @@ async function checkReferences(doc: unknown) {
 	}
 	if (!def.kind || !(def.kind in COLLECTION_BY_KIND)) return
 
-	// Weapons use the item sprites (the weapon form offers category 'item').
+	// Weapons and armor use the item sprites (their forms offer category 'item').
 	const spriteCategory = (SPRITE_CATEGORIES as readonly string[]).includes(
 		def.kind,
 	)
 		? def.kind
-		: def.kind === 'weapon'
+		: def.kind === 'weapon' || def.kind === 'armor'
 			? 'item'
 			: undefined
 
