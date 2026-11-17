@@ -421,6 +421,32 @@ Zone JSON is the **initial state only**. When a game starts, the player gets a r
 
 ---
 
+## 7. Character inventory
+
+_Design in progress ([Inventory 19]); what is below was decided with the owner on 2026-11-17. Equipped state, containers, weight, who receives a `GIVE_ITEM` and whether the type is shared are still open._
+
+Each character has their own inventory: an **ordered array of entries**, kept on the character with the rest of their sheet. There is no party pool, no grid size and no weight slot limit; the screen scrolls when there are many. Each entry is one cell and is drawn with its def's sprite, with the quantity shown on it when there is one.
+
+```ts
+interface InventoryEntry {
+	uid: string // generated; identifies this entry (React key, drag and trade handle)
+	itemId: string // the def's _id (an item, weapon or armor)
+	quantity?: number // only when the def has a maxQuantity
+	// qualifiers (material, quality, +N) come with [Inventory 13], [Inventory 14], [Inventory 17]
+}
+type Inventory = InventoryEntry[]
+```
+
+An entry is an **instance**, like a line item on an order: it points at a def and carries its own details. The def says what the thing is; the entry says which one this character holds.
+
+- **Quantity** exists only on an entry whose def has a `maxQuantity`. Anything else is a single thing and has no `quantity`.
+- **Merge.** Two entries merge only when they are the same def **and every qualifier is identical**: silver arrows +1 merge only with silver arrows +1. Merging fills the target up to the def's `maxQuantity` and leaves the remainder in the source entry as its own cell.
+- **Drop, trade, merge and rearrange** are the first operations. Sorting and search are later.
+- **Trade** is between characters in the party. Stores and NPC trade are out of scope.
+- **Saving** is not designed. There is no saved-game feature yet; the inventory is runtime state until there is one (Trello, Game list).
+
+---
+
 ## Open questions
 
 - **Sprite details.** Still open: what "published" means and how the game receives sprites ([Sprite 8], [Sprite 9], [Game 6]); whether defs may pick unpublished sprites (the pickers offer every sprite of the right category today; [Sprite 8]); what happens to defs when their sprite is deleted (the glyph backfills; see [Integrity 1]); the palette and size for portraits ([Sprite 2]).
