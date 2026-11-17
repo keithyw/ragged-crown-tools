@@ -12,6 +12,13 @@ export interface PlaceableDef {
 	maxQuantity?: number // items only
 }
 
+// Give, take and has-item actions store only an _id and ask for 'item', but the
+// def may be a weapon or armor, so 'item' matches all three carried kinds.
+const matchesKind = (defKind: Kind, wanted: Kind) =>
+	wanted === 'item'
+		? defKind === 'item' || defKind === 'weapon' || defKind === 'armor'
+		: defKind === wanted
+
 // Items and objects, with a lookup for names. Two small fetches.
 export function usePlaceableDefs() {
 	const items = useCollection<ItemDef>('items')
@@ -23,7 +30,8 @@ export function usePlaceableDefs() {
 	const defs = useMemo<PlaceableDef[]>(
 		() => [
 			...items.items.map((d) => ({
-				kind: 'item' as const,
+				// The items collection also holds weapons and armor.
+				kind: d.kind as Kind,
 				_id: d._id,
 				name: d.name,
 				maxQuantity: d.maxQuantity,
@@ -42,7 +50,7 @@ export function usePlaceableDefs() {
 		(kind: Kind, id: string) =>
 			isLoading
 				? '...'
-				: (defs.find((d) => d.kind === kind && d._id === id)?.name ??
+				: (defs.find((d) => matchesKind(d.kind, kind) && d._id === id)?.name ??
 					'(missing)'),
 		[defs, isLoading],
 	)

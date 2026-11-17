@@ -34,11 +34,13 @@ import {
 } from '@/components'
 import { useCollection } from '@/hooks'
 import type {
+	ArmorDef,
 	ItemDef,
 	ObjectDef,
 	PortalDef,
 	Position,
 	TileDef,
+	WeaponDef,
 	ReviewedZone,
 	ZoneStatus,
 	Zone,
@@ -173,7 +175,7 @@ export const ZoneBuilder = ({
 		items,
 		isLoading: itemsLoading,
 		error: itemsError,
-	} = useCollection<ItemDef>('items')
+	} = useCollection<ItemDef | WeaponDef | ArmorDef>('items')
 	const {
 		items: portals,
 		isLoading: portalsLoading,
@@ -195,7 +197,7 @@ export const ZoneBuilder = ({
 		() =>
 			new Map<string, StackDef>([
 				...objects.map((o) => [defKey('object', o._id), o] as const),
-				...items.map((i) => [defKey('item', i._id), i] as const),
+				...items.map((i) => [defKey(i.kind, i._id), i] as const),
 				...portals.map((p) => [defKey('portal', p._id), p] as const),
 			]),
 		[objects, items, portals],
@@ -205,7 +207,7 @@ export const ZoneBuilder = ({
 	const itemChoices = useMemo(
 		() =>
 			items.map((i) => ({
-				kind: 'item' as const,
+				kind: i.kind,
 				_id: i._id,
 				name: i.name,
 				maxQuantity: i.maxQuantity,
@@ -286,14 +288,14 @@ export const ZoneBuilder = ({
 				// Several of the same item are one placement with a quantity, not
 				// repeated clicks. An item with a maxQuantity starts at quantity 1; the stack
 				// drawer changes it.
-				if (!canPlaceOnTop(placements, key, 'item', activeItem._id)) {
+				if (!canPlaceOnTop(placements, key, activeItem.kind, activeItem._id)) {
 					warnDuplicate(activeItem.name, activeItem.maxQuantity !== undefined)
 					return
 				}
 				setPlacements((prev) =>
 					pushPlacement(prev, key, {
 						uid: crypto.randomUUID(),
-						defKind: 'item',
+						defKind: activeItem.kind,
 						defId: activeItem._id,
 						...(activeItem.maxQuantity !== undefined ? { quantity: 1 } : {}),
 					}),

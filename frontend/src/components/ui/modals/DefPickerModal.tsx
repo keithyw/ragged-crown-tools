@@ -25,6 +25,8 @@ interface DefPickerModalProps<T extends PickableDef> {
 	// An extra short line under the id, such as "Solid" or "Space". Nothing is
 	// shown when it returns an empty string.
 	tag?: (def: T) => string
+	// Optional controls under the title, such as a type filter.
+	header?: React.ReactNode
 }
 
 // The grid-of-glyphs picker shared by tiles, objects and items.
@@ -37,6 +39,7 @@ export const DefPickerModal = <T extends PickableDef>({
 	onClose,
 	onSelect,
 	tag,
+	header,
 }: DefPickerModalProps<T>) => {
 	const sorted = useMemo(
 		() => [...defs].sort((a, b) => a.name.localeCompare(b.name)),
@@ -51,6 +54,7 @@ export const DefPickerModal = <T extends PickableDef>({
 			>
 				{title}
 			</DialogTitle>
+			{header}
 
 			{sorted.length === 0 ? (
 				<p className='mt-4 text-sm text-gray-500'>{emptyMessage}</p>

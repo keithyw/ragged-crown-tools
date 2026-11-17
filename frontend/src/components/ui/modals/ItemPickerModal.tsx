@@ -1,15 +1,25 @@
 'use client'
 
-import { DefPickerModal } from '@/components'
+import { useState } from 'react'
+import { Button, DefPickerModal } from '@/components'
 import { type StoredDoc } from '@/lib/services'
-import { type ItemDef } from '@/lib/types'
+import { type ArmorDef, type ItemDef, type WeaponDef } from '@/lib/types'
+
+type Carried = ItemDef | WeaponDef | ArmorDef
+
+const FILTERS = [
+	{ value: 'all', label: 'All' },
+	{ value: 'item', label: 'Items' },
+	{ value: 'weapon', label: 'Weapons' },
+	{ value: 'armor', label: 'Armor' },
+]
 
 interface ItemPickerModalProps {
 	isOpen: boolean
-	items: StoredDoc<ItemDef>[]
+	items: StoredDoc<Carried>[]
 	selectedId: string | null
 	onClose: () => void
-	onSelect: (item: StoredDoc<ItemDef>) => void
+	onSelect: (item: StoredDoc<Carried>) => void
 }
 
 export const ItemPickerModal = ({
@@ -18,15 +28,32 @@ export const ItemPickerModal = ({
 	selectedId,
 	onClose,
 	onSelect,
-}: ItemPickerModalProps) => (
-	<DefPickerModal
-		isOpen={isOpen}
-		title='Choose an item'
-		emptyMessage='No item definitions yet. Create one under Item Definitions.'
-		defs={items}
-		selectedId={selectedId}
-		onClose={onClose}
-		onSelect={onSelect}
-		tag={(i) => (i.maxQuantity !== undefined ? `Up to ${i.maxQuantity}` : '')}
-	/>
-)
+}: ItemPickerModalProps) => {
+	const [kind, setKind] = useState('all')
+	return (
+		<DefPickerModal
+			isOpen={isOpen}
+			title='Choose an item'
+			emptyMessage='Nothing here. Create one under Item, Weapon or Armor Definitions.'
+			defs={kind === 'all' ? items : items.filter((i) => i.kind === kind)}
+			selectedId={selectedId}
+			onClose={onClose}
+			onSelect={onSelect}
+			tag={(i) => (i.maxQuantity !== undefined ? `Up to ${i.maxQuantity}` : '')}
+			header={
+				<div className='mt-3 flex gap-2'>
+					{FILTERS.map((f) => (
+						<Button
+							key={f.value}
+							type='button'
+							actionType={kind === f.value ? 'edit' : 'neutral'}
+							onClick={() => setKind(f.value)}
+						>
+							{f.label}
+						</Button>
+					))}
+				</div>
+			}
+		/>
+	)
+}

@@ -32,8 +32,12 @@ import { interactionSchema } from '@/schemas'
 
 const KIND_LABELS: Partial<Record<Kind, string>> = {
 	item: 'Item',
+	weapon: 'Weapon',
+	armor: 'Armor',
 	object: 'Object',
 }
+
+const CARRIED_KINDS: Kind[] = ['item', 'weapon', 'armor']
 
 // One select value for a def: its kind and _id together.
 const defKey = (kind: Kind, id: string) => `${kind}:${id}`
@@ -103,7 +107,8 @@ const InteractionForm = ({
 	const setCondition = (index: number, next: Condition) =>
 		setConditions((prev) => prev.map((c, i) => (i === index ? next : c)))
 
-	const items = defs.filter((d) => d.kind === 'item')
+	// Items, weapons and armor are all carried, so all can be given, taken or held.
+	const items = defs.filter((d) => CARRIED_KINDS.includes(d.kind))
 
 	const setAction = (index: number, next: Action) =>
 		setActions((prev) => prev.map((a, i) => (i === index ? next : a)))
