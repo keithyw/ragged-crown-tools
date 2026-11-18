@@ -47,11 +47,25 @@ export type ArmorType =
 // ([Inventory 13]). Normal is a quality like the others and can be rolled.
 export type Quality = 'shoddy' | 'poor' | 'normal' | 'good' | 'superior'
 
+// What a weapon or armor piece is made of ([Inventory 14]). Two lists, since a
+// material belongs where it makes sense (no cloth swords, no glass armor).
+// Kept to what a farming village would have; they grow as content needs them.
+// Which materials each type may use is in lib/constants/gear.ts.
+export type WeaponMaterial = 'wood' | 'iron' | 'leather'
+export type ArmorMaterial = 'cloth' | 'leather' | 'fur' | 'wood' | 'copper'
+
+// Any material that exists. A value outside this union can't be written, so
+// "a salt sword" is a type error. Whether a material suits one particular
+// type (iron on a bow) needs the def, so it is checked where the def is known,
+// against WEAPON_MATERIALS_BY_TYPE / ARMOR_MATERIALS_BY_TYPE.
+export type Material = WeaponMaterial | ArmorMaterial
+
 // What an instance of a weapon or armor piece carries beyond its def. More
 // fields come as they are designed ([Inventory 28]). Absent in authored data
 // means "roll when picked up".
 export interface Qualifiers {
 	quality?: Quality
+	material?: Material
 }
 
 // The standard polyhedral dice, d4 to d100.
