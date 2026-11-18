@@ -41,6 +41,19 @@ export type ArmorType =
 	| 'earring'
 	| 'brooch'
 
+// How well a weapon or armor piece was made, lowest to highest. Instance data
+// (carried by an action, a placement or an inventory entry), never on a def;
+// the tools store only the name and the engine decides what each step does
+// ([Inventory 13]). Normal is a quality like the others and can be rolled.
+export type Quality = 'shoddy' | 'poor' | 'normal' | 'good' | 'superior'
+
+// What an instance of a weapon or armor piece carries beyond its def. More
+// fields come as they are designed ([Inventory 28]). Absent in authored data
+// means "roll when picked up".
+export interface Qualifiers {
+	quality?: Quality
+}
+
 // The standard polyhedral dice, d4 to d100.
 export type Die = 4 | 6 | 8 | 10 | 12 | 20 | 100
 

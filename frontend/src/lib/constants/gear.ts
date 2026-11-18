@@ -4,7 +4,7 @@
 //
 // The schema files import this one by a relative path (not '@/'), because the
 // MCP runs them through tsx, which doesn't resolve '@/' (ARCHITECTURE.md 6.1).
-import type { ArmorType, Die, WeaponType } from '../types/gear'
+import type { ArmorType, Die, Quality, WeaponType } from '../types/gear'
 
 type AllListed<U, L extends readonly U[]> = [Exclude<U, L[number]>] extends [
 	never,
@@ -49,6 +49,17 @@ export const ARMOR_TYPES = [
 	'brooch',
 ] as const satisfies readonly ArmorType[]
 export const armorTypesComplete: AllListed<ArmorType, typeof ARMOR_TYPES> = true
+
+// In order, lowest to highest: a picker shows them this way and a roll can
+// index into it.
+export const QUALITIES = [
+	'shoddy',
+	'poor',
+	'normal',
+	'good',
+	'superior',
+] as const satisfies readonly Quality[]
+export const qualitiesComplete: AllListed<Quality, typeof QUALITIES> = true
 
 export const DICE = [4, 6, 8, 10, 12, 20, 100] as const satisfies readonly Die[]
 export const diceComplete: AllListed<Die, typeof DICE> = true
