@@ -6,10 +6,12 @@
 // MCP runs them through tsx, which doesn't resolve '@/' (ARCHITECTURE.md 6.1).
 import type {
 	ArmorMaterial,
+	ArmorMaterialCategory,
 	ArmorType,
 	Die,
 	Quality,
 	WeaponMaterial,
+	WeaponMaterialCategory,
 	WeaponType,
 } from '../types/gear'
 
@@ -68,52 +70,58 @@ export const QUALITIES = [
 ] as const satisfies readonly Quality[]
 export const qualitiesComplete: AllListed<Quality, typeof QUALITIES> = true
 
-export const WEAPON_MATERIALS = [
-	'wood',
-	'iron',
-	'leather',
-] as const satisfies readonly WeaponMaterial[]
+// A list with at least one member, so a category or a type can't be empty.
+type OneOrMore<T> = readonly [T, ...T[]]
+
+// Categories and the concrete materials in each. A category's materials are
+// what an instance can pick from; the player sees the material, never the
+// category. A new wood or metal is one entry here and changes nothing below.
+export const WEAPON_MATERIALS = {
+	wood: ['wood'],
+	metal: ['iron'],
+	leather: ['leather'],
+} as const satisfies Record<WeaponMaterialCategory, OneOrMore<WeaponMaterial>>
 export const weaponMaterialsComplete: AllListed<
 	WeaponMaterial,
-	typeof WEAPON_MATERIALS
+	(typeof WEAPON_MATERIALS)[WeaponMaterialCategory]
 > = true
 
-export const ARMOR_MATERIALS = [
-	'cloth',
-	'leather',
-	'fur',
-	'wood',
-	'copper',
-] as const satisfies readonly ArmorMaterial[]
+export const ARMOR_MATERIALS = {
+	cloth: ['cloth'],
+	leather: ['leather'],
+	fur: ['fur'],
+	wood: ['wood'],
+	metal: ['copper'],
+} as const satisfies Record<ArmorMaterialCategory, OneOrMore<ArmorMaterial>>
 export const armorMaterialsComplete: AllListed<
 	ArmorMaterial,
-	typeof ARMOR_MATERIALS
+	(typeof ARMOR_MATERIALS)[ArmorMaterialCategory]
 > = true
 
-// Which materials each type may use. Typing these as a Record over the type
-// union makes tsc fail when a type is added without an entry here.
-// Spears, polearms and darts are iron because the tip is the part that counts.
+// Which categories each type may use, at least one. Typing these as a Record
+// over the type union makes tsc fail when a type is added without an entry.
+// Spears, polearms and darts are metal because the tip is the part that counts.
 // A whip, when it is added, takes leather (like the sling).
-export const WEAPON_MATERIALS_BY_TYPE = {
-	sword: ['iron'],
-	dagger: ['iron'],
-	spear: ['iron'],
-	polearm: ['iron'],
+export const WEAPON_CATEGORIES_BY_TYPE = {
+	sword: ['metal'],
+	dagger: ['metal'],
+	spear: ['metal'],
+	polearm: ['metal'],
 	bow: ['wood'],
 	sling: ['leather'],
 	crossbow: ['wood'],
-	axe: ['iron'],
-	mace: ['iron'],
-	flail: ['iron'],
+	axe: ['metal'],
+	mace: ['metal'],
+	flail: ['metal'],
 	staff: ['wood'],
-	fist: ['iron'], // claws and knuckles; bare fists are unarmed combat
-	hammer: ['iron'],
+	fist: ['metal'], // claws and knuckles; bare fists are unarmed combat
+	hammer: ['metal'],
 	club: ['wood'],
-	dart: ['iron'],
-} as const satisfies Record<WeaponType, readonly WeaponMaterial[]>
+	dart: ['metal'],
+} as const satisfies Record<WeaponType, OneOrMore<WeaponMaterialCategory>>
 
-// Wood is allowed on shields only. Jewelry is metal only.
-export const ARMOR_MATERIALS_BY_TYPE = {
+// What is allowed depends on the slot: wood only on shields, jewelry metal only.
+export const ARMOR_CATEGORIES_BY_TYPE = {
 	head: ['cloth', 'leather', 'fur'],
 	chest: ['cloth', 'leather', 'fur'],
 	legs: ['cloth', 'leather', 'fur'],
@@ -124,11 +132,11 @@ export const ARMOR_MATERIALS_BY_TYPE = {
 	belt: ['cloth', 'leather'],
 	cloak: ['cloth', 'leather', 'fur'],
 	shield: ['wood'],
-	neck: ['copper'],
-	ring: ['copper'],
-	earring: ['copper'],
-	brooch: ['copper'],
-} as const satisfies Record<ArmorType, readonly ArmorMaterial[]>
+	neck: ['metal'],
+	ring: ['metal'],
+	earring: ['metal'],
+	brooch: ['metal'],
+} as const satisfies Record<ArmorType, OneOrMore<ArmorMaterialCategory>>
 
 export const DICE = [4, 6, 8, 10, 12, 20, 100] as const satisfies readonly Die[]
 export const diceComplete: AllListed<Die, typeof DICE> = true
