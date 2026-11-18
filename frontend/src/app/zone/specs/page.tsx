@@ -19,7 +19,7 @@ const ZONE_SPEC_COLUMNS: TableColumn<StoredZoneSpec>[] = [
 	{ header: 'Name', accessor: 'name' },
 	{ header: 'ID', accessor: 'id' },
 	{ header: 'Size', render: (s) => `${s.width} x ${s.height}` },
-	{ header: 'Danger Level', accessor: 'dangerLevel' },
+	{ header: 'Difficulty Level', accessor: 'difficultyLevel' },
 	{ header: 'Status', accessor: 'status' },
 ]
 

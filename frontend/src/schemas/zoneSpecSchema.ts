@@ -23,11 +23,10 @@ export const zoneSpecSchema = z.object({
 	name: z.string().trim().min(1, 'Name is required'),
 	width: zoneSize,
 	height: zoneSize,
-	dangerLevel: z
-		.number({ error: 'Danger level must be a number' })
-		.int('Danger level must be a whole number')
-		.min(0, 'Danger level cannot be negative')
-		.max(10, 'Danger level is at most 10'),
+	difficultyLevel: z
+		.number({ error: 'Difficulty level must be a number' })
+		.int('Difficulty level must be a whole number')
+		.min(0, 'Difficulty level cannot be negative'),
 	description: z.string().trim().min(1, 'Description is required'),
 	status: z.enum(ZONE_SPEC_STATUSES).default('pending'),
 }) satisfies z.ZodType<ZoneSpec>

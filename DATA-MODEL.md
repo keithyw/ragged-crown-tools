@@ -108,7 +108,7 @@ Entering a town, castle or dungeon normally lands the player on its `startingPos
 
 **Creatures do not move on the map and do not chase the player** (unlike Ultima 3-5). They appear only in random encounters. A non-combat NPC, such as a townsperson or a friendly gold dragon quest giver, is not a creature: it is a solid **object** with interactions (dialog when bumped). An interaction can still turn it hostile, for example an action that replaces the object with an encounter.
 
-**Terrain has no interactions.** Its only behavior beyond movement is the chance of a random encounter, from its `encounterRate` and an encounter table chosen by the region's difficulty (zone `dangerLevel`) and the terrain. A dirt road in a low-level zone gives rats, deer or goblins; the same road in Hell gives demons.
+**Terrain has no interactions.** Its only behavior beyond movement is the chance of a random encounter, from its `encounterRate` and an encounter table chosen by the region's difficulty (zone `difficultyLevel`) and the terrain. A dirt road in a low-level zone gives rats, deer or goblins; the same road in Hell gives demons.
 
 **Terrain code (`code`, owner, 2026-11-10).** A short key for writing a zone's terrain as a grid instead of 256 long `_id`s ([Terrain 1], [Infra 23]): exactly two lowercase letters or digits (`gr` grass, `sw` swamp), unique across `tile_defs` (index `code_unique`). Typed uppercase, it is stored lowercase. It is not the `id` (that stays the full-word label and the promotion key) and not the glyph (shown when there is no sprite). Optional in the schema so older defs still validate; every terrain in the game's set gets one. Stored zones still hold `_id`s. Tools only for now, not in the shared types.
 
@@ -165,7 +165,7 @@ interface Zone {
 	id: string
 	name: string
 	dimensions?: { width: number; height: number }
-	dangerLevel: number
+	difficultyLevel: number
 	startingPosition?: Position
 	terrain: string[][] // terrain def _ids, indexed [y][x]
 	placements?: Record<CellKey, Placement[]>
@@ -206,7 +206,7 @@ interface ZoneSpec {
 	name: string
 	width: number // 1 to 16; the form defaults to 16
 	height: number // 1 to 16; the form defaults to 16
-	dangerLevel: number // 0 to 10, as on a zone
+	difficultyLevel: number // whole number, 0 or more, as on a zone
 	description: string // a pseudo prompt: the general idea of the zone
 	status: 'pending' | 'processed' // defaults to pending
 }

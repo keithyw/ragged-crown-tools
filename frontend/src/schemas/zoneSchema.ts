@@ -16,11 +16,10 @@ const zoneBaseSchema = z.object({
 		.min(1, 'ID is required')
 		.regex(/^[A-Za-z0-9_-]+$/, 'Letters, numbers, - and _ only'), // user generated for now
 	name: z.string().trim().min(1, 'Name is required'),
-	dangerLevel: z
-		.number({ error: 'Danger level must be a number' })
-		.int('Danger level must be a whole number')
-		.min(0, 'Danger level cannot be negative')
-		.max(10, 'Danger level is at most 10'),
+	difficultyLevel: z
+		.number({ error: 'Difficulty level must be a number' })
+		.int('Difficulty level must be a whole number')
+		.min(0, 'Difficulty level cannot be negative'),
 	// Tile _ids, indexed [y][x]
 	terrain: z
 		.array(z.array(z.string().min(1)).min(1))
@@ -84,7 +83,7 @@ export const zoneSchema = zoneBaseSchema.superRefine((zone, ctx) => {
 export const zoneDetailsSchema = zoneBaseSchema.pick({
 	id: true,
 	name: true,
-	dangerLevel: true,
+	difficultyLevel: true,
 })
 
 export type ZoneDetailsFormData = z.infer<typeof zoneDetailsSchema>

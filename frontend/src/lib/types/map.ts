@@ -46,7 +46,7 @@ export interface Zone {
 	id: string
 	name: string
 	dimensions?: { width: number; height: number }
-	dangerLevel: number
+	difficultyLevel: number
 	startingPosition?: Position
 	terrain: string[][] // terrain def _ids, indexed [y][x]
 	placements?: Partial<Record<CellKey, Placement[]>> // each cell bottom to top

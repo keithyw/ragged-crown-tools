@@ -435,7 +435,7 @@ project, there will be tech debt that gets addressed (or quickly forgotten) over
 
 ## 9. Roadmap (from the Trello board)
 
-- Map/Zone Builder: grid editor using tile definitions as a palette, with name, danger level (bounded), start position (x/y inputs or pick from grid), and placements.
+- Map/Zone Builder: grid editor using tile definitions as a palette, with name, difficulty level (whole number, no upper limit), start position (x/y inputs or pick from grid), and placements.
 - Object and item definition builders, and the placements layer with interactions (see `DATA-MODEL.md`). Weapon and armor builders (`app/weapon-definitions`, `app/armor-definitions`, same pattern as the item pages) and their creation skills are done; placing them in zones works in the builder (the item picker has an All / Items / Weapons / Armor filter, a placement carries the def's real `kind`; [Inventory 15], done; the MCP placement check accepts them); quality and material are instance data, designed on [Inventory 13], [Inventory 14] and [Inventory 17].
 - Tile `type` / category and an indoor-outdoor style environment setting to choose default base tiles.
 - Sprites in the tools: done. The builder (`sprites` collection, [Sprite 1]), picking a sprite on terrain, object and item defs ([Tools 17], [Tools 18]; portals wait for the portal builder), and `TileGlyph` drawing it ([Sprite 10]). Publishing sprites to the game, and the game's own update to match, come much later ([Sprite 8], [Sprite 9], [Game 6]).

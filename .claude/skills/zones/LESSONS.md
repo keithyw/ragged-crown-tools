@@ -5,7 +5,7 @@ A log of how each generated zone was built and what the owner corrected. Its pur
 Append one entry per run, newest last, in this shape. Keep entries short and factual; record what was *decided*, not a narrative.
 
 ```
-## <ZONE_ID> (<date>) <size>, danger <n>
+## <ZONE_ID> (<date>) <size>, difficulty <n>
 - Spec: the description, in a line.
 - Layout: the approach (walls ring, rooms, focal points, where things went and why).
 - Defs: reused / created.
@@ -14,7 +14,7 @@ Append one entry per run, newest last, in this shape. Keep entries short and fac
 - Candidate attributes or rules this suggests:
 ```
 
-## SMALL_HUT (2026-11-07) 8x8, danger 0
+## SMALL_HUT (2026-11-07) 8x8, difficulty 0
 - Spec: a peasant one-room hut; hay bed, lit cauldron, small box of rags, weak wooden door, dirt floor, plank walls.
 - Layout: plank wall ring, door centred on the south wall, player starting just inside it. Bed and cauldron in the two north corners, box against the west wall. The middle was left empty. Composed by hand and built with a script (`frontend/.sandbox/small_hut_zone.mjs`).
 - Defs: reused `DOOR`. Created `DIRT_FLOOR`, `WOODEN_WALL`, `HAY_BED`, `CAULDRON`, `SMALL_BOX`, `RAGGED_CLOTHES` (6 new sprites, all in review).
@@ -23,7 +23,7 @@ Append one entry per run, newest last, in this shape. Keep entries short and fac
 - Candidate attributes or rules this suggests: a placeable might carry a "belongs against a wall / in a corner / in the open" hint; a focal object (cauldron) wanted a clear approach cell; the player's start next to the door.
 - Redo 1 (2026-11-08): note "needs a small table and chair". Reused `TABLE` and `CHAIR` (both already existed, sprites approved), placed table at (5,4) and chair at (4,4) beside it, in the open middle of the room that was left empty. No new defs. Suggests: my first pass left the middle empty because the spec listed no furniture; a hut with a bed and a cauldron but nowhere to sit read as thin. A room-type default of "somewhere to sit and eat" may be a rule worth trying.
 
-## STARTING_TOWN (2026-11-10) 16x16, danger 0
+## STARTING_TOWN (2026-11-10) 16x16, difficulty 0
 - Spec: a small farming community; a few huts leading to SMALL_HUT, one hut to FARM_HOUSE, one tavern to STARTING_TAVERN; farmers/peasants, a wheat field lower right, a well, a chicken; no exit to other zones; and update the doors in those interiors to lead back to the town.
 - Layout: ring of trees on the border (blocks every edge, since there are no edge exits). A dirt road crossing at (7,8), one tile wide, so no solid NPC stands on it. Buildings sit one cell off the road with the road cell in front as the arrival spot. Well beside the crossroads, wheat field (on dirt) in the lower right, farmers and peasants on grass beside the roads, chickens near the field and the south road. Start on the road just south of the crossroads. Built with one `create_doc` (`terrainRows`, five explicit portal placements, the rest as `fills`), no script.
 - Defs: reused `FARMER`, `CHICKEN`, `DOOR`, and the sprites `TREE` and `WELL` (approved, no def existed). Created `TREE`, `WELL`, `WHEAT_FIELD`, `PEASANT` (objects) and `HUT`, `TAVERN` (portals); 4 new sprites (`HUT`, `TAVERN`, `WHEAT_FIELD`, `PEASANT`, all in review). `PEASANT` says "Good day to you." (my line, the spec gave none).

@@ -13,10 +13,10 @@ export const detailFields: FormField<ZoneDetailsFormData>[] = [
 		placeholder: 'Enter Name',
 	},
 	{
-		name: 'dangerLevel',
-		label: 'Danger Level',
+		name: 'difficultyLevel',
+		label: 'Difficulty Level',
 		type: 'number',
 		inputWidth: 'sm',
-		inputAttrs: { min: 0, max: 10, step: 1 },
+		inputAttrs: { min: 0, step: 1 },
 	},
 ]

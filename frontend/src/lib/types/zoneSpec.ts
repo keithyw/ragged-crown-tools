@@ -9,7 +9,7 @@ export interface ZoneSpec {
 	name: string
 	width: number
 	height: number
-	dangerLevel: number
+	difficultyLevel: number
 	description: string // the pseudo prompt for the zone skill
 	status: ZoneSpecStatus
 }

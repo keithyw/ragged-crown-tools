@@ -35,12 +35,12 @@ export const fields: FormField<ZoneSpecFormData>[] = [
 		inputAttrs: sizeAttrs,
 	},
 	{
-		name: 'dangerLevel',
-		label: 'Danger Level',
+		name: 'difficultyLevel',
+		label: 'Difficulty Level',
 		required: true,
 		type: 'number',
 		inputWidth: 'xs',
-		inputAttrs: { min: 0, max: 10, step: 1 },
+		inputAttrs: { min: 0, step: 1 },
 	},
 	{
 		name: 'description',

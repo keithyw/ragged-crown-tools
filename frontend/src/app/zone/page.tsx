@@ -26,7 +26,7 @@ const ZONE_COLUMNS: TableColumn<StoredZone>[] = [
 			return `${width} x ${height}`
 		},
 	},
-	{ header: 'Danger Level', accessor: 'dangerLevel' },
+	{ header: 'Difficulty Level', accessor: 'difficultyLevel' },
 	// Only generated zones have a review status.
 	{ header: 'Status', render: (z) => z.status ?? '' },
 ]

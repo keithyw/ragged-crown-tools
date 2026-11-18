@@ -121,7 +121,7 @@ export const ZoneBuilder = ({
 		defaultValues: {
 			id: initialZone?.id ?? '',
 			name: initialZone?.name ?? '',
-			dangerLevel: initialZone?.dangerLevel ?? 0,
+			difficultyLevel: initialZone?.difficultyLevel ?? 0,
 		},
 	})
 	const [triedToSave, setTriedToSave] = useState(false)

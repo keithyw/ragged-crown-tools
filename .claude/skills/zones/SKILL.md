@@ -11,7 +11,7 @@ This skill is deliberately loose. The owner doesn't yet know what can be generat
 
 ## Input
 
-A document in `zone_specs` (`list_collection`, `filters: { status: "pending" }`, or by `id`): `id`, `name`, `width`, `height`, `dangerLevel`, `description` (free text: the idea of the zone), `status`. The zone takes the **spec's `id`, name and danger level**, and the size is the size of `terrain`. Work on one spec at a time.
+A document in `zone_specs` (`list_collection`, `filters: { status: "pending" }`, or by `id`): `id`, `name`, `width`, `height`, `difficultyLevel`, `description` (free text: the idea of the zone), `status`. The zone takes the **spec's `id`, name and difficulty level**, and the size is the size of `terrain`. Work on one spec at a time.
 
 ## Process
 
@@ -27,7 +27,7 @@ A document in `zone_specs` (`list_collection`, `filters: { status: "pending" }`,
 
 ```json
 {
-  "id": "SMALL_HUT", "name": "small hut", "dangerLevel": 0,
+  "id": "SMALL_HUT", "name": "small hut", "difficultyLevel": 0,
   "startingPosition": { "x": 3, "y": 6 },
   "status": "review",
   "terrainRows": ["wf wf wf", "wf wf wf"],
