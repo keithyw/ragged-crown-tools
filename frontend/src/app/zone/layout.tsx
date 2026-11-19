@@ -5,6 +5,7 @@ const LINKS = [
 	{ href: URLS.ZONE, label: 'Zones' },
 	{ href: URLS.ZONE_SPECS, label: 'Zone Specs' },
 	{ href: URLS.ZONE_REVIEW, label: 'Review Generated Zones' },
+	{ href: URLS.ZONE_DIFFICULTY, label: 'Difficulty' },
 ]
 
 const ZoneLayout = ({ children }: Readonly<{ children: React.ReactNode }>) => {

@@ -12,4 +12,5 @@ export const URLS = {
 	ZONE: '/zone',
 	ZONE_SPECS: '/zone/specs',
 	ZONE_REVIEW: '/zone/review',
+	ZONE_DIFFICULTY: '/zone/difficulty',
 }

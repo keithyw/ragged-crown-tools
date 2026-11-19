@@ -18,6 +18,7 @@ var validCollections = map[string]bool{
 	"events":    true,
 	"zones":     true,
 	"zone_specs": true,
+	"difficulty_configs": true,
 }
 
 type ValidationMiddleware struct {
