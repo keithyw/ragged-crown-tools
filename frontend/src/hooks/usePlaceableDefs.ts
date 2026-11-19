@@ -10,6 +10,7 @@ export interface PlaceableDef {
 	_id: string
 	name: string
 	maxQuantity?: number // items only
+	gearType?: string // a weapon's or armor's `type`
 }
 
 // Give, take and has-item actions store only an _id and ask for 'item', but the
@@ -35,6 +36,7 @@ export function usePlaceableDefs() {
 				_id: d._id,
 				name: d.name,
 				maxQuantity: d.maxQuantity,
+				gearType: 'type' in d ? String(d.type) : undefined,
 			})),
 			...objects.items.map((d) => ({
 				kind: 'object' as const,

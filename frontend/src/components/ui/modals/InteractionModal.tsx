@@ -7,6 +7,7 @@ import {
 	Button,
 	CheckboxInput,
 	ItemCombobox,
+	QualifierPicker,
 	SelectDropdown,
 	TextareaInput,
 	TextInput,
@@ -419,12 +420,12 @@ const InteractionForm = ({
 												items={items}
 												isLoading={defsLoading}
 												selectedId={a.itemId}
-												onSelect={(item) =>
-													setAction(i, {
-														...action,
-														itemId: item._id,
-													} as Action)
-												}
+												onSelect={(item) => {
+													// Qualifiers belong to the item they were set for.
+													const rest = { ...action } as Record<string, unknown>
+													delete rest.qualifiers
+													setAction(i, { ...rest, itemId: item._id } as Action)
+												}}
 											/>
 										)
 									}
@@ -481,6 +482,18 @@ const InteractionForm = ({
 										/>
 									)
 								})}
+							{action.type === 'GIVE_ITEM' && !action.custom && (
+								<QualifierPicker
+									id={`action-${i}-qualifiers`}
+									def={items.find((d) => d._id === action.itemId)}
+									value={action.qualifiers}
+									onChange={(q) => {
+										const rest = { ...action }
+										delete rest.qualifiers
+										setAction(i, q ? { ...rest, qualifiers: q } : rest)
+									}}
+								/>
+							)}
 							{config?.customizable && (
 								<CheckboxInput
 									id={`action-${i}-custom`}
