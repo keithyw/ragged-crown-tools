@@ -217,6 +217,32 @@ export const ARMOR_CATEGORIES_BY_TYPE: Record<
 	readonly ArmorMaterialCategory[]
 > = categoriesByType<ArmorType, ArmorMaterialCategory>(ARMOR_GROUPS)
 
+// The category a material belongs to, derived from the lists above and never
+// stored ([Inventory 34]). Weapon and armor lists are separate because
+// `leather` and `wood` sit in both. A material in two categories of one list
+// is a mistake and throws on load.
+function categoryLookup<C extends string, M extends string>(
+	materials: Record<C, readonly M[]>,
+) {
+	const out = new Map<M, C>()
+	for (const c of Object.keys(materials) as C[]) {
+		for (const m of materials[c]) {
+			if (out.has(m)) throw new Error(`${m} is in two material categories`)
+			out.set(m, c)
+		}
+	}
+	return (material: M): C | undefined => out.get(material)
+}
+
+export const weaponCategoryOf = categoryLookup<
+	WeaponMaterialCategory,
+	WeaponMaterial
+>(WEAPON_MATERIALS)
+export const armorCategoryOf = categoryLookup<
+	ArmorMaterialCategory,
+	ArmorMaterial
+>(ARMOR_MATERIALS)
+
 // What the configuration screen and its schema read: per group, its label, its
 // types and the concrete materials of its categories.
 function groupInfo<G extends string, C extends string, M extends string>(
