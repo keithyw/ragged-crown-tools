@@ -53,6 +53,10 @@ var referenceSources = map[string][]refSource{
 		{"items", "interactions.actions.defId"},
 		{"entities", "interactions.actions.defId"},
 	},
+	"difficulty_configs": {
+		{"zones", "difficultyId"},
+		{"zone_specs", "difficultyId"},
+	},
 	"zones": {
 		// TELEPORT actions on a def (the editor doesn't offer them yet). Portal
 		// destinations and TELEPORTs on placements are found by the placement
