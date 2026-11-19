@@ -4,6 +4,7 @@ Internal editor for the data behind the Ragged Crown game (tile definitions now;
 
 @ARCHITECTURE.md
 @DATA-MODEL.md
+@TRELLO.md
 
 The architecture doc is the source of truth for how things fit together. Its "Known gaps" section is the owner's tech-debt list: do not fix items from it unless asked.
 
@@ -18,6 +19,7 @@ I'm an experienced developer (25+ years) who still wants to write code and keep 
 - **Placeholders are intentional.** Copied-over code, stubs and `// TODO` notes are often reminders to myself. Leave them alone unless they're in the way.
 - **Say when you're unsure or wrong.** Verify against the code instead of guessing, and tell me when you haven't been able to run something.
 - **Keep answers proportionate.** Short question, short answer. I tire easily, so don't pad.
+- **Ask, don't suggest.** When a decision is open, give me a short numbered list of bare questions so I can answer rapid-fire. No recommendations or options unless I say I don't know what to do.
 
 ## Safety rules
 
