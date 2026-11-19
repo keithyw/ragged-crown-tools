@@ -18,6 +18,7 @@ type StoredConfig = StoredDoc<DifficultyConfig>
 const COLUMNS: TableColumn<StoredConfig>[] = [
 	{ header: 'Name', accessor: 'name' },
 	{ header: 'ID', accessor: 'id' },
+	{ header: 'Level', accessor: 'level' },
 	{
 		header: 'Weapon groups',
 		render: (c) => Object.keys(c.materials.weapon).join(', ') || 'none',

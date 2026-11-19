@@ -3,16 +3,20 @@
 import { useCallback } from 'react'
 import { useParams } from 'next/navigation'
 import { EditFormLayout } from '@/components'
-import { useEditRecord } from '@/hooks'
+import { useCollection, useEditRecord } from '@/hooks'
 import { URLS } from '@/lib/constants'
 import { collectionService } from '@/lib/services'
-import { ZoneSpec } from '@/lib/types'
+import type { DifficultyConfig, ZoneSpec } from '@/lib/types'
 import { MAX_ZONE_SIZE } from '@/lib/utils'
 import { zoneSpecSchema, type ZoneSpecFormData } from '@/schemas'
-import { editFields } from '@/app/zone/specs/fields'
+import { editFields, withDifficulties } from '@/app/zone/specs/fields'
 
 const EditZoneSpecPage = () => {
 	const params = useParams()
+	const { items: difficulties } = useCollection<DifficultyConfig>(
+		'difficulty_configs',
+		{ sort: 'level' },
+	)
 
 	const editController = useEditRecord({
 		collectionName: 'zone_specs',
@@ -22,7 +26,7 @@ const EditZoneSpecPage = () => {
 			name: '',
 			width: MAX_ZONE_SIZE,
 			height: MAX_ZONE_SIZE,
-			difficultyLevel: 0,
+			difficultyId: '',
 			description: '',
 			status: 'pending',
 		},
@@ -38,7 +42,7 @@ const EditZoneSpecPage = () => {
 				name: s.name,
 				width: s.width,
 				height: s.height,
-				difficultyLevel: s.difficultyLevel,
+				difficultyId: s.difficultyId,
 				description: s.description,
 				status: s.status,
 			}),
@@ -53,7 +57,7 @@ const EditZoneSpecPage = () => {
 		<EditFormLayout
 			item={editController.data as ZoneSpecFormData}
 			title='Edit Zone Spec'
-			fields={editFields}
+			fields={withDifficulties(editFields, difficulties)}
 			isLoading={editController.isLoading}
 			isSubmitting={editController.isSubmitting}
 			loadingError={editController.loadingError}

@@ -20,6 +20,7 @@ import {
 	parseSpritePixels,
 	spritePixelsToText,
 } from '../../frontend/src/lib/utils/sprite'
+import { difficultyConfigSchema } from '../../frontend/src/schemas/difficultyConfigSchema'
 import { spriteSchema } from '../../frontend/src/schemas/spriteSchema'
 import { zoneSchema } from '../../frontend/src/schemas/zoneSchema'
 import { zoneSpecSchema } from '../../frontend/src/schemas/zoneSpecSchema'
@@ -41,6 +42,7 @@ const COLLECTIONS = [
 	'zones',
 	'sprites',
 	'zone_specs',
+	'difficulty_configs',
 	'events',
 ] as const
 
@@ -544,9 +546,11 @@ function validate(
 			? spriteSchema
 			: collection === 'zone_specs'
 				? zoneSpecSchema
-				: allowed
-					? defSchema
-					: zoneSchema
+				: collection === 'difficulty_configs'
+					? difficultyConfigSchema
+					: allowed
+						? defSchema
+						: zoneSchema
 	const result = schema.safeParse(doc)
 	if (!result.success) {
 		const lines = result.error.issues.map(
@@ -586,9 +590,11 @@ function validate(
 			? [spriteSchema.shape, 'a sprite']
 			: collection === 'zone_specs'
 				? [zoneSpecSchema.shape, 'a zone spec']
-				: collection === 'zones'
-					? [zoneSchema.shape, 'a zone']
-					: [DEF_SHAPES[data.kind!], `a ${data.kind} def`]
+				: collection === 'difficulty_configs'
+					? [difficultyConfigSchema.shape, 'a difficulty configuration']
+					: collection === 'zones'
+						? [zoneSchema.shape, 'a zone']
+						: [DEF_SHAPES[data.kind!], `a ${data.kind} def`]
 	const warnings = Object.keys((doc ?? {}) as object)
 		.filter((k) => !(k in shape) && !SERVER_FIELDS.has(k))
 		.map((k) => `'${k}' is not a field of ${what} and was dropped`)
@@ -778,6 +784,19 @@ async function checkReferences(doc: unknown) {
 	}
 }
 
+// A zone's or a zone spec's `difficultyId` must be a real difficulty
+// configuration, as its select guarantees in the UI ([Tools 26]).
+async function checkDifficulty(collection: string, doc: unknown) {
+	if (collection !== 'zones' && collection !== 'zone_specs') return
+	const { difficultyId } = doc as { difficultyId?: string }
+	if (!difficultyId) return
+	if (!(await lookup('difficulty_configs', difficultyId))) {
+		throw new Error(
+			`Invalid document:\n- difficultyId: no difficulty configuration with _id '${difficultyId}'`,
+		)
+	}
+}
+
 // A zone's placements must point at real defs of the kind they say: the
 // `defId` of every placement, contents included, as the builder's pickers
 // guarantee; and no def directly on top of itself in a stack. Not covered: a portal's destination zone, a placement's own
@@ -958,6 +977,7 @@ server.registerTool(
 				{ create: true },
 			)
 			await checkReferences(data)
+			await checkDifficulty(collection, data)
 			await checkZonePlacements(collection, data)
 			const res = await apiPost(`/collection/${collection}`, data)
 			return ok(
@@ -1025,6 +1045,7 @@ server.registerTool(
 				),
 			)
 			await checkReferences(data)
+			await checkDifficulty(collection, data)
 			await checkZonePlacements(collection, data)
 			const res = await apiPut(`/collection/${collection}/${_id}`, data)
 			return ok(

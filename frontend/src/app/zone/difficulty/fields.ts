@@ -16,6 +16,14 @@ export const fields: FormField<DifficultyConfigFormData>[] = [
 		required: true,
 	},
 	{
+		name: 'level',
+		label: 'Level',
+		required: true,
+		type: 'number',
+		inputWidth: 'sm',
+		inputAttrs: { min: 0, step: 1 },
+	},
+	{
 		name: 'description',
 		label: 'Description',
 		type: 'textarea',

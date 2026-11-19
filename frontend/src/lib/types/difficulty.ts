@@ -24,6 +24,9 @@ export interface DifficultyConfig {
 	id: string // user-facing label; the promotion key, never a reference
 	name: string
 	description?: string
+	// What the player sees as the zone's difficulty; a whole number, 0 or more,
+	// no upper limit ([Tools 26]). 0 means no random encounters (towns).
+	level: number
 	// Weapons and armor have separate material lists ([Inventory 33]). A group
 	// that isn't filled in isn't used by this configuration; what an item of a
 	// missing group gets is the engine's decision ([Game 23]).

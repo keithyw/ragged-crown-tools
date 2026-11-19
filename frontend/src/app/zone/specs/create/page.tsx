@@ -3,12 +3,13 @@
 import { useEffect } from 'react'
 import { get } from 'react-hook-form'
 import { CreateFormLayout, FormInput } from '@/components'
-import { useCreateRecord } from '@/hooks'
+import { useCollection, useCreateRecord } from '@/hooks'
 import { URLS } from '@/lib/constants'
 import { collectionService } from '@/lib/services'
 import { MAX_ZONE_SIZE } from '@/lib/utils'
 import { zoneSpecSchema, type ZoneSpecFormData } from '@/schemas'
-import { fields } from '@/app/zone/specs/fields'
+import type { DifficultyConfig } from '@/lib/types'
+import { fields, withDifficulties } from '@/app/zone/specs/fields'
 import { clearDraft, loadDraft, saveDraft } from '@/app/zone/specs/draft'
 
 const defaultValues: ZoneSpecFormData = {
@@ -16,12 +17,16 @@ const defaultValues: ZoneSpecFormData = {
 	name: '',
 	width: MAX_ZONE_SIZE,
 	height: MAX_ZONE_SIZE,
-	difficultyLevel: 0,
+	difficultyId: '',
 	description: '',
 	status: 'pending', // not a visible field, but submitted with the form
 }
 
 const CreateZoneSpecPage = () => {
+	const { items: difficulties } = useCollection<DifficultyConfig>(
+		'difficulty_configs',
+		{ sort: 'level' },
+	)
 	const {
 		control,
 		onSubmit,
@@ -64,7 +69,7 @@ const CreateZoneSpecPage = () => {
 			]}
 			handleSubmit={onSubmit}
 		>
-			{fields.map((f, idx) => (
+			{withDifficulties(fields, difficulties).map((f, idx) => (
 				<FormInput
 					key={idx}
 					control={control}

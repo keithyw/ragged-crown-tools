@@ -11,15 +11,28 @@ import {
 import { useCollection, useDeleteRecord } from '@/hooks'
 import { URLS } from '@/lib/constants'
 import { collectionService, StoredDoc } from '@/lib/services'
-import { TableColumn, TableRowAction, ZoneSpec } from '@/lib/types'
+import {
+	DifficultyConfig,
+	TableColumn,
+	TableRowAction,
+	ZoneSpec,
+} from '@/lib/types'
 
 type StoredZoneSpec = StoredDoc<ZoneSpec>
 
-const ZONE_SPEC_COLUMNS: TableColumn<StoredZoneSpec>[] = [
+const specColumns = (
+	difficulties: StoredDoc<DifficultyConfig>[],
+): TableColumn<StoredZoneSpec>[] => [
 	{ header: 'Name', accessor: 'name' },
 	{ header: 'ID', accessor: 'id' },
 	{ header: 'Size', render: (s) => `${s.width} x ${s.height}` },
-	{ header: 'Difficulty Level', accessor: 'difficultyLevel' },
+	{
+		header: 'Difficulty',
+		render: (s) => {
+			const d = difficulties.find((c) => c._id === s.difficultyId)
+			return d ? `${d.name} (level ${d.level})` : 'missing'
+		},
+	},
 	{ header: 'Status', accessor: 'status' },
 ]
 
@@ -32,6 +45,9 @@ const ZoneSpecsPage = () => {
 		error,
 		refresh,
 	} = useCollection<ZoneSpec>('zone_specs', { sort: 'status' })
+
+	const { items: difficulties } =
+		useCollection<DifficultyConfig>('difficulty_configs')
 
 	const deleteController = useDeleteRecord<StoredZoneSpec>({
 		collectionName: 'zone_specs',
@@ -70,7 +86,7 @@ const ZoneSpecsPage = () => {
 			</CreateItemSection>
 			<DataTable
 				data={specs}
-				columns={ZONE_SPEC_COLUMNS}
+				columns={specColumns(difficulties)}
 				rowKey='_id'
 				actions={actions}
 				emptyMessage='No zone specs have been created yet. Click on Create New Zone Spec to request your first zone.'

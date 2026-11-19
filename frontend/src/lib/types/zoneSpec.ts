@@ -9,7 +9,7 @@ export interface ZoneSpec {
 	name: string
 	width: number
 	height: number
-	difficultyLevel: number
+	difficultyId: string // a difficulty configuration's _id (Tools 26)
 	description: string // the pseudo prompt for the zone skill
 	status: ZoneSpecStatus
 }

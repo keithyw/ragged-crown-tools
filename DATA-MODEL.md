@@ -165,7 +165,7 @@ interface Zone {
 	id: string
 	name: string
 	dimensions?: { width: number; height: number }
-	difficultyLevel: number
+	difficultyId: string // a difficulty configuration's _id (below)
 	startingPosition?: Position
 	terrain: string[][] // terrain def _ids, indexed [y][x]
 	placements?: Record<CellKey, Placement[]>
@@ -173,6 +173,7 @@ interface Zone {
 }
 ```
 
+- **`difficultyId`** (owner, 2026-11-19, [Tools 26]) points at a **difficulty configuration** (`difficulty_configs`, [Tools 25]), which holds the `level` the player sees (whole number, 0 or more, no upper limit; 0 means no random encounters) and per-group material tables for rolled weapons and armor. Several zones can share one. It replaces the zone's own `difficultyLevel`; there is no copy of the number on the zone. Tools-side editing is under Zone, Difficulty.
 - **`terrain`** is unchanged: rows of terrain `_id`s, indexed `[y][x]`.
 - **`placements`** is the layer of things on top of terrain. It is sparse (only cells that have something) and each cell's array is ordered **bottom to top**.
 - **`CellKey`** is `"x,y"` (x first, no spaces). It is only ever built with the `cellKey(x, y)` helper, so `"x, y"` / `"y,x"` drift cannot happen.
@@ -206,7 +207,7 @@ interface ZoneSpec {
 	name: string
 	width: number // 1 to 16; the form defaults to 16
 	height: number // 1 to 16; the form defaults to 16
-	difficultyLevel: number // whole number, 0 or more, as on a zone
+	difficultyId: string // a difficulty configuration's _id, as on a zone
 	description: string // a pseudo prompt: the general idea of the zone
 	status: 'pending' | 'processed' // defaults to pending
 }
@@ -411,6 +412,7 @@ Zone JSON is the **initial state only**. When a game starts, the player gets a r
 | `zones`     | Zones                                                    |
 | `sprites`   | Sprite art (section 1.2)                                 |
 | `zone_specs` | Requests for a generated zone. Tools only; the game never reads them |
+| `difficulty_configs` | Difficulty configurations: a level and per-group material tables ([Tools 25], [Tools 26]); a zone points at one by `_id` |
 | `events`    | Reserved, unused (kept in case reusable interaction templates are ever saved) |
 
 `maps` is redundant with `zones` and is removed from the allow-list ([Backend 4]).

@@ -23,10 +23,7 @@ export const zoneSpecSchema = z.object({
 	name: z.string().trim().min(1, 'Name is required'),
 	width: zoneSize,
 	height: zoneSize,
-	difficultyLevel: z
-		.number({ error: 'Difficulty level must be a number' })
-		.int('Difficulty level must be a whole number')
-		.min(0, 'Difficulty level cannot be negative'),
+	difficultyId: z.string().min(1, 'Pick a difficulty'),
 	description: z.string().trim().min(1, 'Description is required'),
 	status: z.enum(ZONE_SPEC_STATUSES).default('pending'),
 }) satisfies z.ZodType<ZoneSpec>

@@ -31,6 +31,7 @@ const EditDifficultyConfigPage = () => {
 			(c: DifficultyConfig) => ({
 				id: c.id,
 				name: c.name,
+				level: c.level,
 				description: c.description ?? '',
 				materials: c.materials,
 			}),

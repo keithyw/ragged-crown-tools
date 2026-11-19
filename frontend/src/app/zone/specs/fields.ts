@@ -1,4 +1,5 @@
-import type { FormField } from '@/lib/types'
+import type { StoredDoc } from '@/lib/services'
+import type { DifficultyConfig, FormField } from '@/lib/types'
 import { MAX_ZONE_SIZE, MIN_ZONE_SIZE } from '@/lib/utils'
 import type { ZoneSpecFormData } from '@/schemas'
 
@@ -35,12 +36,12 @@ export const fields: FormField<ZoneSpecFormData>[] = [
 		inputAttrs: sizeAttrs,
 	},
 	{
-		name: 'difficultyLevel',
-		label: 'Difficulty Level',
+		// Its options are the difficulty configurations, filled in by the page.
+		name: 'difficultyId',
+		label: 'Difficulty',
 		required: true,
-		type: 'number',
-		inputWidth: 'xs',
-		inputAttrs: { min: 0, step: 1 },
+		type: 'select',
+		placeholder: 'Pick a difficulty',
 	},
 	{
 		name: 'description',
@@ -69,3 +70,20 @@ export const editFields: FormField<ZoneSpecFormData>[] = [
 		],
 	},
 ]
+
+// Fills the difficulty select with the configurations that exist.
+export const withDifficulties = (
+	list: FormField<ZoneSpecFormData>[],
+	difficulties: StoredDoc<DifficultyConfig>[],
+): FormField<ZoneSpecFormData>[] =>
+	list.map((f) =>
+		f.name === 'difficultyId'
+			? {
+					...f,
+					options: difficulties.map((d) => ({
+						value: d._id,
+						label: `${d.name} (level ${d.level})`,
+					})),
+				}
+			: f,
+	)

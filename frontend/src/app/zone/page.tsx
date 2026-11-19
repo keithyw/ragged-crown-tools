@@ -11,12 +11,19 @@ import {
 import { useCollection, useDeleteRecord } from '@/hooks'
 import { URLS } from '@/lib/constants'
 import { collectionService, StoredDoc } from '@/lib/services'
-import { ReviewedZone, TableColumn, TableRowAction } from '@/lib/types'
+import {
+	DifficultyConfig,
+	ReviewedZone,
+	TableColumn,
+	TableRowAction,
+} from '@/lib/types'
 import { gridSize } from '@/lib/utils'
 
 type StoredZone = StoredDoc<ReviewedZone>
 
-const ZONE_COLUMNS: TableColumn<StoredZone>[] = [
+const zoneColumns = (
+	difficulties: StoredDoc<DifficultyConfig>[],
+): TableColumn<StoredZone>[] => [
 	{ header: 'Name', accessor: 'name' },
 	{ header: 'ID', accessor: 'id' },
 	{
@@ -26,7 +33,13 @@ const ZONE_COLUMNS: TableColumn<StoredZone>[] = [
 			return `${width} x ${height}`
 		},
 	},
-	{ header: 'Difficulty Level', accessor: 'difficultyLevel' },
+	{
+		header: 'Difficulty',
+		render: (z) => {
+			const d = difficulties.find((c) => c._id === z.difficultyId)
+			return d ? `${d.name} (level ${d.level})` : 'missing'
+		},
+	},
 	// Only generated zones have a review status.
 	{ header: 'Status', render: (z) => z.status ?? '' },
 ]
@@ -39,6 +52,9 @@ const ZonePage = () => {
 		error,
 		refresh,
 	} = useCollection<ReviewedZone>('zones', { sort: 'name' })
+
+	const { items: difficulties } =
+		useCollection<DifficultyConfig>('difficulty_configs')
 
 	const deleteController = useDeleteRecord<StoredZone>({
 		collectionName: 'zones',
@@ -77,7 +93,7 @@ const ZonePage = () => {
 			</CreateItemSection>
 			<DataTable
 				data={zones}
-				columns={ZONE_COLUMNS}
+				columns={zoneColumns(difficulties)}
 				rowKey='_id'
 				actions={actions}
 				emptyMessage='No zones have been created yet. Click on Create New Zone to draw your first map.'

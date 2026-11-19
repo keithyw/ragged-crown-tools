@@ -35,6 +35,7 @@ import {
 import { useCollection } from '@/hooks'
 import type {
 	ArmorDef,
+	DifficultyConfig,
 	ItemDef,
 	ObjectDef,
 	PortalDef,
@@ -113,6 +114,7 @@ export const ZoneBuilder = ({
 }: ZoneBuilderProps) => {
 	const {
 		register,
+		control,
 		handleSubmit,
 		setError,
 		formState: { errors, isSubmitting },
@@ -121,7 +123,7 @@ export const ZoneBuilder = ({
 		defaultValues: {
 			id: initialZone?.id ?? '',
 			name: initialZone?.name ?? '',
-			difficultyLevel: initialZone?.difficultyLevel ?? 0,
+			difficultyId: initialZone?.difficultyId ?? '',
 		},
 	})
 	const [triedToSave, setTriedToSave] = useState(false)
@@ -183,6 +185,10 @@ export const ZoneBuilder = ({
 	} = useCollection<PortalDef>('entities', { filter: { kind: 'portal' } })
 	// Only names destinations, so a failed load doesn't block the builder.
 	const { items: zones } = useCollection<Zone>('zones')
+	const { items: difficulties } = useCollection<DifficultyConfig>(
+		'difficulty_configs',
+		{ sort: 'level' },
+	)
 	const isLoading =
 		tilesLoading || objectsLoading || itemsLoading || portalsLoading
 	const error = tilesError ?? objectsError ?? itemsError ?? portalsError
@@ -542,7 +548,18 @@ export const ZoneBuilder = ({
 						{detailFields.map((field) => (
 							<FormInput
 								key={field.name}
-								field={field}
+								field={
+									field.name === 'difficultyId'
+										? {
+												...field,
+												options: difficulties.map((d) => ({
+													value: d._id,
+													label: `${d.name} (level ${d.level})`,
+												})),
+											}
+										: field
+								}
+								control={control}
 								register={register}
 								errorMessage={get(errors, field.name)?.message}
 							/>

@@ -4,6 +4,7 @@ import type { DifficultyConfigFormData } from '@/schemas'
 export const defaultValues: DifficultyConfigFormData = {
 	id: '',
 	name: '',
+	level: 0,
 	description: '',
 	materials: { weapon: {}, armor: {} },
 }

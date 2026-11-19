@@ -13,10 +13,10 @@ export const detailFields: FormField<ZoneDetailsFormData>[] = [
 		placeholder: 'Enter Name',
 	},
 	{
-		name: 'difficultyLevel',
-		label: 'Difficulty Level',
-		type: 'number',
-		inputWidth: 'sm',
-		inputAttrs: { min: 0, step: 1 },
+		// Its options are the difficulty configurations, filled in by ZoneBuilder.
+		name: 'difficultyId',
+		label: 'Difficulty',
+		type: 'select',
+		placeholder: 'Pick a difficulty',
 	},
 ]

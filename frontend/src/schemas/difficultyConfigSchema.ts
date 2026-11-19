@@ -15,11 +15,9 @@ function materialTable<M extends string>(
 		(materials as readonly string[]).includes(m)
 	return z
 		.object({
-			default: z
-				.string()
-				.refine(isMaterial, {
-					error: `Default must be one of: ${materials.join(', ')}`,
-				}),
+			default: z.string().refine(isMaterial, {
+				error: `Default must be one of: ${materials.join(', ')}`,
+			}),
 			chances: z.record(
 				z.string(),
 				z
@@ -70,6 +68,10 @@ export const difficultyConfigSchema = z.object({
 		.min(1, 'ID is required')
 		.regex(/^[A-Za-z0-9_-]+$/, 'Letters, numbers, - and _ only'),
 	name: z.string().trim().min(1, 'Name is required'),
+	level: z
+		.number({ error: 'Level must be a number' })
+		.int('Level must be a whole number')
+		.min(0, 'Level cannot be negative'),
 	description: z
 		.string()
 		.trim()
