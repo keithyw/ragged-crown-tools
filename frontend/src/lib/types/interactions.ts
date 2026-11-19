@@ -3,6 +3,7 @@
 // (see ARCHITECTURE.md 5).
 
 import type { Destination, Kind } from './core'
+import type { Qualifiers } from './gear'
 
 export type Condition =
 	| { type: 'HAS_ITEM'; itemId: string; amount: number; custom?: never }
@@ -37,7 +38,13 @@ export type StatTarget = 'character' | 'party'
 export type Action =
 	| { type: 'SHOW_DIALOG'; text: string; custom?: never }
 	| { type: 'SHOW_DIALOG'; custom: true; slot: string }
-	| { type: 'GIVE_ITEM'; itemId: string; amount?: number; custom?: never }
+	| {
+			type: 'GIVE_ITEM'
+			itemId: string
+			amount?: number
+			qualifiers?: Qualifiers // weapons and armor; blank = rolled on pickup
+			custom?: never
+	  }
 	| { type: 'GIVE_ITEM'; custom: true; slot: string }
 	| { type: 'TAKE_ITEM'; itemId: string; amount?: number; custom?: never }
 	| { type: 'TAKE_ITEM'; custom: true; slot: string }
@@ -48,6 +55,7 @@ export type Action =
 			defKind: Kind
 			defId: string
 			quantity?: number
+			qualifiers?: Qualifiers // weapons and armor; blank = rolled on pickup
 			custom?: never
 	  }
 	| { type: 'SPAWN'; custom: true; slot: string }

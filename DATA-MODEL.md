@@ -79,7 +79,7 @@ The legacy category types that used to be in `map.ts` (`TileType`, `TileType2`, 
 
 - **Weapon:** `type` (sword, dagger, spear, polearm, bow, sling, crossbow, axe, mace, flail, staff, fist, hammer, club, dart), `damage` as dice (`{ count, die }`, so 2d4 is `{ 2, 4 }`; no size-dependent damage) and the flags `isTwoHanded`, `isMissile`, `isThrown` (absent = false; a bow is still flagged `isMissile` although its type implies it). Ammo, `requiredBy` and damage types are not designed.
 - **Armor:** `type` is the **slot** (head, chest, legs, hands, wrists, feet, shoulders, belt, cloak, shield, neck, ring, earring, brooch), which is what decides what a character can equip or replace. A shield is armor in the hand slot; the rule that it blocks a second or two-handed weapon is the engine's, not a field. `defenseValue` is a whole number, 0 or more, **with no ceiling**, small and progressive (cloth 1, leather 2, ...), with no multiplier. The style (leather, chain, plate) lives in the name, not a field.
-- **Quality, material and `+N` are instance data, not def data.** A def is the plain base ("long sword") with a base `weight`; the instance, created at game time, carries its quality (**Shoddy, Poor, Normal, Good, Superior**, in `QUALITIES` in `lib/constants/gear.ts`; Normal is a quality like the others), its material and any bonus, and the game computes the effective weight. **Materials** (owner, 2026-11-18) are two short lists in `lib/constants/gear.ts` (weapon and armor, managed separately), kept to what a farming village has. A **category** groups materials and is what a type allows; the instance stores one concrete **material** from it, which is what a player sees ("superior oak staff"). Weapons: wood (wood), metal (iron), leather (leather). Armor: cloth, leather, fur, wood (each holding its own material) and metal (copper). Every type allows at least one category, and may allow several (a tunic: cloth or leather); the slot decides (wood only on shields, jewelry metal only, a sling leather; bare fists are unarmed combat, not a weapon). **Blank in authored data (an action, a placement) means "roll randomly when the item is picked up"** (owner, 2026-11-18), so a designer who wants a plain Normal item sets `normal` explicitly; an inventory entry always holds the resolved value. Tools-side plan: Trello [Inventory 13], [Inventory 14], [Inventory 17], [Inventory 28].
+- **Quality, material and `+N` are instance data, not def data.** A def is the plain base ("long sword") with a base `weight`; the instance, created at game time, carries its quality (**Shoddy, Poor, Normal, Good, Superior**, in `QUALITIES` in `lib/constants/gear.ts`; Normal is a quality like the others), its material and any bonus, and the game computes the effective weight. **Materials** (owner, 2026-11-18) are two short lists in `lib/constants/gear.ts` (weapon and armor, managed separately), kept to what a farming village has. A **category** groups materials and is what a type allows; the instance stores one concrete **material** from it, which is what a player sees ("superior oak staff"). Weapons: wood (wood), metal (iron), leather (leather). Armor: cloth, leather, fur, wood (each holding its own material) and metal (copper). Every type allows at least one category, and may allow several (a tunic: cloth or leather); the slot decides (wood only on shields, jewelry metal only, a sling leather; bare fists are unarmed combat, not a weapon). **Blank in authored data (an action, a placement) means "roll randomly when the item is picked up"** (owner, 2026-11-18), so a designer who wants a plain Normal item sets `normal` explicitly; an inventory entry always holds the resolved value. **Where they are written** ([Inventory 28]): a nested `qualifiers?: { quality?, material? }` (`Qualifiers` in `gear.ts`) on a `GIVE_ITEM` or `SPAWN` action, on the matching custom value and on a `Placement` (container contents are placements). A set value must be a real quality or material (the schema refuses anything else); a field left out is not stored. The schema does not check that a material suits the item's type (that needs the def). Tools-side plan: Trello [Inventory 13], [Inventory 14], [Inventory 17], [Inventory 28].
 - **Sprites:** weapons and armor use the `item` sprite category.
 
 **Quest items** are a flag, not a kind (owner, 2026-11-16): `isQuestItem`, an optional boolean on the item core, so an item, weapon or armor piece can be one. Absent = false, never stored as `false`. It exists so the game can protect a quest item from being dropped or deleted from a character's inventory by accident (a hand-in with `TAKE_ITEM` is the intended way out). The tools only store it; the game's behaviour is Trello [Inventory 18].
@@ -240,6 +240,7 @@ interface Placement {
 	defKind: Kind // with defId, a composite key: kind says which collection
 	defId: string // the def's _id
 	quantity?: number // items with a maxQuantity: "4 spears", not four rows
+	qualifiers?: Qualifiers // weapons and armor: quality and material; blank = rolled on pickup (1.3)
 	interactions?: Interaction[] // per-instance overrides (section 4)
 	contents?: Placement[] // for containers; nested, depth-limited
 	destination?: Destination // portals only; required for a valid map
@@ -312,7 +313,7 @@ Interactions can be **unlimited** (a generic NPC's "Hello and welcome to town X"
 
 ### 4.4 Initial actions
 
-`SHOW_DIALOG`, `GIVE_ITEM`, `TAKE_ITEM`, `GIVE_CURRENCY`, `SET_FLAG`, `SPAWN { defKind, defId, quantity? }` (adds to this cell's stack at runtime), `REMOVE_SELF`, `TELEPORT { destination }`, `PLAY_SOUND`, `MODIFY_ATTRIBUTE`.
+`SHOW_DIALOG`, `GIVE_ITEM { itemId, amount?, qualifiers? }`, `TAKE_ITEM`, `GIVE_CURRENCY`, `SET_FLAG`, `SPAWN { defKind, defId, quantity?, qualifiers? }` (adds to this cell's stack at runtime), `REMOVE_SELF`, `TELEPORT { destination }`, `PLAY_SOUND`, `MODIFY_ATTRIBUTE`.
 
 The engine implements them incrementally ([Game 2]). Fields not listed here are decided when each type is written.
 
@@ -355,7 +356,7 @@ An action's (or condition's) value can be left for each placement to fill in, so
 ```ts
 { type: 'SHOW_DIALOG'; text: string } | { type: 'SHOW_DIALOG'; custom: true; slot: string }
 { type: 'SPAWN'; defKind; defId; quantity? } | { type: 'SPAWN'; custom: true; slot: string }
-{ type: 'GIVE_ITEM'; itemId; amount? } | { type: 'GIVE_ITEM'; custom: true; slot: string }
+{ type: 'GIVE_ITEM'; itemId; amount?; qualifiers? } | { type: 'GIVE_ITEM'; custom: true; slot: string }
 { type: 'TAKE_ITEM'; itemId; amount? } | { type: 'TAKE_ITEM'; custom: true; slot: string }
 { type: 'HAS_ITEM'; itemId; amount } | { type: 'HAS_ITEM'; custom: true; slot: string } // a condition
 ```
@@ -365,13 +366,14 @@ A placement fills the slots in with `customValues`, keyed by `slot`:
 ```ts
 type CustomValue =
 	| { type: 'SHOW_DIALOG'; text?: string }
-	| { type: 'GIVE_ITEM' | 'TAKE_ITEM' | 'HAS_ITEM'; itemId?: string; amount?: number }
-	| { type: 'SPAWN'; defKind?: Kind; defId?: string; quantity?: number }
+	| { type: 'TAKE_ITEM' | 'HAS_ITEM'; itemId?: string; amount?: number }
+	| { type: 'GIVE_ITEM'; itemId?: string; amount?: number; qualifiers?: Qualifiers }
+	| { type: 'SPAWN'; defKind?: Kind; defId?: string; quantity?: number; qualifiers?: Qualifiers }
 ```
 
 Rules:
 
-- **A custom action or condition carries no value.** `text`, or `defKind`/`defId`/`quantity`, or `itemId`/`amount`, are absent. The tools do not validate them and do not save them: checking the box in the interaction editor clears them, and the schema strips them if they arrive anyway. A custom item reference's **amount** is set on the placement too.
+- **A custom action or condition carries no value.** `text`, or `defKind`/`defId`/`quantity`, or `itemId`/`amount`, are absent. The tools do not validate them and do not save them: checking the box in the interaction editor clears them, and the schema strips them if they arrive anyway. A custom item reference's **amount** is set on the placement too. So are its **qualifiers** (`GIVE_ITEM` and `SPAWN`, weapons and armor; 1.3): a custom action on the def carries none, and the placement's value may leave them blank (rolled on pickup).
 - **A non-custom action is unchanged:** its value is required and `custom` is not stored (never `custom: false`).
 - **Only some types can be custom:** the actions `SHOW_DIALOG`, `SPAWN`, `GIVE_ITEM` and `TAKE_ITEM`, and the condition `HAS_ITEM`. Every item reference gets the checkbox. A type opts in with `customizable` in the editor's action or condition registry (`lib/utils/interactions.ts`).
 - **The def only says "a value goes here."** Each custom action or condition is a **slot** with a stable `slot` id, generated when it is first saved. A def stored before slots existed gets its ids on its next save.

@@ -1,6 +1,13 @@
 import { z } from 'zod'
 // Relative, not '@/': the MCP runs this file through tsx (ARCHITECTURE.md 6.1).
-import { ARMOR_TYPES, DICE, WEAPON_TYPES } from '../lib/constants/gear'
+import {
+	ARMOR_MATERIALS,
+	ARMOR_TYPES,
+	DICE,
+	QUALITIES,
+	WEAPON_MATERIALS,
+	WEAPON_TYPES,
+} from '../lib/constants/gear'
 import type {
 	Action,
 	ArmorDef,
@@ -15,6 +22,7 @@ import type {
 	InteractionType,
 	ItemDef,
 	Kind,
+	Material,
 	ObjectDef,
 	Placement,
 	PortalDef,
@@ -159,6 +167,26 @@ const showDialogSchema = z
 			: { type: a.type, text: a.text ?? '' },
 	)
 
+// Every material that exists, in either list.
+const MATERIALS = [
+	...new Set([
+		...Object.values(WEAPON_MATERIALS).flat(),
+		...Object.values(ARMOR_MATERIALS).flat(),
+	]),
+] as [Material, ...Material[]]
+
+// The quality and material of one instance ([Inventory 28]). Only a value that
+// is set is checked, and it has to be a real one; a field left out means "roll
+// when picked up" and is not stored, nor is an empty `qualifiers`. Whether the
+// material suits the item's type needs the def, so the editors and the MCP
+// check that, not this schema.
+export const qualifiersSchema = z
+	.object({
+		quality: z.enum(QUALITIES).optional(),
+		material: z.enum(MATERIALS).optional(),
+	})
+	.transform((q) => (q.quality || q.material ? q : undefined))
+
 const spawnSchema = z
 	.object({
 		type: z.literal('SPAWN'),
@@ -167,6 +195,7 @@ const spawnSchema = z
 		defKind: kindSchema.optional(),
 		defId: z.string().optional(),
 		quantity: amount.optional(),
+		qualifiers: qualifiersSchema.optional(),
 	})
 	.superRefine((a, ctx) => {
 		if (!a.custom && (!a.defKind || !a.defId)) {
@@ -177,7 +206,7 @@ const spawnSchema = z
 			})
 		}
 	})
-	.transform((a) =>
+	.transform((a): Extract<Action, { type: 'SPAWN' }> =>
 		a.custom
 			? {
 					type: a.type,
@@ -189,6 +218,7 @@ const spawnSchema = z
 					defKind: a.defKind ?? ('item' as const),
 					defId: a.defId ?? '',
 					quantity: a.quantity,
+					qualifiers: a.qualifiers,
 				},
 	)
 
@@ -220,8 +250,8 @@ const modifyAttributeSchema = z
 		a.attribute === 'hp' || a.attribute === 'sp' ? { ...a, bar } : a,
 	)
 
-// GIVE_ITEM and TAKE_ITEM are the same shape; either can be custom.
-const itemActionSchema = <T extends 'GIVE_ITEM' | 'TAKE_ITEM'>(type: T) =>
+// TAKE_ITEM; can be custom (GIVE_ITEM is giveItemSchema, below).
+const itemActionSchema = <T extends 'TAKE_ITEM'>(type: T) =>
 	z
 		.object({
 			type: z.literal(type),
@@ -249,9 +279,44 @@ const itemActionSchema = <T extends 'GIVE_ITEM' | 'TAKE_ITEM'>(type: T) =>
 				: { type: a.type, itemId: a.itemId ?? '', amount: a.amount },
 		)
 
+// GIVE_ITEM hands over an instance, so it can say which one (weapons and armor).
+// Same as itemActionSchema otherwise; kept apart so TAKE_ITEM doesn't get the field.
+const giveItemSchema = z
+	.object({
+		type: z.literal('GIVE_ITEM'),
+		custom: z.boolean().optional(),
+		slot: z.string().min(1).optional(),
+		itemId: z.string().optional(),
+		amount: amount.optional(),
+		qualifiers: qualifiersSchema.optional(),
+	})
+	.superRefine((a, ctx) => {
+		if (!a.custom && !a.itemId) {
+			ctx.addIssue({
+				code: 'custom',
+				path: ['itemId'],
+				message: 'Choose an item.',
+			})
+		}
+	})
+	.transform((a): Extract<Action, { type: 'GIVE_ITEM' }> =>
+		a.custom
+			? {
+					type: a.type,
+					custom: true as const,
+					slot: a.slot ?? crypto.randomUUID(),
+				}
+			: {
+					type: a.type,
+					itemId: a.itemId ?? '',
+					amount: a.amount,
+					qualifiers: a.qualifiers,
+				},
+	)
+
 export const actionSchema = z.discriminatedUnion('type', [
 	showDialogSchema,
-	itemActionSchema('GIVE_ITEM'),
+	giveItemSchema,
 	itemActionSchema('TAKE_ITEM'),
 	z.object({ type: z.literal('GIVE_CURRENCY'), amount }),
 	z.object({ type: z.literal('SET_FLAG'), flag: z.string().min(1) }),
@@ -398,15 +463,22 @@ export const defSchema = z.discriminatedUnion('kind', [
 export const customValueSchema = z.union([
 	z.object({ type: z.literal('SHOW_DIALOG'), text: z.string().optional() }),
 	z.object({
-		type: z.enum(['GIVE_ITEM', 'TAKE_ITEM', 'HAS_ITEM']),
+		type: z.enum(['TAKE_ITEM', 'HAS_ITEM']),
 		itemId: z.string().optional(),
 		amount: amount.optional(),
+	}),
+	z.object({
+		type: z.literal('GIVE_ITEM'),
+		itemId: z.string().optional(),
+		amount: amount.optional(),
+		qualifiers: qualifiersSchema.optional(),
 	}),
 	z.object({
 		type: z.literal('SPAWN'),
 		defKind: kindSchema.optional(),
 		defId: z.string().optional(),
 		quantity: amount.optional(),
+		qualifiers: qualifiersSchema.optional(),
 	}),
 ]) satisfies z.ZodType<CustomValue>
 
@@ -416,6 +488,7 @@ export const placementSchema: z.ZodType<Placement> = z.object({
 	defKind: kindSchema,
 	defId: z.string().min(1),
 	quantity: amount.optional(),
+	qualifiers: qualifiersSchema.optional(),
 	interactions: z.array(interactionSchema).optional(),
 	get contents() {
 		return z.array(placementSchema).optional()

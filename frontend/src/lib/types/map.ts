@@ -4,6 +4,7 @@
 
 import type { Destination, Kind, Position } from './core'
 import type { TileDef } from './defs'
+import type { Qualifiers } from './gear'
 import type { Interaction } from './interactions'
 
 export type Direction = 'north' | 'south' | 'east' | 'west'
@@ -17,6 +18,7 @@ export interface Placement {
 	defKind: Kind // with defId, a composite key: kind says which collection
 	defId: string // the def's _id
 	quantity?: number // items with a maxQuantity
+	qualifiers?: Qualifiers // weapons and armor; blank = rolled on pickup
 	interactions?: Interaction[] // per-instance overrides, checked before the def's
 	contents?: Placement[] // containers; depth-limited
 	destination?: Destination // portals only
@@ -29,11 +31,23 @@ export interface Placement {
 export type CustomValue =
 	| { type: 'SHOW_DIALOG'; text?: string }
 	| {
-			type: 'GIVE_ITEM' | 'TAKE_ITEM' | 'HAS_ITEM'
+			type: 'TAKE_ITEM' | 'HAS_ITEM'
 			itemId?: string
 			amount?: number
 	  }
-	| { type: 'SPAWN'; defKind?: Kind; defId?: string; quantity?: number }
+	| {
+			type: 'GIVE_ITEM'
+			itemId?: string
+			amount?: number
+			qualifiers?: Qualifiers
+	  }
+	| {
+			type: 'SPAWN'
+			defKind?: Kind
+			defId?: string
+			quantity?: number
+			qualifiers?: Qualifiers
+	  }
 
 export interface MoveResult {
 	canMove: boolean
