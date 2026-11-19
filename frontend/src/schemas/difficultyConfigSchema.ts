@@ -1,7 +1,7 @@
 import { z } from 'zod'
 // Relative, and not the barrels, on purpose: the MCP runs schema files through
 // tsx, which can't resolve a runtime `@/` import (ARCHITECTURE.md 6.1).
-import { ARMOR_MATERIALS, WEAPON_MATERIALS } from '../lib/constants/gear'
+import { ARMOR_GROUP_INFO, WEAPON_GROUP_INFO } from '../lib/constants/gear'
 import type { DifficultyConfig } from '../lib/types/difficulty'
 
 // A table over one material list. Keys of `chances` and the default must be
@@ -17,7 +17,9 @@ function materialTable<M extends string>(
 		.object({
 			default: z
 				.string()
-				.refine(isMaterial, { error: `Default must be a ${what} material` }),
+				.refine(isMaterial, {
+					error: `Default must be one of: ${materials.join(', ')}`,
+				}),
 			chances: z.record(
 				z.string(),
 				z
@@ -32,11 +34,33 @@ function materialTable<M extends string>(
 					ctx.addIssue({
 						code: 'custom',
 						path: ['chances', key],
-						message: `'${key}' is not a ${what} material`,
+						message: `'${key}' is not a material of the ${what} group`,
 					})
 				}
 			}
 		})
+}
+
+type TableSchema<M extends string> = ReturnType<typeof materialTable<M>>
+
+// One optional table per group; a group left out is not used. Each table only
+// accepts the materials of its group's categories.
+function groupTables<G extends string, M extends string>(
+	groups: Record<G, { categories: Record<string, readonly M[]> }>,
+	what: string,
+) {
+	const shape = Object.fromEntries(
+		Object.entries<{ categories: Record<string, readonly M[]> }>(groups).map(
+			([group, info]) => [
+				group,
+				materialTable(
+					Object.values(info.categories).flat(),
+					`${what} ${group}`,
+				).optional(),
+			],
+		),
+	) as Record<G, z.ZodOptional<TableSchema<M>>>
+	return z.object(shape)
 }
 
 export const difficultyConfigSchema = z.object({
@@ -52,8 +76,8 @@ export const difficultyConfigSchema = z.object({
 		.transform((v) => v || undefined)
 		.optional(),
 	materials: z.object({
-		weapon: materialTable(Object.values(WEAPON_MATERIALS).flat(), 'weapon'),
-		armor: materialTable(Object.values(ARMOR_MATERIALS).flat(), 'armor'),
+		weapon: groupTables(WEAPON_GROUP_INFO, 'weapon'),
+		armor: groupTables(ARMOR_GROUP_INFO, 'armor'),
 	}),
 }) satisfies z.ZodType<DifficultyConfig>
 

@@ -3,7 +3,7 @@
 import { get } from 'react-hook-form'
 import { CreateFormLayout, FormInput, MaterialTableEditor } from '@/components'
 import { useCreateRecord } from '@/hooks'
-import { ARMOR_MATERIALS, URLS, WEAPON_MATERIALS } from '@/lib/constants'
+import { ARMOR_GROUP_INFO, URLS, WEAPON_GROUP_INFO } from '@/lib/constants'
 import { collectionService } from '@/lib/services'
 import { difficultyConfigSchema } from '@/schemas'
 import { defaultValues } from '@/app/zone/difficulty/defaults'
@@ -48,15 +48,15 @@ const CreateDifficultyConfigPage = () => {
 			))}
 			<MaterialTableEditor
 				control={control}
-				table='weapon'
+				kind='weapon'
 				label='Weapon materials'
-				categories={WEAPON_MATERIALS}
+				groups={WEAPON_GROUP_INFO}
 			/>
 			<MaterialTableEditor
 				control={control}
-				table='armor'
+				kind='armor'
 				label='Armor materials'
-				categories={ARMOR_MATERIALS}
+				groups={ARMOR_GROUP_INFO}
 			/>
 		</CreateFormLayout>
 	)

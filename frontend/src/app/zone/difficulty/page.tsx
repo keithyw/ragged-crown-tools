@@ -19,12 +19,12 @@ const COLUMNS: TableColumn<StoredConfig>[] = [
 	{ header: 'Name', accessor: 'name' },
 	{ header: 'ID', accessor: 'id' },
 	{
-		header: 'Weapon default',
-		render: (c) => c.materials.weapon.default,
+		header: 'Weapon groups',
+		render: (c) => Object.keys(c.materials.weapon).join(', ') || 'none',
 	},
 	{
-		header: 'Armor default',
-		render: (c) => c.materials.armor.default,
+		header: 'Armor groups',
+		render: (c) => Object.keys(c.materials.armor).join(', ') || 'none',
 	},
 ]
 

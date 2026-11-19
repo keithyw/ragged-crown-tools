@@ -4,7 +4,7 @@ import { useCallback } from 'react'
 import { useParams } from 'next/navigation'
 import { EditFormLayout, MaterialTableEditor } from '@/components'
 import { useEditRecord } from '@/hooks'
-import { ARMOR_MATERIALS, URLS, WEAPON_MATERIALS } from '@/lib/constants'
+import { ARMOR_GROUP_INFO, URLS, WEAPON_GROUP_INFO } from '@/lib/constants'
 import { collectionService } from '@/lib/services'
 import type { DifficultyConfig } from '@/lib/types'
 import {
@@ -59,15 +59,15 @@ const EditDifficultyConfigPage = () => {
 		>
 			<MaterialTableEditor
 				control={editController.control}
-				table='weapon'
+				kind='weapon'
 				label='Weapon materials'
-				categories={WEAPON_MATERIALS}
+				groups={WEAPON_GROUP_INFO}
 			/>
 			<MaterialTableEditor
 				control={editController.control}
-				table='armor'
+				kind='armor'
 				label='Armor materials'
-				categories={ARMOR_MATERIALS}
+				groups={ARMOR_GROUP_INFO}
 			/>
 		</EditFormLayout>
 	)

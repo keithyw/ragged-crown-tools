@@ -60,10 +60,19 @@ export type ArmorMaterialCategory =
 export type WeaponMaterial = 'wood' | 'iron' | 'leather'
 export type ArmorMaterial = 'cloth' | 'leather' | 'fur' | 'wood' | 'copper'
 
+// Types that share one material table in a difficulty configuration
+// ([Tools 25]): every type in a group allows the same categories, so one
+// default always fits. The grouping is the designer's choice of what a zone
+// can drop (a starting zone has no jewelry). Which types are in which group is
+// in lib/constants/gear.ts.
+export type WeaponGroup = 'metal' | 'wood' | 'leather'
+export type ArmorGroup =
+	'body' | 'wrists' | 'belt' | 'cloak' | 'shield' | 'jewelry'
+
 // Any material that exists. A value outside this union can't be written, so
 // "a salt sword" is a type error. Whether a material suits one particular
 // type (iron on a bow) needs the def, so it is checked where the def is known,
-// against WEAPON_CATEGORIES_BY_TYPE / ARMOR_CATEGORIES_BY_TYPE.
+// against WEAPON_CATEGORIES_BY_TYPE / ARMOR_CATEGORIES_BY_TYPE (derived from the groups).
 export type Material = WeaponMaterial | ArmorMaterial
 
 // What an instance of a weapon or armor piece carries beyond its def. More
