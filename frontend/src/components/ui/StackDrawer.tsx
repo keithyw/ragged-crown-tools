@@ -6,6 +6,7 @@ import {
 	ConfirmationModal,
 	CustomValueInput,
 	DestinationPickerModal,
+	QualifierPicker,
 	ReorderableList,
 	SlideOverDrawer,
 	TextInput,
@@ -20,6 +21,7 @@ import {
 	type Interaction,
 	type Placement,
 	type Position,
+	type Qualifiers,
 } from '@/lib/types'
 import {
 	cellKey,
@@ -111,6 +113,17 @@ export const StackDrawer = ({
 			stack.map((p) => (p.uid === selectedUid ? { ...p, quantity: n } : p)),
 		)
 	}
+
+	// Random on both removes the key, so an unset value is never stored.
+	const setQualifiers = (qualifiers: Qualifiers | undefined) =>
+		onChange(
+			stack.map((p) => {
+				if (p.uid !== selectedUid) return p
+				const next = { ...p, qualifiers }
+				if (!qualifiers) delete next.qualifiers
+				return next
+			}),
+		)
 
 	// Clearing removes the key, so an unset destination is never stored as null.
 	const setDestination = (destination: Destination | undefined) =>
@@ -212,6 +225,20 @@ export const StackDrawer = ({
 							/>
 						</section>
 					)}
+					{selected &&
+						(selected.defKind === 'weapon' || selected.defKind === 'armor') && (
+							<section className='mt-6 border-t border-gray-200 pt-4'>
+								<h3 className='mb-3 text-sm font-bold text-gray-900'>
+									Quality and material of {selectedName}
+								</h3>
+								<QualifierPicker
+									id='placement-qualifiers'
+									def={items.find((d) => d._id === selected.defId)}
+									value={selected.qualifiers}
+									onChange={setQualifiers}
+								/>
+							</section>
+						)}
 					{selected?.defKind === 'portal' && (
 						<section className='mt-6 border-t border-gray-200 pt-4'>
 							<h3 className='mb-3 text-sm font-bold text-gray-900'>
