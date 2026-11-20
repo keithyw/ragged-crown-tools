@@ -284,3 +284,31 @@ export const ARMOR_GROUP_INFO = groupInfo<
 
 export const DICE = [4, 6, 8, 10, 12, 20, 100] as const satisfies readonly Die[]
 export const diceComplete: AllListed<Die, typeof DICE> = true
+
+// Whether a set quality or material may go with this def, or why not
+// ([Skills 19]): only weapons and armor carry qualifiers, and a material must
+// be one of the categories the type allows. The editors only offer what passes;
+// the MCP, which has no pickers, calls this. A blank field has nothing to check.
+export function qualifierProblem(
+	def: { kind?: unknown; type?: unknown },
+	qualifiers: { quality?: unknown; material?: unknown },
+): string | undefined {
+	if (def.kind !== 'weapon' && def.kind !== 'armor') {
+		return `only weapons and armor carry qualifiers, and this def's kind is '${String(def.kind)}'`
+	}
+	if (qualifiers.material === undefined) return undefined
+	const type = String(def.type)
+	const categories: readonly string[] | undefined =
+		def.kind === 'weapon'
+			? WEAPON_CATEGORIES_BY_TYPE[type as WeaponType]
+			: ARMOR_CATEGORIES_BY_TYPE[type as ArmorType]
+	if (!categories) return undefined // an unknown type is the def's own problem
+	const materials: readonly string[] = categories.flatMap((c) =>
+		def.kind === 'weapon'
+			? WEAPON_MATERIALS[c as WeaponMaterialCategory]
+			: ARMOR_MATERIALS[c as ArmorMaterialCategory],
+	)
+	return materials.includes(String(qualifiers.material))
+		? undefined
+		: `material '${String(qualifiers.material)}' doesn't suit a ${type} (allowed: ${materials.join(', ')})`
+}

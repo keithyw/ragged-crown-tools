@@ -47,6 +47,7 @@ A document in `zone_specs` (`list_collection`, `filters: { status: "pending" }`,
 - The same def can't sit directly on top of itself in one stack (DATA-MODEL 3).
 - A portal gets **no `destination`** unless the request names one. No destination named means the zone isn't meant to connect: don't ask, and don't list it as a doubt.
 - **An interior that several buildings share** (or any interior entered from more than one place): its exit door gets `"destination": { "back": true }`, which returns the player to whichever door they came in by. Use it only when the request says the exit goes back to where the player came from.
+- **Gear can carry `qualifiers`** (`{ quality?, material? }`) on a placement, only for a weapon or armor def: `quality` is `shoddy`, `poor`, `normal`, `good` or `superior`; `material` must be one the def's `type` allows (the MCP refuses the rest and says what is allowed). **Leave both out unless the spec asks for specific gear**: unset means the game rolls it when the item is picked up, and `normal` means plain Normal, not "unspecified". A placement with `qualifiers` can't be a `fill`.
 - Container contents go in the placement's `contents`, and only for a def with a `container`. A custom-value slot (a sign's text, a chest's reward) is filled in `customValues` keyed by the def's slot id; leave it empty if the spec gives no value.
 - Don't use `edgeExits`: the builder doesn't have them yet.
 

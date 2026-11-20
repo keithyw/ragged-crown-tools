@@ -15,6 +15,7 @@ import {
 	weaponDefSchema,
 	armorDefSchema,
 } from '../../frontend/src/schemas/contentSchemas'
+import { qualifierProblem } from '../../frontend/src/lib/constants/gear'
 import { SPRITE_CATEGORIES } from '../../frontend/src/lib/types/sprite'
 import {
 	parseSpritePixels,
@@ -206,12 +207,13 @@ const cellCorner = (v: unknown) => {
 // Every def a placement can point at, by `_id`: objects, portals and items
 // (and creatures, so a wrongly placed one gets a kind message, not "missing").
 async function defsById() {
-	const byId = new Map<string, { id?: string; kind: string }>()
+	const byId = new Map<string, { id?: string; kind: string; type?: string }>()
 	for (const c of ['entities', 'items']) {
-		const list: { _id: string; id?: string; kind: string }[] = await (
-			await apiGet(`/collection/${c}`)
-		).json()
-		for (const d of list) byId.set(d._id, { id: d.id, kind: d.kind })
+		const list: { _id: string; id?: string; kind: string; type?: string }[] =
+			await (await apiGet(`/collection/${c}`)).json()
+		for (const d of list) {
+			byId.set(d._id, { id: d.id, kind: d.kind, type: d.type })
+		}
 	}
 	return byId
 }
@@ -460,13 +462,16 @@ async function shownZone(collection: string, stored: Record<string, unknown>) {
 					'destination',
 					'customValues',
 					'interactions',
+					'qualifiers',
 					'quantity',
 				]
 					.filter((k) => p[k] !== undefined)
 					.map((k) =>
 						k === 'contents'
 							? `contents x${(p.contents as unknown[]).length}`
-							: k,
+							: k === 'qualifiers'
+								? qualifiersText(p.qualifiers)
+								: k,
 					)
 				return extra.length > 0 ? `${name} (${extra.join(', ')})` : name
 			})
@@ -474,6 +479,16 @@ async function shownZone(collection: string, stored: Record<string, unknown>) {
 		shownDoc = { ...shownDoc, placements: undefined, placementsByDef: view }
 	}
 	return shownDoc
+}
+
+// What a placement's qualifiers read as in the reply: "good iron", or "random"
+// for a field left to chance.
+const qualifiersText = (q: unknown) => {
+	const { quality, material } = (q ?? {}) as {
+		quality?: string
+		material?: string
+	}
+	return `${quality ?? 'random'} ${material ?? 'random'}`
 }
 
 const fail = (message: string): ToolResult => ({
@@ -673,7 +688,13 @@ async function lookup(collection: string, _id: string) {
 	}
 }
 
-type Loose = { type: string; itemId?: string; defKind?: string; defId?: string }
+type Loose = {
+	type: string
+	itemId?: string
+	defKind?: string
+	defId?: string
+	qualifiers?: { quality?: string; material?: string }
+}
 
 // A def's references to other documents must exist, as they always do through
 // the UI's pickers: its sprite, the items its interactions check, give or take,
@@ -703,6 +724,7 @@ async function checkReferences(doc: unknown) {
 		_id: string
 		what: string
 		kind?: string
+		qualifiers?: Loose['qualifiers']
 	}[] = []
 	if (def.spriteId) {
 		refs.push({
@@ -731,6 +753,8 @@ async function checkReferences(doc: unknown) {
 					collection: 'items',
 					_id: a.itemId,
 					what: 'item',
+					// Only a GIVE_ITEM hands out an instance; TAKE_ITEM has none.
+					qualifiers: a.type === 'GIVE_ITEM' ? a.qualifiers : undefined,
 				})
 			}
 			if (a.type === 'SPAWN' && a.defKind && a.defId) {
@@ -740,6 +764,7 @@ async function checkReferences(doc: unknown) {
 					_id: a.defId,
 					what: `${a.defKind} def`,
 					kind: a.defKind,
+					qualifiers: a.qualifiers,
 				})
 			}
 		})
@@ -764,6 +789,10 @@ async function checkReferences(doc: unknown) {
 			} else if (r.kind && target.kind !== r.kind) {
 				problems.push(
 					`- ${r.path}: '${target.id ?? r._id}' has kind '${target.kind}', not '${r.kind}'`,
+				)
+			} else if (r.qualifiers && qualifierProblem(target, r.qualifiers)) {
+				problems.push(
+					`- ${r.path}.qualifiers: ${qualifierProblem(target, r.qualifiers)}`,
 				)
 			} else if (
 				r.collection === 'sprites' &&
@@ -820,6 +849,18 @@ async function checkZonePlacements(collection: string, doc: unknown) {
 					`- ${at}: '${def.id ?? p.defId}' has kind '${def.kind}', not '${p.defKind}'`,
 				)
 			}
+			if (def && p.qualifiers) {
+				const why = qualifierProblem(def, p.qualifiers)
+				if (why) problems.push(`- ${at}.qualifiers: ${why}`)
+			}
+			// A custom slot's value names its own item or def.
+			for (const [slot, v] of Object.entries(p.customValues ?? {})) {
+				const target = defs.get(String(v.itemId ?? v.defId))
+				const why =
+					target && v.qualifiers && qualifierProblem(target, v.qualifiers)
+				if (why)
+					problems.push(`- ${at}.customValues.${slot}.qualifiers: ${why}`)
+			}
 			if (p.contents) visit(p.contents, `${at}.contents`)
 		})
 	}
@@ -845,6 +886,11 @@ async function checkZonePlacements(collection: string, doc: unknown) {
 type Loose2 = {
 	defKind: string
 	defId: string
+	qualifiers?: Loose['qualifiers']
+	customValues?: Record<
+		string,
+		{ itemId?: string; defId?: string; qualifiers?: Loose['qualifiers'] }
+	>
 	contents?: Loose2[]
 }
 
