@@ -142,8 +142,11 @@ const InteractionForm = ({
 	const setDef = (index: number, key: string) => {
 		const def = defs.find((d) => defKey(d.kind, d._id) === key)
 		if (!def) return
+		// Qualifiers belong to the def they were set for.
+		const next = { ...actions[index] } as Record<string, unknown>
+		delete next.qualifiers
 		setAction(index, {
-			...actions[index],
+			...next,
 			defKind: def.kind,
 			defId: def._id,
 		} as Action)
@@ -482,6 +485,20 @@ const InteractionForm = ({
 										/>
 									)
 								})}
+							{action.type === 'SPAWN' && !action.custom && (
+								<QualifierPicker
+									id={`action-${i}-qualifiers`}
+									def={defs.find(
+										(d) => d.kind === action.defKind && d._id === action.defId,
+									)}
+									value={action.qualifiers}
+									onChange={(q) => {
+										const rest = { ...action }
+										delete rest.qualifiers
+										setAction(i, q ? { ...rest, qualifiers: q } : rest)
+									}}
+								/>
+							)}
 							{action.type === 'GIVE_ITEM' && !action.custom && (
 								<QualifierPicker
 									id={`action-${i}-qualifiers`}

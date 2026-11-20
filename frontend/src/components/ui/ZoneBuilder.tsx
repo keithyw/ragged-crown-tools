@@ -217,8 +217,23 @@ export const ZoneBuilder = ({
 				_id: i._id,
 				name: i.name,
 				maxQuantity: i.maxQuantity,
+				// A weapon's or armor's type, for the quality and material picker.
+				gearType: 'type' in i ? String(i.type) : undefined,
 			})),
 		[items],
+	)
+
+	// What a custom SPAWN slot can add: items, weapons, armor and objects.
+	const spawnChoices = useMemo(
+		() => [
+			...itemChoices,
+			...objects.map((o) => ({
+				kind: o.kind,
+				_id: o._id,
+				name: o.name,
+			})),
+		],
+		[itemChoices, objects],
 	)
 
 	const activeTile = activeTileId ? tilesById.get(activeTileId) : undefined
@@ -731,6 +746,7 @@ export const ZoneBuilder = ({
 				stack={selectedStack}
 				placedDefs={placedDefs}
 				items={itemChoices}
+				spawnChoices={spawnChoices}
 				itemsLoading={itemsLoading}
 				destinationPicker={{
 					zones,

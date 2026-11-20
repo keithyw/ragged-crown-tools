@@ -45,6 +45,7 @@ interface StackDrawerProps {
 	stack: Placement[]
 	placedDefs: ReadonlyMap<string, StackDef>
 	items: PlaceableDef[] // for item slots
+	spawnChoices: PlaceableDef[] // for SPAWN slots
 	itemsLoading: boolean
 	// Zones and map data for naming a portal's destination and picking one.
 	destinationPicker: DestinationPickerData
@@ -63,6 +64,7 @@ export const StackDrawer = ({
 	stack,
 	placedDefs,
 	items,
+	spawnChoices,
 	itemsLoading,
 	destinationPicker,
 	onChange,
@@ -295,6 +297,7 @@ export const StackDrawer = ({
 													value={selected.customValues?.[slot.slot]}
 													onChange={(v) => setCustomValue(slot.slot, v)}
 													items={items}
+													spawnChoices={spawnChoices}
 													itemsLoading={itemsLoading}
 												/>
 											) : (

@@ -3,12 +3,18 @@
 import {
 	ItemCombobox,
 	QualifierPicker,
+	SelectDropdown,
 	TextareaInput,
 	TextInput,
 } from '@/components'
 import type { PlaceableDef } from '@/hooks'
-import type { CustomValue, Qualifiers } from '@/lib/types'
-import { parseNumberInput, slotLabel, type CustomSlot } from '@/lib/utils'
+import type { CustomValue, Kind, Qualifiers } from '@/lib/types'
+import {
+	defKey,
+	parseNumberInput,
+	slotLabel,
+	type CustomSlot,
+} from '@/lib/utils'
 
 interface CustomValueInputProps {
 	id: string
@@ -16,6 +22,7 @@ interface CustomValueInputProps {
 	value: CustomValue | undefined
 	onChange: (value: CustomValue) => void
 	items: PlaceableDef[] // for item slots
+	spawnChoices: PlaceableDef[] // for SPAWN slots
 	itemsLoading: boolean
 }
 
@@ -27,6 +34,7 @@ export const CustomValueInput = ({
 	value,
 	onChange,
 	items,
+	spawnChoices,
 	itemsLoading,
 }: CustomValueInputProps) => {
 	switch (slot.type) {
@@ -127,6 +135,98 @@ export const CustomValueInput = ({
 							}
 						/>
 					)}
+				</div>
+			)
+		}
+		case 'SPAWN': {
+			const current = value?.type === 'SPAWN' ? value : undefined
+			const def = spawnChoices.find(
+				(d) => d.kind === current?.defKind && d._id === current?.defId,
+			)
+			const make = (
+				next: { defKind?: Kind; defId?: string; quantity?: number },
+				qualifiers: Qualifiers | undefined,
+			): CustomValue => ({
+				type: 'SPAWN',
+				...next,
+				...(qualifiers && { qualifiers }),
+			})
+			// The quantity only matters for an item that piles; a stored one is still
+			// shown.
+			const showQuantity =
+				def?.maxQuantity !== undefined || current?.quantity !== undefined
+			return (
+				<div className='mb-4 rounded border border-gray-200 bg-gray-50 p-3'>
+					<SelectDropdown
+						id={id}
+						label={slotLabel(slot)}
+						placeholder={itemsLoading ? 'Loading...' : 'Choose...'}
+						disabled={itemsLoading}
+						options={spawnChoices.map((d) => ({
+							value: defKey(d.kind, d._id),
+							label: `${d.kind}: ${d.name}`,
+						}))}
+						selectedValue={def ? defKey(def.kind, def._id) : ''}
+						// A different def drops the qualifiers, which belong to the old one.
+						onSelect={(v) => {
+							const next = spawnChoices.find((d) => defKey(d.kind, d._id) === v)
+							if (!next) return
+							onChange(
+								make(
+									{
+										defKind: next.kind,
+										defId: next._id,
+										quantity:
+											next.maxQuantity !== undefined
+												? current?.quantity
+												: undefined,
+									},
+									undefined,
+								),
+							)
+						}}
+					/>
+					{showQuantity && (
+						<TextInput
+							id={`${id}-quantity`}
+							label='Quantity (blank = 1)'
+							type='number'
+							inputWidth='sm'
+							min={1}
+							step={1}
+							value={current?.quantity ?? ''}
+							onChange={(e) => {
+								const n = parseNumberInput(e.target.value)
+								onChange(
+									make(
+										{
+											defKind: current?.defKind,
+											defId: current?.defId,
+											quantity: Number.isInteger(n) && n >= 1 ? n : undefined,
+										},
+										current?.qualifiers,
+									),
+								)
+							}}
+						/>
+					)}
+					<QualifierPicker
+						id={`${id}-qualifiers`}
+						def={def}
+						value={current?.qualifiers}
+						onChange={(q) =>
+							onChange(
+								make(
+									{
+										defKind: current?.defKind,
+										defId: current?.defId,
+										quantity: current?.quantity,
+									},
+									q,
+								),
+							)
+						}
+					/>
 				</div>
 			)
 		}
