@@ -1,8 +1,13 @@
 'use client'
 
-import { ItemCombobox, TextareaInput, TextInput } from '@/components'
+import {
+	ItemCombobox,
+	QualifierPicker,
+	TextareaInput,
+	TextInput,
+} from '@/components'
 import type { PlaceableDef } from '@/hooks'
-import type { CustomValue } from '@/lib/types'
+import type { CustomValue, Qualifiers } from '@/lib/types'
 import { parseNumberInput, slotLabel, type CustomSlot } from '@/lib/utils'
 
 interface CustomValueInputProps {
@@ -45,6 +50,17 @@ export const CustomValueInput = ({
 			const type = slot.type
 			const current = value?.type === type ? value : undefined
 			const item = items.find((i) => i._id === current?.itemId)
+			// Only a given item can carry qualifiers; they stay through an amount
+			// change and go when the item changes ([Inventory 30]).
+			const currentQualifiers =
+				current?.type === 'GIVE_ITEM' ? current.qualifiers : undefined
+			const withQualifiers = (
+				next: { itemId?: string; amount?: number },
+				qualifiers: Qualifiers | undefined,
+			): CustomValue =>
+				type === 'GIVE_ITEM'
+					? { type, ...next, ...(qualifiers && { qualifiers }) }
+					: { type, ...next }
 			// Only an item with a maxQuantity has an amount (DATA-MODEL.md 4.3). A stored
 			// amount is still shown, so stored data is never hidden.
 			const showAmount =
@@ -59,12 +75,16 @@ export const CustomValueInput = ({
 						selectedId={current?.itemId ?? ''}
 						// A single-quantity item is always 1, so its amount is dropped.
 						onSelect={(i) =>
-							onChange({
-								type,
-								itemId: i._id,
-								amount:
-									i.maxQuantity !== undefined ? current?.amount : undefined,
-							})
+							onChange(
+								withQualifiers(
+									{
+										itemId: i._id,
+										amount:
+											i.maxQuantity !== undefined ? current?.amount : undefined,
+									},
+									undefined,
+								),
+							)
 						}
 					/>
 					{showAmount && (
@@ -80,12 +100,31 @@ export const CustomValueInput = ({
 								const n = parseNumberInput(e.target.value)
 								// Anything but a whole number of 1 or more is left blank, so
 								// the zone can always be saved.
-								onChange({
-									type,
-									itemId: current?.itemId,
-									amount: Number.isInteger(n) && n >= 1 ? n : undefined,
-								})
+								onChange(
+									withQualifiers(
+										{
+											itemId: current?.itemId,
+											amount: Number.isInteger(n) && n >= 1 ? n : undefined,
+										},
+										currentQualifiers,
+									),
+								)
 							}}
+						/>
+					)}
+					{type === 'GIVE_ITEM' && (
+						<QualifierPicker
+							id={`${id}-qualifiers`}
+							def={item}
+							value={currentQualifiers}
+							onChange={(q) =>
+								onChange(
+									withQualifiers(
+										{ itemId: current?.itemId, amount: current?.amount },
+										q,
+									),
+								)
+							}
 						/>
 					)}
 				</div>
