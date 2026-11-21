@@ -26,6 +26,7 @@ export const fields: FormField<SpriteFormData>[] = [
 			{ value: 'object', label: 'Object' },
 			{ value: 'item', label: 'Item' },
 			{ value: 'portal', label: 'Portal' },
+			{ value: 'monster', label: 'Monster' },
 		],
 	},
 ]

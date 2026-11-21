@@ -1,6 +1,6 @@
 ---
 name: sprites
-description: Make, redo or adjust a Ragged Crown sprite (16x16 EGA pixel art for a terrain, object, item or portal) in the sandbox so the owner can review it. Use when asked to draw, create, fix or tweak a sprite.
+description: Make, redo or adjust a Ragged Crown sprite (16x16 EGA pixel art for a terrain, object, item, portal or monster) in the sandbox so the owner can review it. Use when asked to draw, create, fix or tweak a sprite.
 ---
 
 # Sprites
@@ -23,7 +23,7 @@ That is the standard EGA order. If `EGA_PALETTE` in `frontend/src/lib/types/spri
 { "id": "FARM_HAND", "name": "Farm hand", "category": "object", "background": "transparent", "status": "review", "rows": ["................", "...16 strings of 16 characters..."] }
 ```
 
-- `category`: `terrain`, `object`, `item` or `portal`.
+- `category`: `terrain`, `object`, `item`, `portal` or `monster`. Weapons and armor use `item`.
 - `background` is `"transparent"` unless asked otherwise (or a palette index).
 - `status` is `"review"` on every sprite you create or redraw (see Review below). Never `"approved"`: only the owner approves.
 - `rows` is the text form from above as an array of 16 strings of 16 characters. Send it **instead of** `pixels`: the MCP turns it into the 256-entry array itself, so you never type that array (typing it by hand has failed before, always on the long runs of empty cells). A wrong row count, a short row or a stray character is refused with the row and column. Sending both `rows` and `pixels` is refused.
