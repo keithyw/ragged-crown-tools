@@ -1,6 +1,6 @@
 # Creation rules
 
-Every creation skill (sprites, terrain, items, objects, portals, and whatever comes next) follows these. A skill holds only what is particular to its kind: its collection, fields and values. If a skill and this file disagree, tell the owner; don't guess. The owner judges the result; you create, they review.
+Every creation skill (sprites, terrain, items, objects, portals, weapons, armor, monsters, and whatever comes next) follows these. A skill holds only what is particular to its kind: its collection, fields and values. If a skill and this file disagree, tell the owner; don't guess. The owner judges the result; you create, they review.
 
 ## The hierarchy
 
