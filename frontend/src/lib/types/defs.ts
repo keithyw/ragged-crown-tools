@@ -2,7 +2,7 @@
 // Shared with the game (imported there via @shared/types): types only, keep tools-only fields out
 // (see ARCHITECTURE.md 5).
 
-import type { Kind } from './core'
+import type { Kind, RandomRoll } from './core'
 import type { ArmorDef, WeaponDef } from './gear'
 import type { Interaction } from './interactions'
 
@@ -63,9 +63,16 @@ export interface ItemDef extends CarriedDef {
 	container?: ContainerSpec
 }
 
-// Stub: used by random encounters, never placed on the map. Stored in entities.
-export interface CreatureDef extends BaseDef {
-	kind: 'creature'
+// Monsters (DATA-MODEL.md 1.3): solid, placed in a zone and bumped to fight,
+// or spawned at runtime. No attributes and no gear. Stored in monsters.
+export interface MonsterDef extends BaseDef {
+	kind: 'monster'
+	level: number // whole number, 0 or more
+	hp: number // a set number, not dice
+	defenseValue: number // whole number, 0 or more, no ceiling (as on armor)
+	removalChance: number // 0 to 100: the chance it leaves after the party flees
+	numberAppearing: RandomRoll
+	isUnique?: boolean // absent = false. Only ever one; numberAppearing is ignored
 }
 
 // Always walkable; the destination is set per placement. Stored in entities.
@@ -76,4 +83,4 @@ export interface PortalDef extends BaseDef {
 }
 
 export type Def =
-	TileDef | ObjectDef | ItemDef | WeaponDef | ArmorDef | CreatureDef | PortalDef
+	TileDef | ObjectDef | ItemDef | WeaponDef | ArmorDef | MonsterDef | PortalDef

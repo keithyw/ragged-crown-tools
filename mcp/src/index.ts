@@ -6,9 +6,9 @@ import { z } from 'zod'
 // ARCHITECTURE.md 6.1). Type-only `@/` imports inside them resolve via the
 // `paths` entry in tsconfig.json.
 import {
-	creatureDefSchema,
 	defSchema,
 	itemDefSchema,
+	monsterDefSchema,
 	objectDefSchema,
 	portalDefSchema,
 	tileDefSchema,
@@ -182,8 +182,8 @@ async function zoneFromRows(collection: string, doc: unknown) {
 	return { ...rest, terrain }
 }
 
-// Defs that can be placed, by their `id`: objects, portals and items (a
-// creature isn't placed). `kind` becomes the placement's defKind.
+// Defs that can be placed, by their `id`: objects, portals and items.
+// `kind` becomes the placement's defKind.
 async function placeableDefs() {
 	const defs = new Map<string, { _id: string; kind: string }[]>()
 	for (const c of ['entities', 'items']) {
@@ -191,7 +191,7 @@ async function placeableDefs() {
 			await apiGet(`/collection/${c}`)
 		).json()
 		for (const d of list) {
-			if (!d.id || d.kind === 'creature') continue
+			if (!d.id) continue
 			defs.set(d.id, [...(defs.get(d.id) ?? []), d])
 		}
 	}
@@ -204,8 +204,7 @@ const cellCorner = (v: unknown) => {
 	return m ? { x: Number(m[1]), y: Number(m[2]) } : null
 }
 
-// Every def a placement can point at, by `_id`: objects, portals and items
-// (and creatures, so a wrongly placed one gets a kind message, not "missing").
+// Every def a placement can point at, by `_id`: objects, portals and items.
 async function defsById() {
 	const byId = new Map<string, { id?: string; kind: string; type?: string }>()
 	for (const c of ['entities', 'items']) {
@@ -502,7 +501,7 @@ const KINDS_BY_COLLECTION: Partial<
 > = {
 	tile_defs: ['terrain'],
 	items: ['item', 'weapon', 'armor'],
-	entities: ['object', 'creature', 'portal'],
+	entities: ['object', 'portal'],
 }
 
 // The glyph classes the colour picker can produce, which are the only ones in
@@ -527,7 +526,7 @@ const DEF_SHAPES = {
 	item: itemDefSchema.shape,
 	weapon: weaponDefSchema.shape,
 	armor: armorDefSchema.shape,
-	creature: creatureDefSchema.shape,
+	monster: monsterDefSchema.shape,
 	portal: portalDefSchema.shape,
 }
 const SERVER_FIELDS = new Set(['_id', 'updated_at'])

@@ -15,7 +15,6 @@ import type {
 	Condition,
 	ContainerSpec,
 	CustomValue,
-	CreatureDef,
 	Destination,
 	Glyph,
 	Interaction,
@@ -23,10 +22,12 @@ import type {
 	ItemDef,
 	Kind,
 	Material,
+	MonsterDef,
 	ObjectDef,
 	Placement,
 	PortalDef,
 	Position,
+	RandomRoll,
 	TileDef,
 	WeaponDef,
 } from '@/lib/types'
@@ -47,7 +48,7 @@ export const kindSchema = z.enum([
 	'item',
 	'weapon',
 	'armor',
-	'creature',
+	'monster',
 	'portal',
 ]) satisfies z.ZodType<Kind>
 
@@ -409,17 +410,20 @@ export const itemDefSchema = baseDefSchema.extend({
 	container: containerSpecSchema.optional(),
 }) satisfies z.ZodType<ItemDef>
 
+// A dice roll (RandomRoll), the same shape wherever dice are stored.
+export const randomRollSchema = z.object({
+	count: z
+		.number({ error: 'Count must be a number' })
+		.int('Count must be a whole number')
+		.min(1, 'At least 1'),
+	die: z.literal(DICE),
+}) satisfies z.ZodType<RandomRoll>
+
 export const weaponDefSchema = baseDefSchema.extend({
 	kind: z.literal('weapon'),
 	...carriedShape,
 	type: z.enum(WEAPON_TYPES),
-	damage: z.object({
-		count: z
-			.number({ error: 'Count must be a number' })
-			.int('Count must be a whole number')
-			.min(1, 'At least 1'),
-		die: z.literal(DICE),
-	}),
+	damage: randomRollSchema,
 	isTwoHanded: z.boolean().optional(),
 	isMissile: z.boolean().optional(),
 	isThrown: z.boolean().optional(),
@@ -436,9 +440,28 @@ export const armorDefSchema = baseDefSchema.extend({
 		.min(0, 'Cannot be negative'),
 }) satisfies z.ZodType<ArmorDef>
 
-export const creatureDefSchema = baseDefSchema.extend({
-	kind: z.literal('creature'),
-}) satisfies z.ZodType<CreatureDef>
+export const monsterDefSchema = baseDefSchema.extend({
+	kind: z.literal('monster'),
+	level: z
+		.number({ error: 'Level must be a number' })
+		.int('Level must be a whole number')
+		.min(0, 'Cannot be negative'),
+	hp: z
+		.number({ error: 'HP must be a number' })
+		.int('HP must be a whole number')
+		.min(1, 'At least 1'),
+	defenseValue: z
+		.number({ error: 'Defense value must be a number' })
+		.int('Defense value must be a whole number')
+		.min(0, 'Cannot be negative'),
+	removalChance: z
+		.number({ error: 'Removal chance must be a number' })
+		.int('Removal chance must be a whole number')
+		.min(0, 'Cannot be negative')
+		.max(100, 'At most 100'),
+	numberAppearing: randomRollSchema,
+	isUnique: z.boolean().optional(),
+}) satisfies z.ZodType<MonsterDef>
 
 export const portalDefSchema = baseDefSchema.extend({
 	kind: z.literal('portal'),
@@ -452,7 +475,7 @@ export const defSchema = z.discriminatedUnion('kind', [
 	itemDefSchema,
 	weaponDefSchema,
 	armorDefSchema,
-	creatureDefSchema,
+	monsterDefSchema,
 	portalDefSchema,
 ])
 

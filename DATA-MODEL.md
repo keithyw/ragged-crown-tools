@@ -27,7 +27,7 @@ Every def shares a base:
 | `spriteId`     | string?  | A sprite's `_id`. Drawn instead of the glyph (1.2).         |
 
 ```ts
-type Kind = 'terrain' | 'object' | 'item' | 'weapon' | 'armor' | 'creature' | 'portal'
+type Kind = 'terrain' | 'object' | 'item' | 'weapon' | 'armor' | 'monster' | 'portal'
 ```
 
 JSON has no inheritance, so the kinds are modelled as a base type extended per kind (TS `extends`, zod `.extend`) plus a discriminated union on `kind`.
@@ -68,7 +68,7 @@ The legacy category types that used to be in `map.ts` (`TileType`, `TileType2`, 
 | `item`     | `items`     | `weight`, `maxQuantity?`, `numberOfUses?`, `isQuestItem?`, `container?`, `interactions?` (reserved for item use, deferred). `category` is deferred |
 | `weapon`   | `items`     | The item core (`weight`, `maxQuantity?`, `numberOfUses?`, `isQuestItem?`, `interactions?`, no `container`) plus `type`, `damage`, `isTwoHanded?`, `isMissile?`, `isThrown?` (below) |
 | `armor`    | `items`     | The item core plus `type` (the slot it is worn in) and `defenseValue` (below) |
-| `creature` | `entities`  | Stub for now. Used by random encounters, not placed on the map                       |
+| `monster`  | `monsters`  | `level`, `hp`, `defenseValue`, `removalChance`, `numberAppearing`, `isUnique?` (below) |
 | `portal`   | `entities`  | `twoWay`, `interactions?`: always walkable; its destination is set per placement     |
 
 `entities` holds several kinds and is filtered by `kind` on the server ([Backend 2]).
@@ -77,7 +77,7 @@ The legacy category types that used to be in `map.ts` (`TileType`, `TileType2`, 
 
 **Weapons and armor** (owner, 2026-11-13 to 2026-11-16) are items the character **wields or wears**. They extend the item core (`CarriedDef` in `defs.ts`: `weight`, `maxQuantity?`, `numberOfUses?`, `isQuestItem?`, `interactions?`), not a category of item, and live in `items` told apart by `kind`; `GIVE_ITEM`, `HAS_ITEM` and `TAKE_ITEM` can name any of the three. They have their own builders, skills and shared-types file (`gear.ts`), and carry **no `container`** (a scabbard or quiver is a plain item). Each has exactly one `type`, from a list in code (`lib/constants/gear.ts`, not the database), kept short and grown as needed.
 
-- **Weapon:** `type` (sword, dagger, spear, polearm, bow, sling, crossbow, axe, mace, flail, staff, fist, hammer, club, dart), `damage` as dice (`{ count, die }`, so 2d4 is `{ 2, 4 }`; no size-dependent damage) and the flags `isTwoHanded`, `isMissile`, `isThrown` (absent = false; a bow is still flagged `isMissile` although its type implies it). Ammo, `requiredBy` and damage types are not designed.
+- **Weapon:** `type` (sword, dagger, spear, polearm, bow, sling, crossbow, axe, mace, flail, staff, fist, hammer, club, dart), `damage` as dice (a `RandomRoll`, `{ count, die }`, so 2d4 is `{ 2, 4 }`; no size-dependent damage) and the flags `isTwoHanded`, `isMissile`, `isThrown` (absent = false; a bow is still flagged `isMissile` although its type implies it). Ammo, `requiredBy` and damage types are not designed.
 - **Armor:** `type` is the **slot** (head, chest, legs, hands, wrists, feet, shoulders, belt, cloak, shield, neck, ring, earring, brooch), which is what decides what a character can equip or replace. A shield is armor in the hand slot; the rule that it blocks a second or two-handed weapon is the engine's, not a field. `defenseValue` is a whole number, 0 or more, **with no ceiling**, small and progressive (cloth 1, leather 2, ...), with no multiplier. The style (leather, chain, plate) lives in the name, not a field.
 - **Quality, material and `+N` are instance data, not def data.** A def is the plain base ("long sword") with a base `weight`; the instance, created at game time, carries its quality (**Shoddy, Poor, Normal, Good, Superior**, in `QUALITIES` in `lib/constants/gear.ts`; Normal is a quality like the others), its material and any bonus, and the game computes the effective weight. **Materials** (owner, 2026-11-18) are two short lists in `lib/constants/gear.ts` (weapon and armor, managed separately), kept to what a farming village has. A **category** groups materials and is what a type allows; the instance stores one concrete **material** from it, which is what a player sees ("superior oak staff"). Weapons: wood (wood), metal (iron), leather (leather). Armor: cloth, leather, fur, wood (each holding its own material) and metal (copper). Every type allows at least one category, and may allow several (a tunic: cloth or leather); the slot decides (wood only on shields, jewelry metal only, a sling leather; bare fists are unarmed combat, not a weapon). **Blank in authored data (an action, a placement) means "roll randomly when the item is picked up"** (owner, 2026-11-18), so a designer who wants a plain Normal item sets `normal` explicitly; an inventory entry always holds the resolved value. **Where they are written** ([Inventory 28]): a nested `qualifiers?: { quality?, material? }` (`Qualifiers` in `gear.ts`) on a `GIVE_ITEM` or `SPAWN` action, on the matching custom value and on a `Placement` (container contents are placements). A set value must be a real quality or material (the schema refuses anything else); a field left out is not stored. The schema does not check that a material suits the item's type (that needs the def). Tools-side plan: Trello [Inventory 13], [Inventory 14], [Inventory 17], [Inventory 28].
 - **Sprites:** weapons and armor use the `item` sprite category.
@@ -106,7 +106,16 @@ Entering a town, castle or dungeon normally lands the player on its `startingPos
 - Other portal rules (single use, and so on) are designed with the portals, not with object interactions.
 - **The destination is per placement**, not per def. One "Staircase" def is placed many times, each placement with its own destination, instead of a def per staircase. As in Heroes of Might and Magic's editor, the tools **validate** the map and warn about any portal placement without a destination.
 
-**Creatures do not move on the map and do not chase the player** (unlike Ultima 3-5). They appear only in random encounters. A non-combat NPC, such as a townsperson or a friendly gold dragon quest giver, is not a creature: it is a solid **object** with interactions (dialog when bumped). An interaction can still turn it hostile, for example an action that replaces the object with an encounter.
+**Monsters** (owner, 2026-11-21, [Monsters 2]; the term is AD&D's, and the kind was `creature` until then, never used by stored data) are what the party fights. They live in their own `monsters` collection.
+
+- **A monster is on the map**: placed in a zone like other defs, or spawned at runtime by a spawner or a random encounter ([Combat 7], [Combat 8]). It is **solid**: the player bumps it, like a solid object, and bumping it starts combat ([Combat 1]). Monsters do not move on the map and do not chase the player (unlike Ultima 3-5).
+- **`level`**: whole number, 0 or more. **`hp`**: a set number (1 or more), not dice. **`defenseValue`**: whole number, 0 or more, no ceiling, the same name as on armor; how it is used in a hit is [Combat 10].
+- **`removalChance`**: whole number, 0 to 100, the percentage roll for the monster **leaving** after the party flees ([Combat 5]). A quest boss is 0 (it never leaves, so the quest can't become unsolvable); trivial bandits about 85; a dragon about 25.
+- **`numberAppearing`**: how many appear, as dice (a `RandomRoll`, `{ count, die }`, the same shape as a weapon's `damage`): 3d6 goblins. A placement or group can set its own number instead ([Combat 11]).
+- **`isUnique`**: absent = false. A unique monster (a boss) only ever appears as one, and the game ignores `numberAppearing`. There is no rarity field.
+- **No attributes and no gear.** XP, currency, loot tables ([Combat 2]) and special abilities come later.
+
+A non-combat NPC, such as a townsperson or a friendly gold dragon quest giver, is not a monster: it is a solid **object** with interactions (dialog when bumped).
 
 **Terrain has no interactions.** Its only behavior beyond movement is the chance of a random encounter, from its `encounterRate` and an encounter table chosen by the region's difficulty (zone `difficultyLevel`) and the terrain. A dirt road in a low-level zone gives rats, deer or goblins; the same road in Hell gives demons.
 
@@ -410,7 +419,8 @@ Zone JSON is the **initial state only**. When a game starts, the player gets a r
 | ----------- | -------------------------------------------------------- |
 | `tile_defs` | Terrain defs                                             |
 | `items`     | Item, weapon and armor defs (by `kind`)                  |
-| `entities`  | Object, creature and portal defs (by `kind`)             |
+| `entities`  | Object and portal defs (by `kind`)                       |
+| `monsters`  | Monster defs (section 1.3)                               |
 | `zones`     | Zones                                                    |
 | `sprites`   | Sprite art (section 1.2)                                 |
 | `zone_specs` | Requests for a generated zone. Tools only; the game never reads them |

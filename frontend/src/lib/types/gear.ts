@@ -3,6 +3,7 @@
 // (see ARCHITECTURE.md 5). The runtime lists of these values (and their order) live in
 // lib/constants/gear.ts, which checks that it names every member of the unions below.
 
+import type { RandomRoll } from './core'
 import type { CarriedDef } from './defs'
 
 export type WeaponType =
@@ -83,15 +84,9 @@ export interface Qualifiers {
 	material?: Material
 }
 
-// The standard polyhedral dice, d4 to d100.
-export type Die = 4 | 6 | 8 | 10 | 12 | 20 | 100
-
-// A base roll: `count` dice of `die` sides (1d8 is { count: 1, die: 8 }).
-// Bonuses from material, quality, skill and magic are not decided yet.
-export interface Damage {
-	count: number
-	die: Die
-}
+// A weapon's base roll (1d8 is { count: 1, die: 8 }). Bonuses from material,
+// quality, skill and magic are not decided yet.
+export type Damage = RandomRoll
 
 // Stored in items, told apart from plain items by `kind`.
 export interface WeaponDef extends CarriedDef {

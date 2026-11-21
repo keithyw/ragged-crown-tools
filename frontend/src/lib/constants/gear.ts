@@ -9,13 +9,13 @@ import type {
 	ArmorGroup,
 	ArmorMaterialCategory,
 	ArmorType,
-	Die,
 	Quality,
 	WeaponGroup,
 	WeaponMaterial,
 	WeaponMaterialCategory,
 	WeaponType,
 } from '../types/gear'
+import type { Die } from '../types/core'
 
 type AllListed<U, L extends readonly U[]> = [Exclude<U, L[number]>] extends [
 	never,
