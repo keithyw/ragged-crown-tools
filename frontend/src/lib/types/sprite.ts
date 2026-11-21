@@ -20,13 +20,14 @@ export const EGA_PALETTE = [
 	{ name: 'White', hex: '#FFFFFF' },
 ] as const
 
-// What a sprite is for: the def kinds that can have one (creature and
-// portraits come later, see [Sprite 2]).
+// What a sprite is for: the def kinds that can have one (portraits come
+// later, see [Sprite 2]).
 export const SPRITE_CATEGORIES = [
 	'terrain',
 	'object',
 	'item',
 	'portal',
+	'monster',
 ] as const
 export type SpriteCategory = (typeof SPRITE_CATEGORIES)[number]
 

@@ -1,0 +1,85 @@
+import { glyphFields } from '@/components'
+import { DICE } from '@/lib/constants'
+import type { FormField } from '@/lib/types'
+import type { MonsterDefinitionFormData } from '@/schemas'
+
+export const fields: FormField<MonsterDefinitionFormData>[] = [
+	{
+		name: 'id',
+		label: 'ID',
+		placeholder: 'Enter ID',
+		required: true,
+	},
+	{
+		name: 'name',
+		label: 'Name',
+		placeholder: 'Enter Name',
+		required: true,
+	},
+	{
+		name: 'spriteId',
+		label: 'Sprite (replaces the glyph below when set)',
+		type: 'sprite',
+		spriteCategory: 'monster',
+	},
+	...glyphFields<MonsterDefinitionFormData>(),
+	{
+		name: 'level',
+		label: 'Level (0 or more)',
+		type: 'number',
+		required: true,
+		inputWidth: 'xs',
+		inputAttrs: { min: 0, step: 1 },
+	},
+	{
+		name: 'hp',
+		label: 'HP (a set number)',
+		type: 'number',
+		required: true,
+		inputWidth: 'xs',
+		inputAttrs: { min: 1, step: 1 },
+	},
+	{
+		name: 'defenseValue',
+		label: 'Defense value (0 or more)',
+		type: 'number',
+		required: true,
+		inputWidth: 'xs',
+		inputAttrs: { min: 0, step: 1 },
+	},
+	{
+		name: 'removalChance',
+		label: 'Removal chance (%, 0 to 100): leaves after the party flees',
+		type: 'number',
+		required: true,
+		inputWidth: 'xs',
+		inputAttrs: { min: 0, max: 100, step: 1 },
+	},
+	{
+		name: 'numberAppearing.count',
+		label: 'Number appearing: number of dice (3d6 is 3)',
+		type: 'number',
+		required: true,
+		inputWidth: 'xs',
+		inputAttrs: { min: 1, step: 1 },
+	},
+	{
+		name: 'numberAppearing.die',
+		label: 'Number appearing: die',
+		type: 'select',
+		required: true,
+		placeholder: 'Choose a die',
+		options: DICE.map((d) => ({ value: d, label: `d${d}` })),
+	},
+	{
+		name: 'isUnique',
+		label: 'Unique (only ever one; number appearing is ignored)',
+		type: 'checkbox',
+	},
+	{
+		name: 'description',
+		label: 'Description',
+		placeholder: 'Enter Description',
+		type: 'textarea',
+	},
+]

@@ -40,6 +40,7 @@ const COLLECTIONS = [
 	'tile_defs',
 	'items',
 	'entities',
+	'monsters',
 	'zones',
 	'sprites',
 	'zone_specs',
@@ -502,6 +503,7 @@ const KINDS_BY_COLLECTION: Partial<
 	tile_defs: ['terrain'],
 	items: ['item', 'weapon', 'armor'],
 	entities: ['object', 'portal'],
+	monsters: ['monster'],
 }
 
 // The glyph classes the colour picker can produce, which are the only ones in

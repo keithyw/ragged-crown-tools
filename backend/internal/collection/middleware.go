@@ -15,6 +15,7 @@ var validCollections = map[string]bool{
 	"tile_defs": true,
 	"items":     true,
 	"entities":  true,
+	"monsters":  true,
 	"events":    true,
 	"zones":     true,
 	"zone_specs": true,

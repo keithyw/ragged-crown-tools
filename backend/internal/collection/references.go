@@ -37,6 +37,7 @@ var referenceSources = map[string][]refSource{
 		{"tile_defs", "spriteId"},
 		{"items", "spriteId"},
 		{"entities", "spriteId"},
+		{"monsters", "spriteId"},
 	},
 	"items": {
 		// HAS_ITEM conditions, GIVE_ITEM and TAKE_ITEM actions

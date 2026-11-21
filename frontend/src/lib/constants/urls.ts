@@ -7,6 +7,7 @@ export const URLS = {
 	WEAPON_DEFINITIONS: '/weapon-definitions',
 	ARMOR_DEFINITIONS: '/armor-definitions',
 	PORTAL_DEFINITIONS: '/portal-definitions',
+	MONSTER_DEFINITIONS: '/monster-definitions',
 	SPRITES: '/sprites',
 	SPRITES_REVIEW: '/sprites/review',
 	ZONE: '/zone',
