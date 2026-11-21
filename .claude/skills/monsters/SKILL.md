@@ -49,7 +49,7 @@ A def is the **base monster**. Two defs earn their places by differing in someth
 
 ### Starting values
 
-Reference, not rules: show them in the proposal for the owner to correct. The first four match the game's `monster.json` today (level and hp); the rest are guesses.
+Reference, not rules: show them in the proposal for the owner to correct. Level and hp for goblin, giant spider and road bandit come from the game's old `monster.json` (now retired); everything else is a guess.
 
 | Monster | level | hp | defenseValue | removalChance | numberAppearing |
 | --- | --- | --- | --- | --- | --- |
@@ -65,7 +65,7 @@ Anything the model doesn't hold: what it carries or drops, how it attacks, what 
 
 ## Match what exists
 
-Before proposing, read what is there, on **both** servers: `list_collection` on `monsters` (it holds nothing but monsters, so no `kind` filter). Check a new `id` with `filters: { id }`. The game also has `monster.json` (`ragged-crown/public/data/monster.json`) with its own list; if a request names one of those, use its level and hp so the numbers carry over, and say so.
+Before proposing, read what is there, on **both** servers: `list_collection` on `monsters` (it holds nothing but monsters, so no `kind` filter). Check a new `id` with `filters: { id }`.
 
 ## Glyph conventions
 
