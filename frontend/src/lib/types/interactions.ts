@@ -59,6 +59,9 @@ export type Action =
 			custom?: never
 	  }
 	| { type: 'SPAWN'; custom: true; slot: string }
+	// A barrier's set encounter ([Combat 7]). Always custom: the groups, which
+	// one to show and whether to hide it are filled in per placement.
+	| { type: 'SPAWN_MONSTER'; custom: true; slot: string }
 	| { type: 'REMOVE_SELF' }
 	| { type: 'TELEPORT'; destination: Destination }
 	| { type: 'PLAY_SOUND'; sound: string }

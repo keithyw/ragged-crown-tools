@@ -14,11 +14,13 @@ import {
 	type DestinationPickerData,
 } from '@/components'
 import type { PlaceableDef } from '@/hooks'
+import type { StoredDoc } from '@/lib/services'
 import {
 	type CustomValue,
 	type Destination,
 	type Glyph,
 	type Interaction,
+	type MonsterDef,
 	type Placement,
 	type Position,
 	type Qualifiers,
@@ -46,6 +48,7 @@ interface StackDrawerProps {
 	placedDefs: ReadonlyMap<string, StackDef>
 	items: PlaceableDef[] // for item slots
 	spawnChoices: PlaceableDef[] // for SPAWN slots
+	monsters: StoredDoc<MonsterDef>[] // for SPAWN_MONSTER slots
 	itemsLoading: boolean
 	// Zones and map data for naming a portal's destination and picking one.
 	destinationPicker: DestinationPickerData
@@ -65,6 +68,7 @@ export const StackDrawer = ({
 	placedDefs,
 	items,
 	spawnChoices,
+	monsters,
 	itemsLoading,
 	destinationPicker,
 	onChange,
@@ -298,6 +302,7 @@ export const StackDrawer = ({
 													onChange={(v) => setCustomValue(slot.slot, v)}
 													items={items}
 													spawnChoices={spawnChoices}
+													monsters={monsters}
 													itemsLoading={itemsLoading}
 												/>
 											) : (

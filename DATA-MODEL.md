@@ -323,7 +323,7 @@ Interactions can be **unlimited** (a generic NPC's "Hello and welcome to town X"
 
 ### 4.4 Initial actions
 
-`SHOW_DIALOG`, `GIVE_ITEM { itemId, amount?, qualifiers? }`, `TAKE_ITEM`, `GIVE_CURRENCY`, `SET_FLAG`, `SPAWN { defKind, defId, quantity?, qualifiers? }` (adds to this cell's stack at runtime), `REMOVE_SELF`, `TELEPORT { destination }`, `PLAY_SOUND`, `MODIFY_ATTRIBUTE`.
+`SHOW_DIALOG`, `GIVE_ITEM { itemId, amount?, qualifiers? }`, `TAKE_ITEM`, `GIVE_CURRENCY`, `SET_FLAG`, `SPAWN { defKind, defId, quantity?, qualifiers? }` (adds to this cell's stack at runtime), `SPAWN_MONSTER` (a barrier's set encounter, below), `REMOVE_SELF`, `TELEPORT { destination }`, `PLAY_SOUND`, `MODIFY_ATTRIBUTE`.
 
 The engine implements them incrementally ([Game 2]). Fields not listed here are decided when each type is written.
 
@@ -369,6 +369,7 @@ An action's (or condition's) value can be left for each placement to fill in, so
 { type: 'GIVE_ITEM'; itemId; amount?; qualifiers? } | { type: 'GIVE_ITEM'; custom: true; slot: string }
 { type: 'TAKE_ITEM'; itemId; amount? } | { type: 'TAKE_ITEM'; custom: true; slot: string }
 { type: 'HAS_ITEM'; itemId; amount } | { type: 'HAS_ITEM'; custom: true; slot: string } // a condition
+{ type: 'SPAWN_MONSTER'; custom: true; slot: string } // always custom, see below
 ```
 
 A placement fills the slots in with `customValues`, keyed by `slot`:
@@ -379,7 +380,19 @@ type CustomValue =
 	| { type: 'TAKE_ITEM' | 'HAS_ITEM'; itemId?: string; amount?: number }
 	| { type: 'GIVE_ITEM'; itemId?: string; amount?: number; qualifiers?: Qualifiers }
 	| { type: 'SPAWN'; defKind?: Kind; defId?: string; quantity?: number; qualifiers?: Qualifiers }
+	| { type: 'SPAWN_MONSTER'; groups?: EncounterGroup[]; showAs?: number; hideSprite?: boolean }
+
+interface EncounterGroup {
+	defId: string // a monster def's _id
+	count?: number // blank = rolled from the def's numberAppearing (a unique monster is always one)
+}
 ```
+
+**Set encounter (`SPAWN_MONSTER`, [Combat 7]).** A solid object with a `BUMP_INTERACT` interaction carrying this action is a **barrier**: bumping it starts combat against the groups its placement lists. The action is **always custom** (there is no non-custom form, and no checkbox): which monsters, and how many, are decided at placement. It is the static case; random encounters are separate ([Combat 12]).
+- `groups` are the monster groups, each in melee range. A group's `count` is a whole number, 1 or more; blank rolls the def's `numberAppearing`.
+- `showAs` is an index into `groups`: the barrier is drawn with that group's monster (sprite, else glyph) instead of its own def. Absent, or `hideSprite: true` (absent = false, never stored `false`), and it keeps its own look, which is how a surprise encounter is made.
+- A **win** removes the barrier placement. A **flee** leaves it, so bumping it again restarts the fight (the monster's `removalChance` is [Combat 5]). The monsters exist only inside the fight, so nothing else is placed or removed.
+- Like any custom value, every field may be blank; the game skips a `SPAWN_MONSTER` with no groups.
 
 Rules:
 

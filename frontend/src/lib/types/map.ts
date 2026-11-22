@@ -25,6 +25,14 @@ export interface Placement {
 	customValues?: Record<string, CustomValue> // keyed by the def's slot ids
 }
 
+// One monster group of an encounter ([Combat 7], [Combat 1]): a monster def
+// and how many. A blank `count` is rolled from the def's numberAppearing (a
+// unique monster is always one).
+export interface EncounterGroup {
+	defId: string // a monster def's _id
+	count?: number
+}
+
 // A placement's value for one of its def's custom slots (DATA-MODEL.md 4.6):
 // the def declares the slot, the placement fills it in. Every field may be
 // blank, so unfinished work still saves; finding blanks is zone validation.
@@ -47,6 +55,12 @@ export type CustomValue =
 			defId?: string
 			quantity?: number
 			qualifiers?: Qualifiers
+	  }
+	| {
+			type: 'SPAWN_MONSTER'
+			groups?: EncounterGroup[]
+			showAs?: number // index into groups: whose sprite the barrier shows
+			hideSprite?: boolean // absent = false; the barrier keeps its own look
 	  }
 
 export interface MoveResult {

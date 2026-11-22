@@ -223,6 +223,19 @@ const spawnSchema = z
 				},
 	)
 
+// A barrier's set encounter: always custom, no value on the def ([Combat 7]).
+const spawnMonsterSchema = z
+	.object({
+		type: z.literal('SPAWN_MONSTER'),
+		custom: z.literal(true).optional(),
+		slot: z.string().min(1).optional(),
+	})
+	.transform((a): Extract<Action, { type: 'SPAWN_MONSTER' }> => ({
+		type: a.type,
+		custom: true as const,
+		slot: a.slot ?? crypto.randomUUID(),
+	}))
+
 export const characterStatSchema = z.enum([
 	'strength',
 	'dexterity',
@@ -322,6 +335,7 @@ export const actionSchema = z.discriminatedUnion('type', [
 	z.object({ type: z.literal('GIVE_CURRENCY'), amount }),
 	z.object({ type: z.literal('SET_FLAG'), flag: z.string().min(1) }),
 	spawnSchema,
+	spawnMonsterSchema,
 	z.object({ type: z.literal('REMOVE_SELF') }),
 	z.object({ type: z.literal('TELEPORT'), destination: destinationSchema }),
 	z.object({ type: z.literal('PLAY_SOUND'), sound: z.string().min(1) }),
@@ -503,6 +517,14 @@ export const customValueSchema = z.union([
 		defId: z.string().optional(),
 		quantity: amount.optional(),
 		qualifiers: qualifiersSchema.optional(),
+	}),
+	z.object({
+		type: z.literal('SPAWN_MONSTER'),
+		groups: z
+			.array(z.object({ defId: z.string().min(1), count: amount.optional() }))
+			.optional(),
+		showAs: z.number().int().min(0).optional(),
+		hideSprite: z.boolean().optional(),
 	}),
 ]) satisfies z.ZodType<CustomValue>
 

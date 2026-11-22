@@ -179,6 +179,15 @@ export const ACTION_TYPES: ActionTypeConfig[] = [
 					: '',
 	},
 	{
+		// Always set per placement: the groups are filled in on the placement
+		// ([Combat 7]), so there is no checkbox and no field here.
+		type: 'SPAWN_MONSTER',
+		label: 'Spawn monster (set encounter)',
+		fields: [],
+		blank: () => ({ type: 'SPAWN_MONSTER', custom: true }) as Action,
+		summary: () => 'spawn a set encounter (set per placement)',
+	},
+	{
 		type: 'TAKE_ITEM',
 		label: 'Take item (from the player)',
 		customizable: true,

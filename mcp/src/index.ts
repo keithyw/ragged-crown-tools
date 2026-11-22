@@ -839,8 +839,20 @@ async function checkZonePlacements(collection: string, doc: unknown) {
 
 	const defs = await defsById()
 	const problems: string[] = []
-	const visit = (list: Loose2[], path: string) => {
-		list.forEach((p, i) => {
+	// Loaded on first use: only SPAWN_MONSTER values name monsters.
+	let monsterIds: Set<string> | undefined
+	const monsterExists = async (_id: string) => {
+		monsterIds ??= new Set(
+			(
+				(await (await apiGet('/collection/monsters')).json()) as {
+					_id: string
+				}[]
+			).map((m) => m._id),
+		)
+		return monsterIds.has(_id)
+	}
+	const visit = async (list: Loose2[], path: string) => {
+		for (const [i, p] of list.entries()) {
 			const at = `${path}.${i}`
 			const def = defs.get(p.defId)
 			if (!def) {
@@ -856,17 +868,25 @@ async function checkZonePlacements(collection: string, doc: unknown) {
 			}
 			// A custom slot's value names its own item or def.
 			for (const [slot, v] of Object.entries(p.customValues ?? {})) {
+				// A set encounter's groups name monster defs ([Combat 7]).
+				for (const [g, group] of (v.groups ?? []).entries()) {
+					if (!(await monsterExists(group.defId))) {
+						problems.push(
+							`- ${at}.customValues.${slot}.groups.${g}.defId: no monster with _id '${group.defId}'`,
+						)
+					}
+				}
 				const target = defs.get(String(v.itemId ?? v.defId))
 				const why =
 					target && v.qualifiers && qualifierProblem(target, v.qualifiers)
 				if (why)
 					problems.push(`- ${at}.customValues.${slot}.qualifiers: ${why}`)
 			}
-			if (p.contents) visit(p.contents, `${at}.contents`)
-		})
+			if (p.contents) await visit(p.contents, `${at}.contents`)
+		}
 	}
 	for (const [cell, stack] of Object.entries(placements)) {
-		visit(stack, `placements.${cell}`)
+		await visit(stack, `placements.${cell}`)
 		// The same def can't sit directly on top of itself (DATA-MODEL 3);
 		// several of one item are one placement with a quantity.
 		stack.forEach((p, i) => {
@@ -890,7 +910,12 @@ type Loose2 = {
 	qualifiers?: Loose['qualifiers']
 	customValues?: Record<
 		string,
-		{ itemId?: string; defId?: string; qualifiers?: Loose['qualifiers'] }
+		{
+			itemId?: string
+			defId?: string
+			qualifiers?: Loose['qualifiers']
+			groups?: { defId: string }[]
+		}
 	>
 	contents?: Loose2[]
 }

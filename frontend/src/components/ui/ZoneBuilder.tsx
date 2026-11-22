@@ -37,6 +37,7 @@ import type {
 	ArmorDef,
 	DifficultyConfig,
 	ItemDef,
+	MonsterDef,
 	ObjectDef,
 	PortalDef,
 	Position,
@@ -183,6 +184,9 @@ export const ZoneBuilder = ({
 		isLoading: portalsLoading,
 		error: portalsError,
 	} = useCollection<PortalDef>('entities', { filter: { kind: 'portal' } })
+	// Only for a set encounter's groups, so a failed load doesn't block the
+	// builder.
+	const { items: monsters } = useCollection<MonsterDef>('monsters')
 	// Only names destinations, so a failed load doesn't block the builder.
 	const { items: zones } = useCollection<Zone>('zones')
 	const { items: difficulties } = useCollection<DifficultyConfig>(
@@ -199,6 +203,10 @@ export const ZoneBuilder = ({
 	)
 
 	// Defs that can sit on the terrain, keyed like a Placement (kind + _id).
+	const monstersById = useMemo(
+		() => new Map(monsters.map((m) => [m._id, m])),
+		[monsters],
+	)
 	const placedDefs = useMemo(
 		() =>
 			new Map<string, StackDef>([
@@ -484,6 +492,7 @@ export const ZoneBuilder = ({
 							tilesById={tilesById}
 							placements={placements}
 							placedDefs={placedDefs}
+							monsters={monstersById}
 							startingPosition={startingPosition}
 							selectedCell={selectedCell}
 							onCellAction={tool ? handleCell : undefined}
@@ -747,6 +756,7 @@ export const ZoneBuilder = ({
 				placedDefs={placedDefs}
 				items={itemChoices}
 				spawnChoices={spawnChoices}
+				monsters={monsters}
 				itemsLoading={itemsLoading}
 				destinationPicker={{
 					zones,

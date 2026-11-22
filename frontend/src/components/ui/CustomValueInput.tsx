@@ -1,6 +1,8 @@
 'use client'
 
 import {
+	Button,
+	CheckboxInput,
 	ItemCombobox,
 	QualifierPicker,
 	SelectDropdown,
@@ -8,7 +10,14 @@ import {
 	TextInput,
 } from '@/components'
 import type { PlaceableDef } from '@/hooks'
-import type { CustomValue, Kind, Qualifiers } from '@/lib/types'
+import type { StoredDoc } from '@/lib/services'
+import type {
+	CustomValue,
+	EncounterGroup,
+	Kind,
+	MonsterDef,
+	Qualifiers,
+} from '@/lib/types'
 import {
 	defKey,
 	parseNumberInput,
@@ -23,6 +32,7 @@ interface CustomValueInputProps {
 	onChange: (value: CustomValue) => void
 	items: PlaceableDef[] // for item slots
 	spawnChoices: PlaceableDef[] // for SPAWN slots
+	monsters: StoredDoc<MonsterDef>[] // for SPAWN_MONSTER slots
 	itemsLoading: boolean
 }
 
@@ -35,6 +45,7 @@ export const CustomValueInput = ({
 	onChange,
 	items,
 	spawnChoices,
+	monsters,
 	itemsLoading,
 }: CustomValueInputProps) => {
 	switch (slot.type) {
@@ -224,6 +235,142 @@ export const CustomValueInput = ({
 									},
 									q,
 								),
+							)
+						}
+					/>
+				</div>
+			)
+		}
+		case 'SPAWN_MONSTER': {
+			const current = value?.type === 'SPAWN_MONSTER' ? value : undefined
+			const groups = current?.groups ?? []
+			// An empty list, an unset "show as" and a false checkbox are not stored.
+			const make = (next: {
+				groups?: EncounterGroup[]
+				showAs?: number
+				hideSprite?: boolean
+			}): CustomValue => ({
+				type: 'SPAWN_MONSTER',
+				...(next.groups?.length && { groups: next.groups }),
+				...(next.groups?.length &&
+					next.showAs !== undefined && { showAs: next.showAs }),
+				...(next.hideSprite && { hideSprite: true }),
+			})
+			const nameOf = (defId: string) =>
+				monsters.find((m) => m._id === defId)?.name ?? '(missing)'
+			const setGroups = (next: EncounterGroup[], showAs = current?.showAs) =>
+				onChange(
+					make({
+						groups: next,
+						showAs:
+							showAs !== undefined && showAs < next.length ? showAs : undefined,
+						hideSprite: current?.hideSprite,
+					}),
+				)
+			return (
+				<div className='mb-4 rounded border border-gray-200 bg-gray-50 p-3'>
+					<div className='mb-2 font-bold text-gray-700'>{slotLabel(slot)}</div>
+					{groups.length === 0 && (
+						<p className='mb-2 text-sm text-gray-500'>
+							No monsters yet. A blank encounter is saved as is.
+						</p>
+					)}
+					{groups.map((g, idx) => (
+						<div key={idx} className='mb-2 flex items-end gap-2'>
+							<SelectDropdown
+								id={`${id}-group-${idx}`}
+								label={`Group ${idx + 1}`}
+								placeholder={
+									itemsLoading ? 'Loading...' : 'Choose a monster...'
+								}
+								disabled={itemsLoading}
+								options={monsters.map((m) => ({
+									value: m._id,
+									label: m.name,
+								}))}
+								selectedValue={g.defId}
+								onSelect={(v) =>
+									setGroups(
+										groups.map((x, j) =>
+											j === idx ? { defId: String(v), count: x.count } : x,
+										),
+									)
+								}
+							/>
+							<TextInput
+								id={`${id}-group-${idx}-count`}
+								label='Count (blank = roll)'
+								type='number'
+								inputWidth='sm'
+								min={1}
+								step={1}
+								value={g.count ?? ''}
+								onChange={(e) => {
+									const n = parseNumberInput(e.target.value)
+									setGroups(
+										groups.map((x, j) =>
+											j === idx
+												? {
+														defId: x.defId,
+														...(Number.isInteger(n) && n >= 1 && { count: n }),
+													}
+												: x,
+										),
+									)
+								}}
+							/>
+							<Button
+								actionType='delete'
+								onClick={() => {
+									const showAs = current?.showAs
+									setGroups(
+										groups.filter((_, j) => j !== idx),
+										showAs === undefined || showAs === idx
+											? undefined
+											: showAs > idx
+												? showAs - 1
+												: showAs,
+									)
+								}}
+							>
+								Remove
+							</Button>
+						</div>
+					))}
+					<Button
+						actionType='neutral'
+						onClick={() => setGroups([...groups, { defId: '' }])}
+					>
+						Add group
+					</Button>
+					{groups.length > 0 && (
+						<SelectDropdown
+							id={`${id}-show-as`}
+							label='Show as (whose sprite the barrier shows)'
+							placeholder='The barrier keeps its own look'
+							options={groups.map((g, idx) => ({
+								value: String(idx),
+								label: `Group ${idx + 1}: ${g.defId ? nameOf(g.defId) : '(none)'}`,
+							}))}
+							selectedValue={
+								current?.showAs !== undefined ? String(current.showAs) : ''
+							}
+							onSelect={(v) =>
+								setGroups(groups, v === '' ? undefined : Number(v))
+							}
+						/>
+					)}
+					<CheckboxInput
+						id={`${id}-hide`}
+						label='Hide the sprite (a surprise encounter)'
+						checked={!!current?.hideSprite}
+						onChange={(e) =>
+							onChange(
+								make({
+									groups: current?.groups,
+									showAs: current?.showAs,
+									hideSprite: e.target.checked,
+								}),
 							)
 						}
 					/>

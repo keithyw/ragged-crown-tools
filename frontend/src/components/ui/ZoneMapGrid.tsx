@@ -22,6 +22,9 @@ interface ZoneMapGridProps {
 	// Things placed on the terrain, and the defs to draw them with (keyed by defKey).
 	placements?: Zone['placements']
 	placedDefs?: ReadonlyMap<string, { glyph: Glyph }>
+	// Monster defs by _id: a set encounter's barrier is drawn as the monster
+	// its "show as" group names ([Combat 7]).
+	monsters?: ReadonlyMap<string, { glyph: Glyph }>
 	startingPosition?: Position
 	// The cell whose stack is open, outlined.
 	selectedCell?: Position | null
@@ -38,6 +41,7 @@ export const ZoneMapGrid = ({
 	tilesById,
 	placements,
 	placedDefs,
+	monsters,
 	startingPosition,
 	selectedCell,
 	onCellAction,
@@ -62,6 +66,12 @@ export const ZoneMapGrid = ({
 	// A placement whose def is missing gives undefined, which TileGlyph draws as "?".
 	const drawnAt = (x: number, y: number, tileId: string) => {
 		const top = placements?.[cellKey(x, y)]?.at(-1)
+		for (const v of Object.values(top?.customValues ?? {})) {
+			if (v.type !== 'SPAWN_MONSTER' || v.hideSprite) continue
+			const group = v.showAs === undefined ? undefined : v.groups?.[v.showAs]
+			const monster = group && monsters?.get(group.defId)
+			if (monster) return monster
+		}
 		return top
 			? placedDefs?.get(defKey(top.defKind, top.defId))
 			: tilesById.get(tileId)
