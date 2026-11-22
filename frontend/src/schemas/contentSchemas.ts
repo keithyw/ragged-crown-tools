@@ -459,6 +459,7 @@ export const monsterDefSchema = baseDefSchema.extend({
 		.int('Removal chance must be a whole number')
 		.min(0, 'Cannot be negative')
 		.max(100, 'At most 100'),
+	damage: randomRollSchema,
 	numberAppearing: randomRollSchema,
 	isUnique: z.boolean().optional(),
 }) satisfies z.ZodType<MonsterDef>

@@ -12,7 +12,7 @@ A monster is something the party fights. It is placed on the map like other defs
 - Collection: **`monsters`**, `kind: "monster"`. It is its own collection, not `entities`.
 - Sprite category: `monster`.
 - Batch cap: the default, 10.
-- Extra proposal columns: `level`, `hp`, `defenseValue`, `removalChance`, `numberAppearing` (`2d4`), whether it is unique, and the sprite plan.
+- Extra proposal columns: `level`, `hp`, `defenseValue`, `damage` (`1d4`), `removalChance`, `numberAppearing` (`2d4`), whether it is unique, and the sprite plan.
 - Sandbox UI page: Monster Definitions.
 
 ## Monster, object or item?
@@ -30,6 +30,7 @@ A monster is what the party **fights**. A townsperson, a guard who only talks, o
   "level": 1,
   "hp": 6,
   "defenseValue": 1,
+  "damage": { "count": 1, "die": 4 },
   "removalChance": 85,
   "numberAppearing": { "count": 2, "die": 4 }
 }
@@ -38,26 +39,27 @@ A monster is what the party **fights**. A townsperson, a guard who only talks, o
 - `level`: **required**, a whole number, 0 or more.
 - `hp`: **required**, a set number, 1 or more. Not dice.
 - `defenseValue`: **required**, a whole number, 0 or more, no ceiling. The same name and kind of number as armor's `defenseValue` (small and progressive: cloth 1, leather 2). **How it is used in a hit, and the scale monsters sit on, is not decided yet ([Combat 10])**, so use the starting values below, say they are placeholders, and don't invent a rule.
+- `damage`: **required**, the base damage per hit, dice in the same shape as a weapon's damage: `count` a whole number, 1 or more; `die` one of 4, 6, 8, 10, 12, 20, 100 (1d4 is `{ "count": 1, "die": 4 }`). There is no to-hit roll yet ([Combat 10]), so every attack hits for this roll. The starting values below are guesses; say so. Special attacks (poison, breath, drain) are still not part of a monster.
 - `removalChance`: **required**, a whole number from 0 to 100: the percentage chance the monster **leaves** after the party flees. 0 means it never leaves (a quest boss, so a quest can't become unsolvable); about 85 for trivial things (bandits, rats); about 25 for something major (a dragon). Use the starting value, say it is a guess, and always say what 0 does.
 - `numberAppearing`: **required**, dice in the same shape as a weapon's damage: `count` a whole number, 1 or more; `die` one of 4, 6, 8, 10, 12, 20, 100. So 3d6 is `{ "count": 3, "die": 6 }`. This is how many can appear together (rats and goblins come in numbers; a dragon is rare). A placement or encounter group can set its own number instead; that is not stored here.
 - `isUnique`: only when the owner says the monster is a one-off (a named boss, a dragon). Send `true` only, **never `false`** (absent means false). A unique monster only ever appears as one, and the game ignores `numberAppearing`, but **the field is still required**: send a small plausible value (`1d4` is fine) and say it is ignored. There is no rarity field and no boss flag.
-- Not part of a monster: attributes, gear, interactions, XP, currency, loot, abilities (breath, poison, drain, spells), damage or attack values, speed. Don't send them and don't hide them in the description.
+- Not part of a monster: attributes, gear, interactions, XP, currency, loot, abilities (breath, poison, drain, spells), special attacks, speed. Don't send them and don't hide them in the description.
 
 ## What makes two monsters different defs
 
-A def is the **base monster**. Two defs earn their places by differing in something the model holds (level, hp, defense, how many appear, whether it leaves) or by reading differently at tile size. A goblin, an orc and a goblin chieftain are three; a "green goblin" and a "blue goblin" are not. Don't make variants for a title or an equipment loadout ("goblin with a bow"): there is no gear.
+A def is the **base monster**. Two defs earn their places by differing in something the model holds (level, hp, defense, damage, how many appear, whether it leaves) or by reading differently at tile size. A goblin, an orc and a goblin chieftain are three; a "green goblin" and a "blue goblin" are not. Don't make variants for a title or an equipment loadout ("goblin with a bow"): there is no gear.
 
 ### Starting values
 
 Reference, not rules: show them in the proposal for the owner to correct. Level and hp for goblin, giant spider and road bandit come from the game's old `monster.json` (now retired); everything else is a guess.
 
-| Monster | level | hp | defenseValue | removalChance | numberAppearing |
-| --- | --- | --- | --- | --- | --- |
-| Rat | 0 | 2 | 0 | 85 | 2d6 |
-| Goblin | 1 | 6 | 1 | 85 | 2d4 |
-| Giant spider | 1 | 8 | 1 | 60 | 1d4 |
-| Orc | 2 | 12 | 2 | 60 | 2d4 |
-| Road bandit | 2 | 14 | 2 | 85 | 1d6 |
+| Monster | level | hp | defenseValue | damage | removalChance | numberAppearing |
+| --- | --- | --- | --- | --- | --- | --- |
+| Rat | 0 | 2 | 0 | 1d4 | 85 | 2d6 |
+| Goblin | 1 | 6 | 1 | 1d6 | 85 | 2d4 |
+| Giant spider | 1 | 8 | 1 | 1d6 | 60 | 1d4 |
+| Orc | 2 | 12 | 2 | 1d8 | 60 | 2d4 |
+| Road bandit | 2 | 14 | 2 | 1d6 | 85 | 1d6 |
 
 ## Never put these in the data
 

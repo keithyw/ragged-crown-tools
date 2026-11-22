@@ -56,6 +56,22 @@ export const fields: FormField<MonsterDefinitionFormData>[] = [
 		inputAttrs: { min: 0, max: 100, step: 1 },
 	},
 	{
+		name: 'damage.count',
+		label: 'Damage: number of dice (1d4 is 1)',
+		type: 'number',
+		required: true,
+		inputWidth: 'xs',
+		inputAttrs: { min: 1, step: 1 },
+	},
+	{
+		name: 'damage.die',
+		label: 'Damage: die',
+		type: 'select',
+		required: true,
+		placeholder: 'Choose a die',
+		options: DICE.map((d) => ({ value: d, label: `d${d}` })),
+	},
+	{
 		name: 'numberAppearing.count',
 		label: 'Number appearing: number of dice (3d6 is 3)',
 		type: 'number',

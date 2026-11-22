@@ -26,6 +26,7 @@ const CreateMonsterDefinitionPage = () => {
 			level: 0,
 			defenseValue: 0,
 			removalChance: 0,
+			damage: { count: 1 },
 			numberAppearing: { count: 1 },
 			isUnique: false,
 			description: '',
