@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { Button, InteractionModal } from '@/components'
+import { Button, InteractionModal, ReorderableList } from '@/components'
 import { usePlaceableDefs } from '@/hooks'
 import type { Interaction, InteractionType } from '@/lib/types'
 import { blankInteraction, summarizeInteraction } from '@/lib/utils'
@@ -35,32 +35,42 @@ export const InteractionsEditor = ({
 			{list.length === 0 ? (
 				<p className='mb-3 text-sm text-gray-500'>No interactions.</p>
 			) : (
-				<ul className='mb-3 space-y-2'>
-					{list.map((it, index) => (
-						<li
-							key={it.id}
-							className='flex items-center justify-between gap-3 rounded border border-gray-200 p-3 text-sm text-gray-900'
-						>
-							<span className='min-w-0'>{summarizeInteraction(it, names)}</span>
-							<span className='flex shrink-0 gap-2'>
-								<Button
-									type='button'
-									actionType='edit'
-									onClick={() => setEditing({ index, interaction: it })}
-								>
-									Edit
-								</Button>
-								<Button
-									type='button'
-									actionType='delete'
-									onClick={() => onChange(list.filter((_, i) => i !== index))}
-								>
-									Remove
-								</Button>
-							</span>
-						</li>
-					))}
-				</ul>
+				// Dragged by the grip, since the order is behaviour: the first
+				// interaction whose conditions pass runs (DATA-MODEL 4.1). Nothing
+				// is selected, so there are no arrows.
+				<div className='mb-3'>
+					<ReorderableList
+						items={list}
+						getKey={(it) => it.id}
+						onReorder={onChange}
+						selectedKey={null}
+						onSelect={() => {}}
+						showArrows={false}
+						renderItem={(it, index) => (
+							<div className='flex items-center justify-between gap-3 text-sm text-gray-900'>
+								<span className='min-w-0'>
+									{summarizeInteraction(it, names)}
+								</span>
+								<span className='flex shrink-0 gap-2'>
+									<Button
+										type='button'
+										actionType='edit'
+										onClick={() => setEditing({ index, interaction: it })}
+									>
+										Edit
+									</Button>
+									<Button
+										type='button'
+										actionType='delete'
+										onClick={() => onChange(list.filter((_, i) => i !== index))}
+									>
+										Remove
+									</Button>
+								</span>
+							</div>
+						)}
+					/>
+				</div>
 			)}
 			<Button
 				type='button'

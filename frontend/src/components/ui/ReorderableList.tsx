@@ -14,6 +14,8 @@ interface ReorderableListProps<T> {
 	// The highlighted row. Its arrows move it one place.
 	selectedKey: string | null
 	onSelect: (key: string) => void
+	// The selected row's up/down arrows. Off for a short list that is only dragged.
+	showArrows?: boolean
 }
 
 // Moves the item at `from` to `to`, shifting the ones in between.
@@ -34,6 +36,7 @@ export const ReorderableList = <T,>({
 	onReorder,
 	selectedKey,
 	onSelect,
+	showArrows = true,
 }: ReorderableListProps<T>) => {
 	const [dragFrom, setDragFrom] = useState<number | null>(null)
 	const [dragOver, setDragOver] = useState<number | null>(null)
@@ -98,7 +101,7 @@ export const ReorderableList = <T,>({
 							<GripVertical className='size-5' aria-hidden />
 						</span>
 						<div className='min-w-0 flex-1'>{renderItem(item, idx)}</div>
-						{isSelected && (
+						{isSelected && showArrows && (
 							<div className='flex gap-1'>
 								{arrows.map(({ label, Icon, to }) => (
 									<button
