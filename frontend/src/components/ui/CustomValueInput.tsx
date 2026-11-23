@@ -33,6 +33,10 @@ interface CustomValueInputProps {
 	items: PlaceableDef[] // for item slots
 	spawnChoices: PlaceableDef[] // for SPAWN slots
 	monsters: StoredDoc<MonsterDef>[] // for SPAWN_MONSTER slots
+	// REMOVE_OBJECT: names the chosen object ("Oak at 3,4"), and starts picking
+	// one on the map.
+	describeTarget: (uid: string) => string
+	onPickTarget: () => void
 	itemsLoading: boolean
 }
 
@@ -46,6 +50,8 @@ export const CustomValueInput = ({
 	items,
 	spawnChoices,
 	monsters,
+	describeTarget,
+	onPickTarget,
 	itemsLoading,
 }: CustomValueInputProps) => {
 	switch (slot.type) {
@@ -238,6 +244,31 @@ export const CustomValueInput = ({
 							)
 						}
 					/>
+				</div>
+			)
+		}
+		case 'REMOVE_OBJECT': {
+			const current = value?.type === 'REMOVE_OBJECT' ? value : undefined
+			const targetUid = current?.targetUid
+			return (
+				<div className='mb-4 rounded border border-gray-200 bg-gray-50 p-3'>
+					<div className='mb-2 font-bold text-gray-700'>{slotLabel(slot)}</div>
+					<p className='mb-2 text-sm text-gray-700'>
+						{targetUid ? describeTarget(targetUid) : 'Not set'}
+					</p>
+					<div className='flex gap-2'>
+						<Button actionType='edit' onClick={onPickTarget}>
+							{targetUid ? 'Change on map' : 'Choose on map'}
+						</Button>
+						<Button
+							actionType='neutral'
+							disabled={!targetUid}
+							// A cleared target stores none, not ''.
+							onClick={() => onChange({ type: 'REMOVE_OBJECT' })}
+						>
+							Clear
+						</Button>
+					</div>
 				</div>
 			)
 		}

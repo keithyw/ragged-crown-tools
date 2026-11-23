@@ -851,6 +851,11 @@ async function checkZonePlacements(collection: string, doc: unknown) {
 		)
 		return monsterIds.has(_id)
 	}
+	// A REMOVE_OBJECT value names an object placement on the map by its uid.
+	const onMap = new Map<string, Loose2>()
+	for (const stack of Object.values(placements)) {
+		for (const p of stack) onMap.set(p.uid, p)
+	}
 	const visit = async (list: Loose2[], path: string) => {
 		for (const [i, p] of list.entries()) {
 			const at = `${path}.${i}`
@@ -873,6 +878,18 @@ async function checkZonePlacements(collection: string, doc: unknown) {
 					if (!(await monsterExists(group.defId))) {
 						problems.push(
 							`- ${at}.customValues.${slot}.groups.${g}.defId: no monster with _id '${group.defId}'`,
+						)
+					}
+				}
+				if (v.type === 'REMOVE_OBJECT' && v.targetUid) {
+					const t = onMap.get(v.targetUid)
+					if (!t) {
+						problems.push(
+							`- ${at}.customValues.${slot}.targetUid: no placement with uid '${v.targetUid}' in this zone`,
+						)
+					} else if (t.defKind !== 'object') {
+						problems.push(
+							`- ${at}.customValues.${slot}.targetUid: the placement is a ${t.defKind}, only an object can be removed`,
 						)
 					}
 				}
@@ -905,12 +922,15 @@ async function checkZonePlacements(collection: string, doc: unknown) {
 	}
 }
 type Loose2 = {
+	uid: string
 	defKind: string
 	defId: string
 	qualifiers?: Loose['qualifiers']
 	customValues?: Record<
 		string,
 		{
+			type?: string
+			targetUid?: string
 			itemId?: string
 			defId?: string
 			qualifiers?: Loose['qualifiers']

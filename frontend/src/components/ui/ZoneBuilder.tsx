@@ -70,10 +70,11 @@ import {
 import { detailFields } from '@/app/zone/fields'
 
 // One tool at a time; a click on the map does exactly one thing.
-type Tool = 'paint' | 'start' | 'object' | 'item' | 'portal' | 'stack'
+type Tool =
+	'paint' | 'start' | 'object' | 'item' | 'portal' | 'stack' | 'target'
 // The tools offered in the tool selector. Start and stack have their own
 // sections.
-type PlaceTool = Exclude<Tool, 'start' | 'stack'>
+type PlaceTool = Exclude<Tool, 'start' | 'stack' | 'target'>
 
 const STATUS_CHOICES = [
 	{ value: 'review', label: 'Review' },
@@ -164,6 +165,13 @@ export const ZoneBuilder = ({
 	// The cell whose stack is open in the drawer.
 	const [selectedCell, setSelectedCell] = useState<Position | null>(null)
 	const [isStackOpen, setIsStackOpen] = useState(false)
+	// A REMOVE_OBJECT target being picked on the map: the placement (and its
+	// slot) that gets it. The drawer is closed meanwhile and reopens after.
+	const [targetPick, setTargetPick] = useState<{
+		cell: Position
+		uid: string
+		slot: string
+	} | null>(null)
 	const {
 		items: tiles,
 		isLoading: tilesLoading,
@@ -265,12 +273,18 @@ export const ZoneBuilder = ({
 		)
 			return
 		const onKeyDown = (e: KeyboardEvent) => {
-			if (e.key === 'Escape') setTool(null)
+			if (e.key !== 'Escape') return
+			setTool(null)
+			if (targetPick) {
+				setTargetPick(null)
+				setIsStackOpen(true)
+			}
 		}
 		window.addEventListener('keydown', onKeyDown)
 		return () => window.removeEventListener('keydown', onKeyDown)
 	}, [
 		tool,
+		targetPick,
 		isPickerOpen,
 		isObjectPickerOpen,
 		isItemPickerOpen,
@@ -343,6 +357,44 @@ export const ZoneBuilder = ({
 						defId: activePortal._id,
 					}),
 				)
+			} else if (tool === 'target' && targetPick) {
+				const top = placements?.[cellKey(x, y)]?.at(-1)
+				if (top?.defKind !== 'object') {
+					toast.error('Click a cell whose top is an object.', {
+						id: 'target-pick',
+					})
+					return
+				}
+				if (top.uid === targetPick.uid) {
+					toast.error('An object cannot remove itself this way.', {
+						id: 'target-pick',
+					})
+					return
+				}
+				const originKey = cellKey(targetPick.cell.x, targetPick.cell.y)
+				setPlacements((prev) =>
+					replaceStack(
+						prev,
+						originKey,
+						(prev?.[originKey] ?? []).map((p) =>
+							p.uid === targetPick.uid
+								? {
+										...p,
+										customValues: {
+											...p.customValues,
+											[targetPick.slot]: {
+												type: 'REMOVE_OBJECT',
+												targetUid: top.uid,
+											},
+										},
+									}
+								: p,
+						),
+					),
+				)
+				setTargetPick(null)
+				setTool(null)
+				setIsStackOpen(true)
 			} else if (tool === 'stack') {
 				// Stays on after the drawer closes, so the next stack is one click away.
 				if (!placements?.[cellKey(x, y)]?.length) {
@@ -353,7 +405,15 @@ export const ZoneBuilder = ({
 				setIsStackOpen(true)
 			}
 		},
-		[tool, activeTileId, activeObject, activeItem, activePortal, placements],
+		[
+			tool,
+			targetPick,
+			activeTileId,
+			activeObject,
+			activeItem,
+			activePortal,
+			placements,
+		],
 	)
 
 	// What the tool selector shows for each tool.
@@ -599,7 +659,8 @@ export const ZoneBuilder = ({
 								setSelectedTool(v as PlaceTool)
 								// Switching tools stops the one that was running. Start and
 								// stack are left alone.
-								if (tool !== 'start' && tool !== 'stack') setTool(null)
+								if (tool !== 'start' && tool !== 'stack' && tool !== 'target')
+									setTool(null)
 							}}
 						/>
 						<ToolPickerSection {...toolSections[selectedTool]} />
@@ -630,6 +691,28 @@ export const ZoneBuilder = ({
 							</p>
 						)}
 					</section>
+					{tool === 'target' && (
+						<section>
+							<h3 className='mb-2 text-sm font-bold text-gray-700'>
+								Choose the object to remove
+							</h3>
+							<p className='mb-2 text-sm text-gray-500'>
+								Click the object on the map (the top of its cell). Esc to
+								cancel.
+							</p>
+							<Button
+								type='button'
+								actionType='neutral'
+								onClick={() => {
+									setTool(null)
+									setTargetPick(null)
+									setIsStackOpen(true)
+								}}
+							>
+								Cancel
+							</Button>
+						</section>
+					)}
 					<section>
 						<h3 className='mb-2 text-sm font-bold text-gray-700'>
 							Start Position
@@ -758,6 +841,14 @@ export const ZoneBuilder = ({
 				spawnChoices={spawnChoices}
 				monsters={monsters}
 				itemsLoading={itemsLoading}
+				placements={placements ?? {}}
+				onPickTarget={(uid, slot) => {
+					if (!selectedCell) return
+					setTargetPick({ cell: selectedCell, uid, slot })
+					setTool('target')
+					// The cell stays selected, so the drawer reopens on it.
+					setIsStackOpen(false)
+				}}
 				destinationPicker={{
 					zones,
 					thisZone: {

@@ -57,6 +57,10 @@ export type CustomValue =
 			qualifiers?: Qualifiers
 	  }
 	| {
+			type: 'REMOVE_OBJECT'
+			targetUid?: string // the uid of an object placement in this zone
+	  }
+	| {
 			type: 'SPAWN_MONSTER'
 			groups?: EncounterGroup[]
 			showAs?: number // index into groups: whose sprite the barrier shows

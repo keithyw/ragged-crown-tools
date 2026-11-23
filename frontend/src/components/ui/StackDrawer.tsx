@@ -21,6 +21,7 @@ import {
 	type Glyph,
 	type Interaction,
 	type MonsterDef,
+	type CellKey,
 	type Placement,
 	type Position,
 	type Qualifiers,
@@ -52,6 +53,10 @@ interface StackDrawerProps {
 	itemsLoading: boolean
 	// Zones and map data for naming a portal's destination and picking one.
 	destinationPicker: DestinationPickerData
+	// The whole zone's placements, to name a REMOVE_OBJECT target.
+	placements: Partial<Record<CellKey, Placement[]>>
+	// Starts picking a REMOVE_OBJECT target on the map for this placement's slot.
+	onPickTarget: (placementUid: string, slot: string) => void
 	// Gets the cell's whole stack after an edit, bottom to top.
 	onChange: (stack: Placement[]) => void
 	onClose: () => void
@@ -71,6 +76,8 @@ export const StackDrawer = ({
 	monsters,
 	itemsLoading,
 	destinationPicker,
+	placements,
+	onPickTarget,
 	onChange,
 	onClose,
 }: StackDrawerProps) => {
@@ -95,6 +102,16 @@ export const StackDrawer = ({
 	const slotGroups = (selectedDef?.interactions ?? [])
 		.map((i) => ({ interaction: i, slots: customSlotsOf(i) }))
 		.filter((g) => g.slots.length > 0)
+	// "Oak at 3,4" for a REMOVE_OBJECT target, wherever it is on the map.
+	const describeTarget = (uid: string) => {
+		for (const [cell, list] of Object.entries(placements)) {
+			const p = list?.find((x) => x.uid === uid)
+			if (!p) continue
+			const name = placedDefs.get(defKey(p.defKind, p.defId))?.name
+			return `${name ?? 'Missing definition'} at ${cell}`
+		}
+		return '(missing from this zone)'
+	}
 	const names: SummaryContext = {
 		defName: (kind, id) => placedDefs.get(defKey(kind, id))?.name ?? id,
 	}
@@ -303,6 +320,10 @@ export const StackDrawer = ({
 													items={items}
 													spawnChoices={spawnChoices}
 													monsters={monsters}
+													describeTarget={describeTarget}
+													onPickTarget={() =>
+														onPickTarget(selected.uid, slot.slot)
+													}
 													itemsLoading={itemsLoading}
 												/>
 											) : (

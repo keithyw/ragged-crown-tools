@@ -188,6 +188,14 @@ export const ACTION_TYPES: ActionTypeConfig[] = [
 		summary: () => 'spawn a set encounter (set per placement)',
 	},
 	{
+		// Always set per placement: the target is picked on the placement.
+		type: 'REMOVE_OBJECT',
+		label: 'Remove an object (set per placement)',
+		fields: [],
+		blank: () => ({ type: 'REMOVE_OBJECT', custom: true }) as Action,
+		summary: () => 'remove an object in this zone (set per placement)',
+	},
+	{
 		type: 'TAKE_ITEM',
 		label: 'Take item (from the player)',
 		customizable: true,

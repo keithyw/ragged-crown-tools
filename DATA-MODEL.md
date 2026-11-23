@@ -323,7 +323,7 @@ Interactions can be **unlimited** (a generic NPC's "Hello and welcome to town X"
 
 ### 4.4 Initial actions
 
-`SHOW_DIALOG`, `GIVE_ITEM { itemId, amount?, qualifiers? }`, `TAKE_ITEM`, `GIVE_CURRENCY`, `SET_FLAG`, `SPAWN { defKind, defId, quantity?, qualifiers? }` (adds to this cell's stack at runtime), `SPAWN_MONSTER` (a barrier's set encounter, below), `REMOVE_SELF`, `TELEPORT { destination }`, `PLAY_SOUND`, `MODIFY_ATTRIBUTE`.
+`SHOW_DIALOG`, `GIVE_ITEM { itemId, amount?, qualifiers? }`, `TAKE_ITEM`, `GIVE_CURRENCY`, `SET_FLAG`, `SPAWN { defKind, defId, quantity?, qualifiers? }` (adds to this cell's stack at runtime), `SPAWN_MONSTER` (a barrier's set encounter, below), `REMOVE_SELF`, `REMOVE_OBJECT` (removes another object in the zone, below), `TELEPORT { destination }`, `PLAY_SOUND`, `MODIFY_ATTRIBUTE`.
 
 The engine implements them incrementally ([Game 2]). Fields not listed here are decided when each type is written.
 
@@ -370,6 +370,7 @@ An action's (or condition's) value can be left for each placement to fill in, so
 { type: 'TAKE_ITEM'; itemId; amount? } | { type: 'TAKE_ITEM'; custom: true; slot: string }
 { type: 'HAS_ITEM'; itemId; amount } | { type: 'HAS_ITEM'; custom: true; slot: string } // a condition
 { type: 'SPAWN_MONSTER'; custom: true; slot: string } // always custom, see below
+{ type: 'REMOVE_OBJECT'; custom: true; slot: string } // always custom, see below
 ```
 
 A placement fills the slots in with `customValues`, keyed by `slot`:
@@ -381,6 +382,7 @@ type CustomValue =
 	| { type: 'GIVE_ITEM'; itemId?: string; amount?: number; qualifiers?: Qualifiers }
 	| { type: 'SPAWN'; defKind?: Kind; defId?: string; quantity?: number; qualifiers?: Qualifiers }
 	| { type: 'SPAWN_MONSTER'; groups?: EncounterGroup[]; showAs?: number; hideSprite?: boolean }
+	| { type: 'REMOVE_OBJECT'; targetUid?: string }
 
 interface EncounterGroup {
 	defId: string // a monster def's _id
@@ -393,6 +395,10 @@ interface EncounterGroup {
 - `showAs` is an index into `groups`: the barrier is drawn with that group's monster (sprite, else glyph) instead of its own def. Absent, or `hideSprite: true` (absent = false, never stored `false`), and it keeps its own look, which is how a surprise encounter is made.
 - A **win** removes the barrier placement. A **flee** leaves it, so bumping it again restarts the fight (the monster's `removalChance` is [Combat 5]). The monsters exist only inside the fight, so nothing else is placed or removed.
 - Like any custom value, every field may be blank; the game skips a `SPAWN_MONSTER` with no groups.
+
+**Remove an object (`REMOVE_OBJECT`, owner, 2026-11-22, [Interactions 14]).** Removes **another** object placement in the same zone (`REMOVE_SELF` is the object itself): a quest giver that clears the trees blocking the way out of the starting zone once the quest item is handed over. Always custom, like `SPAWN_MONSTER`: the def says only "remove an object here", and the placement names the target by its placement **`uid`** (stable when the stack is reordered), one target per action (use the action again for more). Objects only, and only the **top** placement of a cell. The designer picks it by **clicking it on the map**, as for the starting position (a "Choose on map" button in the stack drawer closes the drawer, then reopens it on the original cell), so there is no list to scroll. The target is expected to exist: an unset or missing one is the engine's decision ([Game 5]; working assumption, the action is skipped). A target deleted later leaves a dangling `targetUid` ([Integrity 1]).
+
+**Messages on a talk are custom `SHOW_DIALOG` slots** (no separate custom hint, [Interactions 14]): the success interaction carries one for its flavor text, and an unconditional `TALK` fallback after it carries the one that says what the quest wants. A blank value shows nothing; there is no default message.
 
 Rules:
 

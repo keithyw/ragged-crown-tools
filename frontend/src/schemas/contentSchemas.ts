@@ -236,6 +236,20 @@ const spawnMonsterSchema = z
 		slot: a.slot ?? crypto.randomUUID(),
 	}))
 
+// Removes another object in the zone: always custom, the target is picked on
+// the placement.
+const removeObjectSchema = z
+	.object({
+		type: z.literal('REMOVE_OBJECT'),
+		custom: z.literal(true).optional(),
+		slot: z.string().min(1).optional(),
+	})
+	.transform((a): Extract<Action, { type: 'REMOVE_OBJECT' }> => ({
+		type: a.type,
+		custom: true as const,
+		slot: a.slot ?? crypto.randomUUID(),
+	}))
+
 export const characterStatSchema = z.enum([
 	'strength',
 	'dexterity',
@@ -336,6 +350,7 @@ export const actionSchema = z.discriminatedUnion('type', [
 	z.object({ type: z.literal('SET_FLAG'), flag: z.string().min(1) }),
 	spawnSchema,
 	spawnMonsterSchema,
+	removeObjectSchema,
 	z.object({ type: z.literal('REMOVE_SELF') }),
 	z.object({ type: z.literal('TELEPORT'), destination: destinationSchema }),
 	z.object({ type: z.literal('PLAY_SOUND'), sound: z.string().min(1) }),
@@ -517,6 +532,10 @@ export const customValueSchema = z.union([
 		defId: z.string().optional(),
 		quantity: amount.optional(),
 		qualifiers: qualifiersSchema.optional(),
+	}),
+	z.object({
+		type: z.literal('REMOVE_OBJECT'),
+		targetUid: z.string().min(1).optional(),
 	}),
 	z.object({
 		type: z.literal('SPAWN_MONSTER'),
