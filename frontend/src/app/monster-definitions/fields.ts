@@ -72,6 +72,13 @@ export const fields: FormField<MonsterDefinitionFormData>[] = [
 		options: DICE.map((d) => ({ value: d, label: `d${d}` })),
 	},
 	{
+		name: 'initiative',
+		label: 'Initiative (blank = 6): turn order base, 1d6 is added each round',
+		type: 'number',
+		inputWidth: 'xs',
+		inputAttrs: { min: 0, step: 1 },
+	},
+	{
 		name: 'numberAppearing.count',
 		label: 'Number appearing: number of dice (3d6 is 3)',
 		type: 'number',

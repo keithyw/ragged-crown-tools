@@ -489,6 +489,12 @@ export const monsterDefSchema = baseDefSchema.extend({
 		.min(0, 'Cannot be negative')
 		.max(100, 'At most 100'),
 	damage: randomRollSchema,
+	// Absent reads as 6 in the game (owner, 2026-11-24).
+	initiative: z
+		.number({ error: 'Initiative must be a number' })
+		.int('Initiative must be a whole number')
+		.min(0, 'Cannot be negative')
+		.optional(),
 	numberAppearing: randomRollSchema,
 	isUnique: z.boolean().optional(),
 }) satisfies z.ZodType<MonsterDef>

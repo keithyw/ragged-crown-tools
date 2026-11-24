@@ -68,7 +68,7 @@ The legacy category types that used to be in `map.ts` (`TileType`, `TileType2`, 
 | `item`     | `items`     | `weight`, `maxQuantity?`, `numberOfUses?`, `isQuestItem?`, `container?`, `interactions?` (reserved for item use, deferred). `category` is deferred |
 | `weapon`   | `items`     | The item core (`weight`, `maxQuantity?`, `numberOfUses?`, `isQuestItem?`, `interactions?`, no `container`) plus `type`, `damage`, `isTwoHanded?`, `isMissile?`, `isThrown?` (below) |
 | `armor`    | `items`     | The item core plus `type` (the slot it is worn in) and `defenseValue` (below) |
-| `monster`  | `monsters`  | `level`, `hp`, `defenseValue`, `damage`, `removalChance`, `numberAppearing`, `isUnique?` (below) |
+| `monster`  | `monsters`  | `level`, `hp`, `defenseValue`, `damage`, `removalChance`, `initiative?`, `numberAppearing`, `isUnique?` (below) |
 | `portal`   | `entities`  | `twoWay`, `interactions?`: always walkable; its destination is set per placement     |
 
 `entities` holds several kinds and is filtered by `kind` on the server ([Backend 2]).
@@ -112,6 +112,7 @@ Entering a town, castle or dungeon normally lands the player on its `startingPos
 - **`level`**: whole number, 0 or more. **`hp`**: a set number (1 or more), not dice. **`defenseValue`**: whole number, 0 or more, no ceiling, the same name as on armor; how it is used in a hit is [Combat 10].
 - **`damage`** ([Monsters 7]): the monster's base damage per hit, as dice (a `RandomRoll`, the same shape and name as a weapon's `damage`): 1d4 is `{ count: 1, die: 4 }`. Required. There is no to-hit roll in milestone 2 ([Combat 10]), so every attack hits for this roll. Bonuses, damage types and special attacks come later.
 - **`removalChance`**: whole number, 0 to 100, the percentage roll for the monster **leaving** after the party flees ([Combat 5]). A quest boss is 0 (it never leaves, so the quest can't become unsolvable); trivial bandits about 85; a dragon about 25.
+- **`initiative`** ([Monsters 9], owner, 2026-11-24): optional whole number, 0 or more; absent reads as 6. Monsters have no attributes, so this is the base of their place in the turn order: each round the game adds 1d6 to it, once per monster ([Combat 17]). Characters start from the same 6 and add their speed, gear and a 1d6.
 - **`numberAppearing`**: how many appear, as dice (a `RandomRoll`, `{ count, die }`, the same shape as a weapon's `damage`): 3d6 goblins. A placement or group can set its own number instead ([Combat 11]).
 - **`isUnique`**: absent = false. A unique monster (a boss) only ever appears as one, and the game ignores `numberAppearing`. There is no rarity field.
 - **No attributes and no gear.** XP, currency, loot tables ([Combat 2]) and special abilities come later.
