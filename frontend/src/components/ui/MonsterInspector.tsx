@@ -20,6 +20,7 @@ export const MonsterInspector = ({
 		{ key: 'Defense', val: monster.defenseValue.toString() },
 		{ key: 'Damage', val: `${monster.damage.count}d${monster.damage.die}` },
 		{ key: 'Initiative', val: (monster.initiative ?? 6).toString() },
+		{ key: 'XP', val: monster.xp.toString() },
 		{ key: 'Removal chance', val: `${monster.removalChance}%` },
 		{
 			key: 'Number appearing',

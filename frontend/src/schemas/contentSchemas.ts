@@ -495,6 +495,12 @@ export const monsterDefSchema = baseDefSchema.extend({
 		.int('Initiative must be a whole number')
 		.min(0, 'Cannot be negative')
 		.optional(),
+	// Required, no default: the scale depends on the monster and the zone
+	// it lives in ([Monsters 8]).
+	xp: z
+		.number({ error: 'XP must be a number' })
+		.int('XP must be a whole number')
+		.min(0, 'Cannot be negative'),
 	numberAppearing: randomRollSchema,
 	isUnique: z.boolean().optional(),
 }) satisfies z.ZodType<MonsterDef>

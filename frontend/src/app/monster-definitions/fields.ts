@@ -79,6 +79,14 @@ export const fields: FormField<MonsterDefinitionFormData>[] = [
 		inputAttrs: { min: 0, step: 1 },
 	},
 	{
+		name: 'xp',
+		label: 'XP (0 or more): experience for beating one',
+		type: 'number',
+		required: true,
+		inputWidth: 'xs',
+		inputAttrs: { min: 0, step: 1 },
+	},
+	{
 		name: 'numberAppearing.count',
 		label: 'Number appearing: number of dice (3d6 is 3)',
 		type: 'number',

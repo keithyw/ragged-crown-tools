@@ -73,6 +73,7 @@ export interface MonsterDef extends BaseDef {
 	removalChance: number // 0 to 100: the chance it leaves after the party flees
 	damage: RandomRoll // base damage when it hits, as on a weapon
 	initiative?: number // base for the turn order, 1d6 is added each round; absent = 6
+	xp: number // experience for beating it, a set whole number; no default
 	numberAppearing: RandomRoll
 	isUnique?: boolean // absent = false. Only ever one; numberAppearing is ignored
 }
