@@ -53,6 +53,7 @@ const EditMonsterDefinitionPage = () => {
 				initiative: m.initiative,
 				xp: m.xp,
 				rarity: m.rarity,
+				terrainIds: m.terrainIds ?? [],
 				numberAppearing: m.numberAppearing,
 				isUnique: m.isUnique ?? false,
 			}),

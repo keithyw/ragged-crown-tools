@@ -706,6 +706,7 @@ async function checkReferences(doc: unknown) {
 	const def = doc as {
 		kind?: string
 		spriteId?: string
+		terrainIds?: string[]
 		interactions?: { conditions?: Loose[]; actions: Loose[] }[]
 	}
 	if (!def.kind || !(def.kind in COLLECTION_BY_KIND)) return
@@ -735,6 +736,16 @@ async function checkReferences(doc: unknown) {
 			what: 'sprite',
 		})
 	}
+	// A monster's terrains ([Monsters 11]).
+	def.terrainIds?.forEach((_id, i) => {
+		refs.push({
+			path: `terrainIds.${i}`,
+			collection: 'tile_defs',
+			_id,
+			what: 'terrain',
+			kind: 'terrain',
+		})
+	})
 	def.interactions?.forEach((it, i) => {
 		it.conditions?.forEach((c, j) => {
 			if (c.type === 'HAS_ITEM' && c.itemId) {

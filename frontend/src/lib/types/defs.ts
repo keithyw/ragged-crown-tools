@@ -80,6 +80,7 @@ export interface MonsterDef extends BaseDef {
 	xp: number // experience for beating it, a set whole number; no default
 	rarity: MonsterRarity // how often it turns up in random encounters; no default
 	numberAppearing: RandomRoll
+	terrainIds?: string[] // terrain defs (_id) it can turn up on in the open world; absent = none
 	isUnique?: boolean // absent = false. Only ever one; numberAppearing is ignored
 }
 

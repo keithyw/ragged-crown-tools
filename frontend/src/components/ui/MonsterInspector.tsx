@@ -1,7 +1,8 @@
 'use client'
 
 import { Button, TileDetails, TileGlyph } from '@/components'
-import { MonsterDef } from '@/lib/types'
+import { useCollection } from '@/hooks'
+import { MonsterDef, TileDef } from '@/lib/types'
 
 interface MonsterInspectorProps {
 	monster: MonsterDef
@@ -14,6 +15,10 @@ export const MonsterInspector = ({
 	onEdit,
 	onDelete,
 }: MonsterInspectorProps) => {
+	const { items: terrains, isLoading } = useCollection<TileDef>('tile_defs')
+	const terrainNames = (monster.terrainIds ?? []).map(
+		(_id) => terrains.find((t) => t._id === _id)?.name ?? '(missing)',
+	)
 	const details = [
 		{ key: 'Level', val: monster.level.toString() },
 		{ key: 'HP', val: monster.hp.toString() },
@@ -28,6 +33,14 @@ export const MonsterInspector = ({
 			val: monster.isUnique
 				? 'One (unique)'
 				: `${monster.numberAppearing.count}d${monster.numberAppearing.die}`,
+		},
+		{
+			key: 'Terrains',
+			val: isLoading
+				? '...'
+				: terrainNames.length > 0
+					? terrainNames.join(', ')
+					: 'None',
 		},
 		{ key: 'Description', val: monster.description ?? '-' },
 	]

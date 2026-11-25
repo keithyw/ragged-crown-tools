@@ -32,6 +32,9 @@ type refSource struct {
 var referenceSources = map[string][]refSource{
 	"tile_defs": {
 		{"zones", "terrain"},
+		// the terrains a monster can turn up on ([Monsters 11]); equality on an
+		// array field matches any element
+		{"monsters", "terrainIds"},
 	},
 	"sprites": {
 		{"tile_defs", "spriteId"},

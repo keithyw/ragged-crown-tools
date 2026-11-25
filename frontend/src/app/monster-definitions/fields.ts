@@ -87,6 +87,11 @@ export const fields: FormField<MonsterDefinitionFormData>[] = [
 		inputAttrs: { min: 0, step: 1 },
 	},
 	{
+		name: 'terrainIds',
+		label: 'Terrains it can appear on in the open world',
+		type: 'terrains',
+	},
+	{
 		name: 'rarity',
 		label: 'Rarity: how often it turns up in random encounters',
 		type: 'select',

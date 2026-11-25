@@ -8,6 +8,7 @@ import {
 	SelectDropdown,
 	SpritePicker,
 	SwitchInput,
+	TerrainPicker,
 	TextareaInput,
 	TextInput,
 } from '@/components'
@@ -113,6 +114,27 @@ export const FormInput = <
 								label={field.label}
 								category={field.spriteCategory!}
 								value={cf.value as string | undefined}
+								onChange={cf.onChange}
+							/>
+							<InputErrorMessage errorMessage={errorMessage as string} />
+						</>
+					)}
+				/>
+			)
+		case 'terrains':
+			if (!control) {
+				console.error('Control is required')
+				return null
+			}
+			return (
+				<Controller
+					name={field.name as Path<T>}
+					control={control}
+					render={({ field: cf }) => (
+						<>
+							<TerrainPicker
+								label={field.label}
+								value={(cf.value as string[] | undefined) ?? []}
 								onChange={cf.onChange}
 							/>
 							<InputErrorMessage errorMessage={errorMessage as string} />

@@ -504,6 +504,12 @@ export const monsterDefSchema = baseDefSchema.extend({
 	// Required, no default: every monster gets a deliberate tier ([Monsters 10]).
 	rarity: z.enum(MONSTER_RARITIES, { error: 'Choose a rarity' }),
 	numberAppearing: randomRollSchema,
+	// An empty list is stored as absent, like the other optional fields
+	// ([Monsters 11]). The MCP checks each one is a terrain that exists.
+	terrainIds: z
+		.array(z.string())
+		.transform((v) => (v.length > 0 ? v : undefined))
+		.optional(),
 	isUnique: z.boolean().optional(),
 }) satisfies z.ZodType<MonsterDef>
 

@@ -28,6 +28,7 @@ const CreateMonsterDefinitionPage = () => {
 			removalChance: 0,
 			damage: { count: 1 },
 			numberAppearing: { count: 1 },
+			terrainIds: [],
 			isUnique: false,
 			description: '',
 		},
