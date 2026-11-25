@@ -122,7 +122,7 @@ Entering a town, castle or dungeon normally lands the player on its `startingPos
 
 A non-combat NPC, such as a townsperson or a friendly gold dragon quest giver, is not a monster: it is a solid **object** with interactions (dialog when bumped).
 
-**Terrain has no interactions.** Its only behavior beyond movement is the chance of a random encounter, from its `encounterRate` and an encounter table chosen by the region's difficulty (zone `difficultyLevel`) and the terrain. A dirt road in a low-level zone gives rats, deer or goblins; the same road in Hell gives demons.
+**Terrain has no interactions.** Its only behavior beyond movement is the chance of a random encounter, its `encounterRate`. Which monsters can appear is decided by the monsters' own `terrainIds` and the zone's difficulty, in a zone set to `terrain` encounters (section 2.5). A dirt road in a low-level zone gives rats, deer or goblins; the same road in Hell gives demons.
 
 **Terrain code (`code`, owner, 2026-11-10).** A short key for writing a zone's terrain as a grid instead of 256 long `_id`s ([Terrain 1], [Infra 23]): exactly two lowercase letters or digits (`gr` grass, `sw` swamp), unique across `tile_defs` (index `code_unique`). Typed uppercase, it is stored lowercase. It is not the `id` (that stays the full-word label and the promotion key) and not the glyph (shown when there is no sprite). Optional in the schema so older defs still validate; every terrain in the game's set gets one. Stored zones still hold `_id`s. Tools only for now, not in the shared types.
 
@@ -180,6 +180,7 @@ interface Zone {
 	name: string
 	dimensions?: { width: number; height: number }
 	difficultyId: string // a difficulty configuration's _id (below)
+	randomEncounters?: 'none' | 'terrain' | 'config' // absent = none, section 2.5
 	startingPosition?: Position
 	terrain: string[][] // terrain def _ids, indexed [y][x]
 	placements?: Record<CellKey, Placement[]>
@@ -187,7 +188,7 @@ interface Zone {
 }
 ```
 
-- **`difficultyId`** (owner, 2026-11-19, [Tools 26]) points at a **difficulty configuration** (`difficulty_configs`, [Tools 25]), which holds the `level` the player sees (whole number, 0 or more, no upper limit; 0 means no random encounters) and per-group material tables for rolled weapons and armor. Several zones can share one. It replaces the zone's own `difficultyLevel`; there is no copy of the number on the zone. Tools-side editing is under Zone, Difficulty.
+- **`difficultyId`** (owner, 2026-11-19, [Tools 26]) points at a **difficulty configuration** (`difficulty_configs`, [Tools 25]), which holds the `level` the player sees (whole number, 0 or more, no upper limit; it limits which monsters random encounters can pick, section 2.5) and per-group material tables for rolled weapons and armor. Several zones can share one. It replaces the zone's own `difficultyLevel`; there is no copy of the number on the zone. Tools-side editing is under Zone, Difficulty.
 - **`terrain`** is unchanged: rows of terrain `_id`s, indexed `[y][x]`.
 - **`placements`** is the layer of things on top of terrain. It is sparse (only cells that have something) and each cell's array is ordered **bottom to top**.
 - **`CellKey`** is `"x,y"` (x first, no spaces). It is only ever built with the `cellKey(x, y)` helper, so `"x, y"` / `"y,x"` drift cannot happen.
@@ -222,6 +223,7 @@ interface ZoneSpec {
 	width: number // 1 to 16; the form defaults to 16
 	height: number // 1 to 16; the form defaults to 16
 	difficultyId: string // a difficulty configuration's _id, as on a zone
+	randomEncounters?: 'none' | 'terrain' | 'config' // as on a zone; absent = none (section 2.5)
 	description: string // a pseudo prompt: the general idea of the zone
 	status: 'pending' | 'processed' // defaults to pending
 }
@@ -241,6 +243,19 @@ A generated zone carries a **review state**, the same idea as a sprite's ([Skill
 These are **tools only**, like the sprite's: the type is `ReviewedZone` in `lib/types/zoneReview.ts`, not in the shared types (`lib/types/shared.ts`), so the game's `Zone` is unchanged and ignores the two fields. The zone skill writes `review`; the owner approves from the zone review page or sends a zone back from the zone's inspector in the builder; a redo round replaces the same zone (same `_id`, `id` and unchanged placement `uid`s) and sets it back to `review`.
 
 - **Specs are easy to rebuild.** Losing the sandbox's copies to `make sandbox-refresh` is acceptable. Keeping them is useful as a record of what worked, not as content.
+
+### 2.5 Random encounters per zone
+
+_Decided 2026-11-25 ([Combat 23], [Combat 8])._ A zone says where its random encounters come from with one setting, `randomEncounters`:
+
+- **`none`**: no random encounters. A walk over a space never rolls one. Set encounters (barriers, placed monsters) still work. **This is the default**: an absent field reads as `none`, so existing zones need no migration and a new town has none. The forms and a zone spec fill in `none` explicitly when saved; both stored forms mean the same.
+- **`terrain`**: the open world. The terrain stepped on rolls its `encounterRate`; if it passes, the game picks from the monsters whose `terrainIds` hold that terrain and whose level fits the zone's difficulty ([Monsters 11]). An outdoor zone with water, forest and plains gets sharks near water and spiders in the forest.
+- **`config`**: the zone's difficulty configuration decides. Its chance rolls, and the monster pool on the configuration supplies the candidates ([Tools 27]). Used for a dungeon, or any zone with its own set of monsters (an underwater zone with sea elves and a dragon turtle). **"Dungeon" is not a field**: the setting is named for what it points at.
+- In both modes `isUnique` monsters are never candidates, the odds come from `rarity` ([Monsters 10]), and group size is the def's `numberAppearing`.
+- **The zone's difficulty level no longer means "no encounters" at 0.** `none` is how encounters are turned off; level 0 now only limits which monsters can be drawn (a level 0-1 starting zone gets rats and goblins).
+- **A zone that can't produce an encounter produces none** (an empty pool, no monster for the terrain, a level that excludes everyone). The game doesn't force one, and the tools don't warn: the designer play tests the zone and adjusts the tables (owner, 2026-11-25).
+- **Zone specs carry the setting too**, so asking for a town gets a zone with `none` ([Tools 29]). A spec still needs a difficulty configuration ready; having the AI generate one is later work.
+- `moveCost` and `isWalkable` are not touched: terrain effects beyond encounters are a separate system (time) and out of scope.
 
 ---
 

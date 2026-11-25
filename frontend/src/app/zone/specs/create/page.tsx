@@ -18,6 +18,7 @@ const defaultValues: ZoneSpecFormData = {
 	width: MAX_ZONE_SIZE,
 	height: MAX_ZONE_SIZE,
 	difficultyId: '',
+	randomEncounters: 'none',
 	description: '',
 	status: 'pending', // not a visible field, but submitted with the form
 }

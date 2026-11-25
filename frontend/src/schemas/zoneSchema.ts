@@ -1,4 +1,6 @@
 import { z } from 'zod'
+// Relative, not '@/': the MCP runs this file through tsx (ARCHITECTURE.md 6.1).
+import { RANDOM_ENCOUNTERS } from '../lib/constants/encounters'
 import type { Zone } from '@/lib/types'
 import { ZONE_STATUSES } from '../lib/types/zoneReview'
 import { placementSchema, positionSchema } from './contentSchemas'
@@ -18,6 +20,8 @@ const zoneBaseSchema = z.object({
 	name: z.string().trim().min(1, 'Name is required'),
 	// A difficulty configuration's _id.
 	difficultyId: z.string().min(1, 'Pick a difficulty'),
+	// Absent reads as 'none' ([Tools 29]).
+	randomEncounters: z.enum(RANDOM_ENCOUNTERS).optional(),
 	// Tile _ids, indexed [y][x]
 	terrain: z
 		.array(z.array(z.string().min(1)).min(1))
@@ -82,6 +86,7 @@ export const zoneDetailsSchema = zoneBaseSchema.pick({
 	id: true,
 	name: true,
 	difficultyId: true,
+	randomEncounters: true,
 })
 
 export type ZoneDetailsFormData = z.infer<typeof zoneDetailsSchema>

@@ -1,3 +1,4 @@
+export * from './encounters'
 export * from './errors'
 export * from './gear'
 export * from './monsters'

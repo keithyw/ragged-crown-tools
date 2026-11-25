@@ -74,11 +74,15 @@ export interface MoveResult {
 	blockReason?: string
 }
 
+// Where a zone's random encounters come from (DATA-MODEL.md 2.5).
+export type RandomEncounters = 'none' | 'terrain' | 'config'
+
 export interface Zone {
 	id: string
 	name: string
 	dimensions?: { width: number; height: number }
 	difficultyId: string // a difficulty configuration's _id; it holds the level ([Tools 26])
+	randomEncounters?: RandomEncounters // absent = none ([Tools 29])
 	startingPosition?: Position
 	terrain: string[][] // terrain def _ids, indexed [y][x]
 	placements?: Partial<Record<CellKey, Placement[]>> // each cell bottom to top

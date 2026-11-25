@@ -9,7 +9,7 @@ import {
 	SpinnerSection,
 } from '@/components'
 import { useCollection, useDeleteRecord } from '@/hooks'
-import { URLS } from '@/lib/constants'
+import { RANDOM_ENCOUNTER_LABELS, URLS } from '@/lib/constants'
 import { collectionService, StoredDoc } from '@/lib/services'
 import {
 	DifficultyConfig,
@@ -32,6 +32,10 @@ const specColumns = (
 			const d = difficulties.find((c) => c._id === s.difficultyId)
 			return d ? `${d.name} (level ${d.level})` : 'missing'
 		},
+	},
+	{
+		header: 'Encounters',
+		render: (s) => RANDOM_ENCOUNTER_LABELS[s.randomEncounters ?? 'none'],
 	},
 	{ header: 'Status', accessor: 'status' },
 ]

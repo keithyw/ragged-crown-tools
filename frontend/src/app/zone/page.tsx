@@ -9,7 +9,7 @@ import {
 	SpinnerSection,
 } from '@/components'
 import { useCollection, useDeleteRecord } from '@/hooks'
-import { URLS } from '@/lib/constants'
+import { RANDOM_ENCOUNTER_LABELS, URLS } from '@/lib/constants'
 import { collectionService, StoredDoc } from '@/lib/services'
 import {
 	DifficultyConfig,
@@ -39,6 +39,10 @@ const zoneColumns = (
 			const d = difficulties.find((c) => c._id === z.difficultyId)
 			return d ? `${d.name} (level ${d.level})` : 'missing'
 		},
+	},
+	{
+		header: 'Encounters',
+		render: (z) => RANDOM_ENCOUNTER_LABELS[z.randomEncounters ?? 'none'],
 	},
 	// Only generated zones have a review status.
 	{ header: 'Status', render: (z) => z.status ?? '' },

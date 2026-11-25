@@ -1,3 +1,4 @@
+import { RANDOM_ENCOUNTER_LABELS, RANDOM_ENCOUNTERS } from '@/lib/constants'
 import type { StoredDoc } from '@/lib/services'
 import type { DifficultyConfig, FormField } from '@/lib/types'
 import { MAX_ZONE_SIZE, MIN_ZONE_SIZE } from '@/lib/utils'
@@ -42,6 +43,15 @@ export const fields: FormField<ZoneSpecFormData>[] = [
 		required: true,
 		type: 'select',
 		placeholder: 'Pick a difficulty',
+	},
+	{
+		name: 'randomEncounters',
+		label: 'Random encounters (none for a town)',
+		type: 'select',
+		options: RANDOM_ENCOUNTERS.map((v) => ({
+			value: v,
+			label: RANDOM_ENCOUNTER_LABELS[v],
+		})),
 	},
 	{
 		name: 'description',

@@ -11,7 +11,7 @@ This skill is deliberately loose. The owner doesn't yet know what can be generat
 
 ## Input
 
-A document in `zone_specs` (`list_collection`, `filters: { status: "pending" }`, or by `id`): `id`, `name`, `width`, `height`, `difficultyId`, `description` (free text: the idea of the zone), `status`. The zone takes the **spec's `id`, name and `difficultyId`** (a difficulty configuration's `_id`; it holds the level and the material tables, [Tools 25], [Tools 26]), and the size is the size of `terrain`. Copy `difficultyId` as it is. Don't create a configuration: if the spec's is missing, say so and stop (the MCP refuses a `difficultyId` that doesn't exist). Read configurations with `list_collection` on `difficulty_configs`. Work on one spec at a time.
+A document in `zone_specs` (`list_collection`, `filters: { status: "pending" }`, or by `id`): `id`, `name`, `width`, `height`, `difficultyId`, `randomEncounters`, `description` (free text: the idea of the zone), `status`. The zone takes the **spec's `id`, name and `difficultyId`** (a difficulty configuration's `_id`; it holds the level and the material tables, [Tools 25], [Tools 26]), and the size is the size of `terrain`. Copy `difficultyId` as it is. Don't create a configuration: if the spec's is missing, say so and stop (the MCP refuses a `difficultyId` that doesn't exist). Read configurations with `list_collection` on `difficulty_configs`. **Copy `randomEncounters` too** (`none`, `terrain` or `config`; absent reads as `none`, [Tools 29]): it says where the zone's random encounters come from, and the owner sets it when asking (a town is `none`). Never choose one yourself, and say in the report what the spec asked for. Work on one spec at a time.
 
 ## Process
 
@@ -27,7 +27,7 @@ A document in `zone_specs` (`list_collection`, `filters: { status: "pending" }`,
 
 ```json
 {
-  "id": "SMALL_HUT", "name": "small hut", "difficultyId": "<the spec's difficultyId>",
+  "id": "SMALL_HUT", "name": "small hut", "difficultyId": "<the spec's difficultyId>", "randomEncounters": "<the spec's value>",
   "startingPosition": { "x": 3, "y": 6 },
   "status": "review",
   "terrainRows": ["wf wf wf", "wf wf wf"],

@@ -1,6 +1,7 @@
 import { z } from 'zod'
 // Relative, and not the barrels, on purpose: the MCP runs schema files through
 // tsx, which can't resolve a runtime `@/` import (ARCHITECTURE.md 6.1).
+import { RANDOM_ENCOUNTERS } from '../lib/constants/encounters'
 import { ZONE_SPEC_STATUSES, type ZoneSpec } from '../lib/types/zoneSpec'
 import { MAX_ZONE_SIZE, MIN_ZONE_SIZE } from '../lib/utils/Zonegrid'
 
@@ -24,6 +25,8 @@ export const zoneSpecSchema = z.object({
 	width: zoneSize,
 	height: zoneSize,
 	difficultyId: z.string().min(1, 'Pick a difficulty'),
+	// A spec for a town asks for 'none' ([Tools 29]).
+	randomEncounters: z.enum(RANDOM_ENCOUNTERS).default('none'),
 	description: z.string().trim().min(1, 'Description is required'),
 	status: z.enum(ZONE_SPEC_STATUSES).default('pending'),
 }) satisfies z.ZodType<ZoneSpec>
