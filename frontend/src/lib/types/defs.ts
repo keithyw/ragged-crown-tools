@@ -63,6 +63,11 @@ export interface ItemDef extends CarriedDef {
 	container?: ContainerSpec
 }
 
+// How common a monster is in random encounters, most common first
+// (DATA-MODEL.md 1.3, [Monsters 10]). The weights are the game's.
+export type MonsterRarity =
+	'common' | 'uncommon' | 'scarce' | 'rare' | 'very rare' | 'ultra rare'
+
 // Monsters (DATA-MODEL.md 1.3): solid, placed in a zone and bumped to fight,
 // or spawned at runtime. No attributes and no gear. Stored in monsters.
 export interface MonsterDef extends BaseDef {
@@ -74,6 +79,7 @@ export interface MonsterDef extends BaseDef {
 	damage: RandomRoll // base damage when it hits, as on a weapon
 	initiative?: number // base for the turn order, 1d6 is added each round; absent = 6
 	xp: number // experience for beating it, a set whole number; no default
+	rarity: MonsterRarity // how often it turns up in random encounters; no default
 	numberAppearing: RandomRoll
 	isUnique?: boolean // absent = false. Only ever one; numberAppearing is ignored
 }

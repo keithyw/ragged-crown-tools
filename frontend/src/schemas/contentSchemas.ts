@@ -8,6 +8,7 @@ import {
 	WEAPON_MATERIALS,
 	WEAPON_TYPES,
 } from '../lib/constants/gear'
+import { MONSTER_RARITIES } from '../lib/constants/monsters'
 import type {
 	Action,
 	ArmorDef,
@@ -501,6 +502,8 @@ export const monsterDefSchema = baseDefSchema.extend({
 		.number({ error: 'XP must be a number' })
 		.int('XP must be a whole number')
 		.min(0, 'Cannot be negative'),
+	// Required, no default: every monster gets a deliberate tier ([Monsters 10]).
+	rarity: z.enum(MONSTER_RARITIES, { error: 'Choose a rarity' }),
 	numberAppearing: randomRollSchema,
 	isUnique: z.boolean().optional(),
 }) satisfies z.ZodType<MonsterDef>

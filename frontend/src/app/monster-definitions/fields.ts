@@ -1,5 +1,5 @@
 import { glyphFields } from '@/components'
-import { DICE } from '@/lib/constants'
+import { DICE, MONSTER_RARITIES } from '@/lib/constants'
 import type { FormField } from '@/lib/types'
 import type { MonsterDefinitionFormData } from '@/schemas'
 
@@ -85,6 +85,17 @@ export const fields: FormField<MonsterDefinitionFormData>[] = [
 		required: true,
 		inputWidth: 'xs',
 		inputAttrs: { min: 0, step: 1 },
+	},
+	{
+		name: 'rarity',
+		label: 'Rarity: how often it turns up in random encounters',
+		type: 'select',
+		required: true,
+		placeholder: 'Choose a rarity',
+		options: MONSTER_RARITIES.map((r) => ({
+			value: r,
+			label: r.charAt(0).toUpperCase() + r.slice(1),
+		})),
 	},
 	{
 		name: 'numberAppearing.count',

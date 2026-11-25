@@ -52,6 +52,7 @@ const EditMonsterDefinitionPage = () => {
 				damage: m.damage,
 				initiative: m.initiative,
 				xp: m.xp,
+				rarity: m.rarity,
 				numberAppearing: m.numberAppearing,
 				isUnique: m.isUnique ?? false,
 			}),

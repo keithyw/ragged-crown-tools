@@ -12,7 +12,7 @@ A monster is something the party fights. It is placed on the map like other defs
 - Collection: **`monsters`**, `kind: "monster"`. It is its own collection, not `entities`.
 - Sprite category: `monster`.
 - Batch cap: the default, 10.
-- Extra proposal columns: `level`, `hp`, `defenseValue`, `damage` (`1d4`), `removalChance`, `initiative`, `xp`, `numberAppearing` (`2d4`), whether it is unique, and the sprite plan.
+- Extra proposal columns: `level`, `hp`, `defenseValue`, `damage` (`1d4`), `removalChance`, `initiative`, `xp`, `rarity`, `numberAppearing` (`2d4`), whether it is unique, and the sprite plan.
 - Sandbox UI page: Monster Definitions.
 
 ## Monster, object or item?
@@ -34,6 +34,7 @@ A monster is what the party **fights**. A townsperson, a guard who only talks, o
   "removalChance": 85,
   "initiative": 6,
   "xp": 0,
+  "rarity": "common",
   "numberAppearing": { "count": 2, "die": 4 }
 }
 ```
@@ -45,8 +46,9 @@ A monster is what the party **fights**. A townsperson, a guard who only talks, o
 - `removalChance`: **required**, a whole number from 0 to 100: the percentage chance the monster **leaves** after the party flees. 0 means it never leaves (a quest boss, so a quest can't become unsolvable); about 85 for trivial things (bandits, rats); about 25 for something major (a dragon). Use the starting value, say it is a guess, and always say what 0 does.
 - `initiative`: optional whole number, 0 or more; absent reads as 6 in the game. **Send it anyway** (the owner wants every monster to carry one). It is the base of the monster's place in the turn order: each round the game adds 1d6, and a character starts from 6 plus speed and gear. 6 is an average monster, higher acts earlier. The starting values below are all 6 and a guess; say so.
 - `xp`: **required**, a set whole number, 0 or more ([Monsters 8]). What beating **one** of this monster is worth; the game sums it over the encounter and divides it among the party. **There is no default**, and it is not flat per zone: a rat is worth less than a goblin, a boss a little more than an average goblin, so it follows the monster's own level, hp, defense and damage and the zone's difficulty. The scale is not settled (owner, 2026-11-24: assigned per monster, not a formula from level or zone; rat 4, goblin 6, a wine cellar boss 10; difficulty and monster level only suggest a range). Propose a value per monster, say it is a guess, and don't copy one monster's number onto another.
+- `rarity`: **required**, one of `common`, `uncommon`, `scarce`, `rare`, `very rare`, `ultra rare` ([Monsters 10]); no default. How often it turns up in **random** encounters (the game turns the tier into odds). Set encounters ignore it. The starting values below are guesses; say so. The tier names are provisional.
 - `numberAppearing`: **required**, dice in the same shape as a weapon's damage: `count` a whole number, 1 or more; `die` one of 4, 6, 8, 10, 12, 20, 100. So 3d6 is `{ "count": 3, "die": 6 }`. This is how many can appear together (rats and goblins come in numbers; a dragon is rare). A placement or encounter group can set its own number instead; that is not stored here.
-- `isUnique`: only when the owner says the monster is a one-off (a named boss, a dragon). Send `true` only, **never `false`** (absent means false). A unique monster only ever appears as one, and the game ignores `numberAppearing`, but **the field is still required**: send a small plausible value (`1d4` is fine) and say it is ignored. There is no rarity field and no boss flag.
+- `isUnique`: only when the owner says the monster is a one-off (a named boss, a dragon). Send `true` only, **never `false`** (absent means false). A unique monster only ever appears as one, and the game ignores `numberAppearing`, but **the field is still required**: send a small plausible value (`1d4` is fine) and say it is ignored. A unique monster never appears in random encounters, so its rarity is only a placeholder (`rare` or `ultra rare` is fine); there is no boss flag.
 - Not part of a monster: attributes, gear, interactions, currency, loot, abilities (breath, poison, drain, spells), special attacks, speed. Don't send them and don't hide them in the description.
 
 ## What makes two monsters different defs
@@ -57,13 +59,13 @@ A def is the **base monster**. Two defs earn their places by differing in someth
 
 Reference, not rules: show them in the proposal for the owner to correct. Level and hp for goblin, giant spider and road bandit come from the game's old `monster.json` (now retired); everything else is a guess.
 
-| Monster | level | hp | defenseValue | damage | removalChance | initiative | xp | numberAppearing |
-| --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| Rat | 0 | 2 | 0 | 1d4 | 85 | 6 | 4 | 2d6 |
-| Goblin | 1 | 6 | 1 | 1d6 | 85 | 6 | 6 | 2d4 |
-| Giant spider | 1 | 8 | 1 | 1d6 | 60 | 6 | 7 | 1d4 |
-| Orc | 2 | 12 | 2 | 1d8 | 60 | 6 | 10 | 2d4 |
-| Road bandit | 2 | 14 | 2 | 1d6 | 85 | 6 | 9 | 1d6 |
+| Monster | level | hp | defenseValue | damage | removalChance | initiative | xp | rarity | numberAppearing |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| Rat | 0 | 2 | 0 | 1d4 | 85 | 6 | 4 | common | 2d6 |
+| Goblin | 1 | 6 | 1 | 1d6 | 85 | 6 | 6 | common | 2d4 |
+| Giant spider | 1 | 8 | 1 | 1d6 | 60 | 6 | 7 | uncommon | 1d4 |
+| Orc | 2 | 12 | 2 | 1d8 | 60 | 6 | 10 | uncommon | 2d4 |
+| Road bandit | 2 | 14 | 2 | 1d6 | 85 | 6 | 9 | uncommon | 1d6 |
 
 ## Never put these in the data
 
