@@ -1,7 +1,8 @@
 // Difficulty configurations: what a zone's random things draw from (DATA-MODEL.md 2,
 // Trello [Tools 25]). A zone points at one by `_id` ([Tools 26]). Shared with the game
-// (listed in shared.ts): types only. This iteration holds the material tables; the
-// level number, encounter and drop tables come with later cards.
+// (listed in shared.ts): types only. Material tables, the level, and the
+// monster pool and encounter chance for random encounters; drop tables come
+// with a later card.
 
 import type {
 	ArmorGroup,
@@ -25,8 +26,16 @@ export interface DifficultyConfig {
 	name: string
 	description?: string
 	// What the player sees as the zone's difficulty; a whole number, 0 or more,
-	// no upper limit ([Tools 26]). 0 means no random encounters (towns).
+	// no upper limit ([Tools 26]). It limits which monsters random encounters
+	// can pick; whether a zone has random encounters at all is the zone's
+	// `randomEncounters` (DATA-MODEL.md 2.5).
 	level: number
+	// For a zone set to `config` encounters ([Tools 27]): the percentage chance
+	// (0 to 100) that a step starts a random encounter, and the monsters one
+	// can draw from (monster `_id`s; never unique ones). Absent = none; odds
+	// within the pool come from each monster's rarity.
+	encounterChance?: number
+	monsterIds?: string[]
 	// Weapons and armor have separate material lists ([Inventory 33]). A group
 	// that isn't filled in isn't used by this configuration; what an item of a
 	// missing group gets is the engine's decision ([Game 23]).

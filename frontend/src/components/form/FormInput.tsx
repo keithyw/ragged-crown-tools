@@ -1,10 +1,17 @@
 'use client'
 
-import { UseFormRegister, Path, Control, Controller } from 'react-hook-form'
+import {
+	UseFormRegister,
+	Path,
+	Control,
+	Controller,
+	FieldValues,
+} from 'react-hook-form'
 import {
 	CheckboxInput,
 	ColorPicker,
 	InputErrorMessage,
+	MonsterPoolPicker,
 	SelectDropdown,
 	SpritePicker,
 	SwitchInput,
@@ -114,6 +121,28 @@ export const FormInput = <
 								label={field.label}
 								category={field.spriteCategory!}
 								value={cf.value as string | undefined}
+								onChange={cf.onChange}
+							/>
+							<InputErrorMessage errorMessage={errorMessage as string} />
+						</>
+					)}
+				/>
+			)
+		case 'monsters':
+			if (!control) {
+				console.error('Control is required')
+				return null
+			}
+			return (
+				<Controller
+					name={field.name as Path<T>}
+					control={control}
+					render={({ field: cf }) => (
+						<>
+							<MonsterPoolPicker
+								label={field.label}
+								control={control as unknown as Control<FieldValues>}
+								value={(cf.value as string[] | undefined) ?? []}
 								onChange={cf.onChange}
 							/>
 							<InputErrorMessage errorMessage={errorMessage as string} />

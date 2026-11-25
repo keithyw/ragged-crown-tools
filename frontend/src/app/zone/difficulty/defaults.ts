@@ -5,6 +5,7 @@ export const defaultValues: DifficultyConfigFormData = {
 	id: '',
 	name: '',
 	level: 0,
+	monsterIds: [],
 	description: '',
 	materials: { weapon: {}, armor: {} },
 }

@@ -24,6 +24,19 @@ export const fields: FormField<DifficultyConfigFormData>[] = [
 		inputAttrs: { min: 0, step: 1 },
 	},
 	{
+		name: 'encounterChance',
+		label:
+			'Encounter chance (0 to 100): per step, in zones set to the difficulty configuration',
+		type: 'number',
+		inputWidth: 'sm',
+		inputAttrs: { min: 0, max: 100, step: 1 },
+	},
+	{
+		name: 'monsterIds',
+		label: 'Monsters for random encounters',
+		type: 'monsters',
+	},
+	{
 		name: 'description',
 		label: 'Description',
 		type: 'textarea',

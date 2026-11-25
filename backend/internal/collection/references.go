@@ -57,6 +57,11 @@ var referenceSources = map[string][]refSource{
 		{"items", "interactions.actions.defId"},
 		{"entities", "interactions.actions.defId"},
 	},
+	"monsters": {
+		// the monster pool of a difficulty configuration ([Tools 27]); equality on
+		// an array field matches any element
+		{"difficulty_configs", "monsterIds"},
+	},
 	"difficulty_configs": {
 		{"zones", "difficultyId"},
 		{"zone_specs", "difficultyId"},

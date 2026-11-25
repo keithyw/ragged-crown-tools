@@ -72,6 +72,19 @@ export const difficultyConfigSchema = z.object({
 		.number({ error: 'Level must be a number' })
 		.int('Level must be a whole number')
 		.min(0, 'Level cannot be negative'),
+	// Percent per step, for zones set to `config` encounters ([Tools 27]).
+	encounterChance: z
+		.number({ error: 'Chance must be a number' })
+		.int('Chance must be a whole number')
+		.min(0, 'Cannot be negative')
+		.max(100, 'At most 100')
+		.optional(),
+	// An empty pool is stored as absent. The MCP checks each is a monster that
+	// exists, isn't unique and fits the level.
+	monsterIds: z
+		.array(z.string())
+		.transform((v) => (v.length > 0 ? v : undefined))
+		.optional(),
 	description: z
 		.string()
 		.trim()

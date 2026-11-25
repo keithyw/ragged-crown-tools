@@ -838,6 +838,36 @@ async function checkDifficulty(collection: string, doc: unknown) {
 	}
 }
 
+// A difficulty configuration's monster pool ([Tools 27]) must name monsters
+// that exist, aren't unique and fit its level, as the picker guarantees in the
+// UI.
+async function checkMonsterPool(collection: string, doc: unknown) {
+	if (collection !== 'difficulty_configs') return
+	const { monsterIds, level } = doc as { monsterIds?: string[]; level: number }
+	if (!monsterIds?.length) return
+	const problems: string[] = []
+	await Promise.all(
+		monsterIds.map(async (_id, i) => {
+			const m = await lookup('monsters', _id)
+			if (!m) {
+				problems.push(`- monsterIds.${i}: no monster with _id '${_id}'`)
+			} else if (m.isUnique) {
+				problems.push(
+					`- monsterIds.${i}: '${m.id ?? _id}' is unique, and unique monsters are for set encounters only`,
+				)
+			} else if (typeof m.level === 'number' && m.level > level) {
+				problems.push(
+					`- monsterIds.${i}: '${m.id ?? _id}' is level ${m.level}, above this configuration's level ${level}`,
+				)
+			}
+		}),
+	)
+	if (problems.length > 0) {
+		problems.sort()
+		throw new Error(`Invalid document:\n${problems.join('\n')}`)
+	}
+}
+
 // A zone's placements must point at real defs of the kind they say: the
 // `defId` of every placement, contents included, as the builder's pickers
 // guarantee; and no def directly on top of itself in a stack. Not covered: a portal's destination zone, a placement's own
@@ -1081,6 +1111,7 @@ server.registerTool(
 			)
 			await checkReferences(data)
 			await checkDifficulty(collection, data)
+			await checkMonsterPool(collection, data)
 			await checkZonePlacements(collection, data)
 			const res = await apiPost(`/collection/${collection}`, data)
 			return ok(
@@ -1149,6 +1180,7 @@ server.registerTool(
 			)
 			await checkReferences(data)
 			await checkDifficulty(collection, data)
+			await checkMonsterPool(collection, data)
 			await checkZonePlacements(collection, data)
 			const res = await apiPut(`/collection/${collection}/${_id}`, data)
 			return ok(

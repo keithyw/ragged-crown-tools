@@ -32,6 +32,8 @@ const EditDifficultyConfigPage = () => {
 				id: c.id,
 				name: c.name,
 				level: c.level,
+				encounterChance: c.encounterChance,
+				monsterIds: c.monsterIds ?? [],
 				description: c.description ?? '',
 				materials: c.materials,
 			}),

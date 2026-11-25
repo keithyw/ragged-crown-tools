@@ -20,6 +20,15 @@ const COLUMNS: TableColumn<StoredConfig>[] = [
 	{ header: 'ID', accessor: 'id' },
 	{ header: 'Level', accessor: 'level' },
 	{
+		header: 'Encounter chance',
+		render: (c) =>
+			c.encounterChance === undefined ? '' : `${c.encounterChance}%`,
+	},
+	{
+		header: 'Monsters',
+		render: (c) => String(c.monsterIds?.length ?? 0),
+	},
+	{
 		header: 'Weapon groups',
 		render: (c) => Object.keys(c.materials.weapon).join(', ') || 'none',
 	},
