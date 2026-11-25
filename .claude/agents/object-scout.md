@@ -36,4 +36,4 @@ Your report is all the main session sees, so keep it short. No full documents, n
 1. The proposal table: `id`, name, solid/space (and `moveCost`), container, bumped (the line, or nothing), sprite (`reuse SPRITE_ID <_id>` or `new`), one-line reason. Then one line each for description and glyph.
 2. Existing defs to reuse instead of creating, one line each with the reason.
 3. For each `new` sprite, a one-line brief for the `sprite-artist`: `id`, name, what it should show.
-4. One line each on anything left out (behaviour beyond simple dialog), anything unsure, and any `id` that was taken.
+4. One line each on anything left out (behaviour beyond simple dialog and the random encounter space), anything unsure, and any `id` that was taken.

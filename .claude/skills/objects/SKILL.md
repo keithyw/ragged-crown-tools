@@ -1,6 +1,6 @@
 ---
 name: objects
-description: Make, redo or adjust Ragged Crown object definitions (solid objects such as a wall or a bar counter, and spaces such as a rug or fire, placed on the map) in the sandbox so the owner can review them. Use when asked to create or tweak objects, furniture, scenery, spaces or simple talking characters. Creates only simple dialog interactions.
+description: Make, redo or adjust Ragged Crown object definitions (solid objects such as a wall or a bar counter, and spaces such as a rug or fire, placed on the map) in the sandbox so the owner can review them. Use when asked to create or tweak objects, furniture, scenery, spaces or simple talking characters. Creates only simple dialog and random encounter space interactions.
 ---
 
 # Objects
@@ -12,10 +12,10 @@ An object def is something placed on top of the terrain: scenery, furniture, a c
 - Collection: `entities`, `kind: "object"`. The collection also holds creatures and portals; don't touch those here.
 - Sprite category: `object`.
 - Batch cap: the default, 10.
-- Extra proposal columns: solid or space (and `moveCost` if set), `container` capacity if any, what it says when bumped (the line, if it has dialog), the behaviour you are leaving out if the request implied one.
+- Extra proposal columns: solid or space (and `moveCost` if set), invisible or not, `container` capacity if any, what it says when bumped (the line, if it has dialog), the behaviour you are leaving out if the request implied one.
 - Sandbox UI page: object definitions.
 
-**Interactions: simple dialog only.** An NPC or sign can say a fixed line, or leave the line to each placement; the rules are in "Simple interactions" in `RULES.md` (Trello [Skills 14]). Everything else (keys, items given or taken, conditions, limits, stat effects, quest givers) is **not created here yet**: make the body, say plainly what behaviour was left out, and let the owner add it in the interaction editor in the UI. Other objects get no interactions at all.
+**Interactions: simple dialog and the random encounter space only.** An NPC or sign can say a fixed line, or leave the line to each placement; an invisible space can start a random encounter; the rules are in "Simple interactions" in `RULES.md` (Trello [Skills 14]). Everything else (keys, items given or taken, conditions, limits, stat effects, quest givers) is **not created here yet**: make the body, say plainly what behaviour was left out, and let the owner add it in the interaction editor in the UI. Other objects get no interactions at all.
 
 ## Object, space or item?
 
@@ -36,10 +36,11 @@ An object def is something placed on top of the terrain: scenery, furniture, a c
 ```
 
 - `isSolid`: required, **always set it**, `true` or `false`.
+- `isInvisible`: the game draws what is below it instead of the def (the next placement down the stack, or the terrain), and the zone builder outlines the cell (DATA-MODEL.md 2.1, Trello [Tools 30]). Set it **only** when the request calls for something the player must not see: a hidden trigger space, a random encounter space that looks like plain ground. Send `true` or leave it out; never `false`. Any object or space may have it, solid or not. **An invisible def needs no sprite** (nothing of it is drawn): leave `spriteId` out and keep the default `??` glyph, and say so in the proposal's sprite column ("none, invisible"). It is not a disguise: for something that should look like another thing, use that thing's sprite.
 - `moveCost`: spaces only. Leave it out for a solid object (the forms drop it) and leave it out for an ordinary space too, since it defaults to 1. Set it only when entering should be harder (quicksand, deep mud): a whole number, 0 or more.
 - `numberOfUses`: how many times the thing can be used before it disappears; 1 or more; absent is unlimited. Nothing uses an object until it has interactions, so leave it out unless asked.
 - `container`: `{ "capacity": n }` for a chest, barrel, cabinet or corpse that holds things, `capacity` 1 or more. `maxDepth` only if it may hold other containers, counting itself (2 holds a bag that holds items); the engine caps it at 3. Leave it out for anything that doesn't hold things.
-- `interactions`: only the simple dialog from `RULES.md`, and only on something that talks. A person who says "Howdy!":
+- `interactions`: only the simple ones from `RULES.md`: dialog, and only on something that talks; or the random encounter action, only on an invisible space. A person who says "Howdy!":
 
 ```json
 {
