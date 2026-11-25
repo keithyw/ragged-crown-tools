@@ -37,7 +37,6 @@ export const TileInspector = ({
 	// spriteCoords: Position
 	// description?: string
 	// encounterRate?: number
-	// encounterTableKey?: string
 	const details = [
 		{ key: 'Color', val: tile.glyph.color },
 		{ key: 'Background', val: tile.glyph.bg },

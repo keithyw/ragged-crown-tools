@@ -418,7 +418,7 @@ Why promotion is keyed on `id`: the server generates `_id` and strips any `_id` 
 
 Things the code currently does that are worth a decision. Verified against the repo at the time of writing.
 
-1. **Edit drops unmanaged fields.** `useEditRecord` submits only the form's values, and PUT replaces the whole document. Fields the form does not cover (`type`, `spriteCoords`, `encounterTableKey`) will be removed on the first edit. Merge the loaded document with the form values before sending.
+1. **Edit drops unmanaged fields.** `useEditRecord` submits only the form's values, and PUT replaces the whole document. Fields the form does not cover (`type`, `spriteCoords`) will be removed on the first edit. Merge the loaded document with the form values before sending.
 2. **Edit page has empty config strings.** `redirectUrl: ''` and `errorLoadingMessage: ''` in `[id]/edit/page.tsx`, so a successful save or a failed load pushes to `''` rather than the list.
 3. **No unique-index creation.** Nothing in the backend creates an index on `id`, so duplicate `id` values are possible and `ErrDuplicate` will not fire for them.
 4. **Naming drift in the hooks.** The edit hook's `id` option is really the document `_id`, and its schema constraint (`z.ZodType<{ id: string }>`) refers to the user-facing `id`.

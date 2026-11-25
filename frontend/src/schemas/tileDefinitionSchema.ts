@@ -3,7 +3,6 @@ import { tileDefSchema } from './contentSchemas'
 
 // missing fields for now:
 // 	spriteCoords: Position
-// 	encounterTableKey?: string
 
 const requiredNumber = (label: string) =>
 	z.number({
