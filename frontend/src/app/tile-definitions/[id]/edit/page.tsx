@@ -31,7 +31,7 @@ const EditTileDefinitionPage = () => {
 		redirectUrl: '',
 		schema: tileDefinitionSchema,
 		// Everything the doc holds except _id/updated_at, so the full-replace
-		// PUT keeps fields the form doesn't show (encounterTableKey).
+		// PUT keeps fields the form doesn't show.
 		handleFetchCallback: useCallback(
 			(t: TileDef & { code?: string }) => ({
 				kind: 'terrain' as const,
@@ -44,7 +44,6 @@ const EditTileDefinitionPage = () => {
 				moveCost: t.moveCost,
 				isWalkable: t.isWalkable,
 				encounterRate: t.encounterRate,
-				encounterTableKey: t.encounterTableKey,
 			}),
 			[],
 		),

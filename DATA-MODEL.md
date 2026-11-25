@@ -63,7 +63,7 @@ The legacy category types that used to be in `map.ts` (`TileType`, `TileType2`, 
 
 | Kind       | Collection  | Kind-specific fields                                                                 |
 | ---------- | ----------- | ------------------------------------------------------------------------------------ |
-| `terrain`  | `tile_defs` | Today's `TileDef` fields minus the glyph and `isConsumable`: `moveCost`, `isWalkable?`, `encounterRate?`, `encounterTableKey?`, `code?` (tools only, below) |
+| `terrain`  | `tile_defs` | Today's `TileDef` fields minus the glyph and `isConsumable`: `moveCost`, `isWalkable?`, `encounterRate?`, `code?` (tools only, below) |
 | `object`   | `entities`  | `isSolid`, `moveCost?` (spaces only, default 1), `numberOfUses?`, `container?`, `interactions?` |
 | `item`     | `items`     | `weight`, `maxQuantity?`, `numberOfUses?`, `isQuestItem?`, `container?`, `interactions?` (reserved for item use, deferred). `category` is deferred |
 | `weapon`   | `items`     | The item core (`weight`, `maxQuantity?`, `numberOfUses?`, `isQuestItem?`, `interactions?`, no `container`) plus `type`, `damage`, `isTwoHanded?`, `isMissile?`, `isThrown?` (below) |
@@ -146,7 +146,7 @@ A cell is **blocked** if its terrain is not walkable or any placement in its sta
 
 Terrain and objects/spaces are distinct for the designer: terrain is **painted** onto the ground layer, objects and spaces are **placed** on top, each from its own palette.
 
-Terrain is the ground layer and does not change. It is where **random encounters** live (`encounterRate`, `encounterTableKey`), so it dominates the open world. Objects and spaces are things placed on top, mostly decoration, so they dominate towns and buildings.
+Terrain is the ground layer and does not change. It is where **random encounters** live (`encounterRate`), so it dominates the open world. Objects and spaces are things placed on top, mostly decoration, so they dominate towns and buildings.
 
 Some things could be either. A tree is normally terrain (it can carry an encounter rate), but it can also be an object when placed as decoration. A dangerous town that needs encounters uses special objects or spaces that start a set or random encounter, rather than encounter-bearing terrain.
 

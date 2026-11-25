@@ -30,7 +30,7 @@ A terrain def is the ground a zone is painted with (DATA-MODEL.md 1.3, 1.5). It 
 - `description`: in the voice of the existing tiles ("Towering trees block out the sun overhead.").
 - `moveCost`: required, 0 or more.
 - `isWalkable`: **always set it**. Absent reads as "No" in the inspector, while the form defaults to `true`. Use `false` only for ground nobody can enter (deep water, lava, a chasm).
-- `encounterRate`: 0 to 1 (the schema doesn't enforce it). Leave it out for ground that can't be entered. `encounterTableKey` is not used; encounter tables aren't designed.
+- `encounterRate`: 0 to 1 (the schema doesn't enforce it). Leave it out for ground that can't be entered. It only decides whether an encounter happens on a step; which monsters appear is decided elsewhere ([Combat 8]).
 - Don't send `symbol`, `color` or `bg` at the top level; they live inside `glyph`.
 
 ## Match what exists

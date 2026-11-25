@@ -33,8 +33,7 @@ export interface TileDef extends BaseDef {
 	kind: 'terrain'
 	moveCost: number
 	isWalkable?: boolean
-	encounterRate?: number
-	encounterTableKey?: string
+	encounterRate?: number // the chance an encounter happens on a step; what appears is decided elsewhere ([Combat 8])
 }
 
 // Objects (isSolid) and spaces (!isSolid). Stored in entities.

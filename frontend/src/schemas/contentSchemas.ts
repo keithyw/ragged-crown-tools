@@ -405,7 +405,6 @@ export const tileDefSchema = baseDefSchema.extend({
 	moveCost: z.number().min(0, 'Cannot be negative'),
 	isWalkable: z.boolean().optional(),
 	encounterRate: z.number().optional(),
-	encounterTableKey: optionalText,
 }) satisfies z.ZodType<TileDef>
 
 export const objectDefSchema = baseDefSchema.extend({
