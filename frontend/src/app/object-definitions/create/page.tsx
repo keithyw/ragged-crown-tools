@@ -24,6 +24,7 @@ const CreateObjectDefinitionPage = () => {
 			// The backfill glyph, so a def can be saved before it has a sprite.
 			glyph: { symbol: '??', color: 'text-white', bg: 'bg-black' },
 			isSolid: true,
+			isInvisible: false,
 			moveCost: 1,
 			container: { capacity: 0, maxDepth: 0 },
 			description: '',

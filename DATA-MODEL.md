@@ -46,7 +46,7 @@ interface Glyph {
 }
 ```
 
-There is no separate "invisible" concept: a thing meant to go unnoticed uses a glyph that blends in (section 2.1). Two defs may share the same glyph values: quicksand terrain and a deep-quicksand space look identical to the player.
+A thing meant to go unnoticed either uses a glyph that blends in or, for an object or space, is `isInvisible` (section 2.1). Two defs may share the same glyph values: quicksand terrain and a deep-quicksand space look identical to the player.
 
 **Sprites (in progress).** Sprites were first deferred, with the glyph as the only appearance. That changed on 2026-10-23: standard unicode characters turned out not to be enough to bring objects and other tiles to life, so the sprite builder moved into the current milestones (Trello epic [Sprite 1]). Not every def needs a sprite, but the tool and how sprites render must exist before more content is built.
 
@@ -64,7 +64,7 @@ The legacy category types that used to be in `map.ts` (`TileType`, `TileType2`, 
 | Kind       | Collection  | Kind-specific fields                                                                 |
 | ---------- | ----------- | ------------------------------------------------------------------------------------ |
 | `terrain`  | `tile_defs` | Today's `TileDef` fields minus the glyph and `isConsumable`: `moveCost`, `isWalkable?`, `encounterRate?`, `code?` (tools only, below) |
-| `object`   | `entities`  | `isSolid`, `moveCost?` (spaces only, default 1), `numberOfUses?`, `container?`, `interactions?` |
+| `object`   | `entities`  | `isSolid`, `isInvisible?`, `moveCost?` (spaces only, default 1), `numberOfUses?`, `container?`, `interactions?` |
 | `item`     | `items`     | `weight`, `maxQuantity?`, `numberOfUses?`, `isQuestItem?`, `container?`, `interactions?` (reserved for item use, deferred). `category` is deferred |
 | `weapon`   | `items`     | The item core (`weight`, `maxQuantity?`, `numberOfUses?`, `isQuestItem?`, `interactions?`, no `container`) plus `type`, `damage`, `isTwoHanded?`, `isMissile?`, `isThrown?` (below) |
 | `armor`    | `items`     | The item core plus `type` (the slot it is worn in) and `defenseValue` (below) |
@@ -197,7 +197,7 @@ interface Zone {
 
 Only the **top** placement in a cell's stack is what the player interacts with. To hide something (a trap covering treasure, a mound covering a chest), the top placement must carry the interaction that reveals or triggers it.
 
-The top placement's glyph is always what is drawn; there is no special "invisible" rule. Disguise is done by the designer choosing the top glyph:
+The top placement's glyph is what is drawn, unless its def is **`isInvisible`** (owner, 2026-11-25, [Combat 12]): an object or space with that flag (absent = false, never stored `false`) is not drawn, so what is below it shows through, the next placement down the stack or else the terrain. It still blocks, rolls and runs its interactions as usual (an invisible space is how a random encounter space looks like plain ground, 4.4). The zone builder draws it the same way but outlines the cell so the designer can find it. Otherwise disguise is done by the designer choosing the top glyph:
 
 - **Poisoned treasure:** the top is a poison object/space whose glyph looks like a chest or gold, so it seems safe.
 - **Pirate cache:** the top is a mound whose glyph matches the surrounding ground. Moving onto or bumping it with a `HAS_ITEM pirate map` condition runs a list of `GIVE_ITEM` actions.
@@ -342,7 +342,7 @@ Interactions can be **unlimited** (a generic NPC's "Hello and welcome to town X"
 
 ### 4.4 Initial actions
 
-`SHOW_DIALOG`, `GIVE_ITEM { itemId, amount?, qualifiers? }`, `TAKE_ITEM`, `GIVE_CURRENCY`, `SET_FLAG`, `SPAWN { defKind, defId, quantity?, qualifiers? }` (adds to this cell's stack at runtime), `SPAWN_MONSTER` (a barrier's set encounter, below), `REMOVE_SELF`, `REMOVE_OBJECT` (removes another object in the zone, below), `TELEPORT { destination }`, `PLAY_SOUND`, `MODIFY_ATTRIBUTE`.
+`SHOW_DIALOG`, `GIVE_ITEM { itemId, amount?, qualifiers? }`, `TAKE_ITEM`, `GIVE_CURRENCY`, `SET_FLAG`, `SPAWN { defKind, defId, quantity?, qualifiers? }` (adds to this cell's stack at runtime), `SPAWN_MONSTER` (a barrier's set encounter, below), `RANDOM_ENCOUNTER` (a random encounter space, below), `REMOVE_SELF`, `REMOVE_OBJECT` (removes another object in the zone, below), `TELEPORT { destination }`, `PLAY_SOUND`, `MODIFY_ATTRIBUTE`.
 
 The engine implements them incrementally ([Game 2]). Fields not listed here are decided when each type is written.
 
@@ -416,6 +416,11 @@ interface EncounterGroup {
 - Like any custom value, every field may be blank; the game skips a `SPAWN_MONSTER` with no groups.
 
 **Remove an object (`REMOVE_OBJECT`, owner, 2026-11-22, [Interactions 14]).** Removes **another** object placement in the same zone (`REMOVE_SELF` is the object itself): a quest giver that clears the trees blocking the way out of the starting zone once the quest item is handed over. Always custom, like `SPAWN_MONSTER`: the def says only "remove an object here", and the placement names the target by its placement **`uid`** (stable when the stack is reordered), one target per action (use the action again for more). Objects only, and only the **top** placement of a cell. The designer picks it by **clicking it on the map**, as for the starting position (a "Choose on map" button in the stack drawer closes the drawer, then reopens it on the original cell), so there is no list to scroll. The target is expected to exist: an unset or missing one is the engine's decision ([Game 5]; working assumption, the action is skipped). A target deleted later leaves a dangling `targetUid` ([Integrity 1]).
+
+**Random encounter space (`RANDOM_ENCOUNTER`, owner, 2026-11-25, [Combat 12]).** A non-solid space, looking like the ground, with `on: WALK`. Stepping on it rolls the zone's **difficulty configuration's** `encounterChance` and, on a success, picks one monster from its pool by rarity, exactly as a `config` random encounter does (section 2.5). Combat starts with no monster placed on the cell: the monster exists only in the fight.
+- **Always custom**, like `SPAWN_MONSTER`: the placement's `customValues[slot]` is `{ type: 'RANDOM_ENCOUNTER', repeatable? }` (absent = false, never stored `false`). It is per placement so one def serves both behaviours. Not repeatable: the space is removed after its one roll, whether or not anything appeared. Repeatable: it stays and rolls every time.
+- **A zone set to `none` never fires it**, and the space stays. It works in a `terrain` or `config` zone, but always uses the configuration's chance and pool, never the terrain's.
+- It fires **after** the step, like a terrain encounter, so a flee leaves the player standing on the space.
 
 **Messages on a talk are custom `SHOW_DIALOG` slots** (no separate custom hint, [Interactions 14]): the success interaction carries one for its flavor text, and an unconditional `TALK` fallback after it carries the one that says what the quest wants. A blank value shows nothing; there is no default message.
 

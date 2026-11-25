@@ -21,7 +21,7 @@ interface ZoneMapGridProps {
 	tilesById: ReadonlyMap<string, StoredDoc<TileDef>>
 	// Things placed on the terrain, and the defs to draw them with (keyed by defKey).
 	placements?: Zone['placements']
-	placedDefs?: ReadonlyMap<string, { glyph: Glyph }>
+	placedDefs?: ReadonlyMap<string, { glyph: Glyph; isInvisible?: boolean }>
 	// Monster defs by _id: a set encounter's barrier is drawn as the monster
 	// its "show as" group names ([Combat 7]).
 	monsters?: ReadonlyMap<string, { glyph: Glyph }>
@@ -62,19 +62,29 @@ export const ZoneMapGrid = ({
 		onCellAction(cell.x, cell.y, isStrokeStart)
 	}
 
-	// The topmost placement is what's drawn; a cell with none shows its terrain.
-	// A placement whose def is missing gives undefined, which TileGlyph draws as "?".
+	// The topmost visible placement is what's drawn; a cell with none shows its
+	// terrain. An invisible def is skipped, so what is below shows through, and
+	// the cell is marked so the designer can still find it. A placement whose
+	// def is missing gives undefined, which TileGlyph draws as "?".
 	const drawnAt = (x: number, y: number, tileId: string) => {
-		const top = placements?.[cellKey(x, y)]?.at(-1)
-		for (const v of Object.values(top?.customValues ?? {})) {
-			if (v.type !== 'SPAWN_MONSTER' || v.hideSprite) continue
-			const group = v.showAs === undefined ? undefined : v.groups?.[v.showAs]
-			const monster = group && monsters?.get(group.defId)
-			if (monster) return monster
+		const stack = placements?.[cellKey(x, y)] ?? []
+		let hasInvisible = false
+		for (let i = stack.length - 1; i >= 0; i--) {
+			const placement = stack[i]
+			for (const v of Object.values(placement.customValues ?? {})) {
+				if (v.type !== 'SPAWN_MONSTER' || v.hideSprite) continue
+				const group = v.showAs === undefined ? undefined : v.groups?.[v.showAs]
+				const monster = group && monsters?.get(group.defId)
+				if (monster) return { tile: monster, hasInvisible }
+			}
+			const def = placedDefs?.get(defKey(placement.defKind, placement.defId))
+			if (def?.isInvisible) {
+				hasInvisible = true
+				continue
+			}
+			return { tile: def, hasInvisible }
 		}
-		return top
-			? placedDefs?.get(defKey(top.defKind, top.defId))
-			: tilesById.get(tileId)
+		return { tile: tilesById.get(tileId), hasInvisible }
 	}
 
 	const endStroke = () => {
@@ -105,25 +115,30 @@ export const ZoneMapGrid = ({
 				onPointerCancel={endStroke}
 			>
 				{grid.flatMap((row, y) =>
-					row.map((tileId, x) => (
-						<TileGlyph
-							variant='cell'
-							key={cellKey(x, y)}
-							data-x={x}
-							data-y={y}
-							tile={drawnAt(x, y, tileId)}
-							className={cn(
-								startingPosition?.x === x &&
-									startingPosition?.y === y &&
-									'outline-2 -outline-offset-2 outline-sky-400',
-								selectedCell?.x === x &&
-									selectedCell?.y === y &&
-									'outline-2 -outline-offset-2 outline-fuchsia-400',
-								onCellAction &&
-									'hover:outline-2 hover:-outline-offset-2 hover:outline-amber-300',
-							)}
-						/>
-					)),
+					row.map((tileId, x) => {
+						const { tile, hasInvisible } = drawnAt(x, y, tileId)
+						return (
+							<TileGlyph
+								variant='cell'
+								key={cellKey(x, y)}
+								data-x={x}
+								data-y={y}
+								tile={tile}
+								className={cn(
+									hasInvisible &&
+										'outline-1 -outline-offset-2 outline-white/70 outline-dashed',
+									startingPosition?.x === x &&
+										startingPosition?.y === y &&
+										'outline-2 -outline-offset-2 outline-sky-400',
+									selectedCell?.x === x &&
+										selectedCell?.y === y &&
+										'outline-2 -outline-offset-2 outline-fuchsia-400',
+									onCellAction &&
+										'hover:outline-2 hover:-outline-offset-2 hover:outline-amber-300',
+								)}
+							/>
+						)
+					}),
 				)}
 			</div>
 		</div>

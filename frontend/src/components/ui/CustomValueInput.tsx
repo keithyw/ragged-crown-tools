@@ -272,6 +272,26 @@ export const CustomValueInput = ({
 				</div>
 			)
 		}
+		case 'RANDOM_ENCOUNTER': {
+			const current = value?.type === 'RANDOM_ENCOUNTER' ? value : undefined
+			return (
+				<div className='mb-4 rounded border border-gray-200 bg-gray-50 p-3'>
+					<div className='mb-2 font-bold text-gray-700'>{slotLabel(slot)}</div>
+					<CheckboxInput
+						id={`${id}-repeatable`}
+						label='Repeatable (stays and rolls every time)'
+						checked={!!current?.repeatable}
+						onChange={(e) =>
+							// A false checkbox is not stored.
+							onChange({
+								type: 'RANDOM_ENCOUNTER',
+								...(e.target.checked && { repeatable: true }),
+							})
+						}
+					/>
+				</div>
+			)
+		}
 		case 'SPAWN_MONSTER': {
 			const current = value?.type === 'SPAWN_MONSTER' ? value : undefined
 			const groups = current?.groups ?? []

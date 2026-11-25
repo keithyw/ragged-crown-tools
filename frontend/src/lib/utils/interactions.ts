@@ -188,6 +188,16 @@ export const ACTION_TYPES: ActionTypeConfig[] = [
 		summary: () => 'spawn a set encounter (set per placement)',
 	},
 	{
+		// A non-solid space: stepping on it rolls the difficulty configuration's
+		// chance and pool ([Combat 12]). Always set per placement: whether it
+		// repeats is filled in on the placement.
+		type: 'RANDOM_ENCOUNTER',
+		label: 'Random encounter (space)',
+		fields: [],
+		blank: () => ({ type: 'RANDOM_ENCOUNTER', custom: true }) as Action,
+		summary: () => 'random encounter (repeatable set per placement)',
+	},
+	{
 		// Always set per placement: the target is picked on the placement.
 		type: 'REMOVE_OBJECT',
 		label: 'Remove an object (set per placement)',

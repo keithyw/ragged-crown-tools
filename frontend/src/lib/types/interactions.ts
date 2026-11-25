@@ -62,6 +62,10 @@ export type Action =
 	// A barrier's set encounter ([Combat 7]). Always custom: the groups, which
 	// one to show and whether to hide it are filled in per placement.
 	| { type: 'SPAWN_MONSTER'; custom: true; slot: string }
+	// A random encounter space ([Combat 12]): rolls the zone's difficulty
+	// configuration's chance and pool. Always custom: whether it repeats is
+	// filled in per placement.
+	| { type: 'RANDOM_ENCOUNTER'; custom: true; slot: string }
 	// Removes another object from this zone (the quest giver clears the trees).
 	// Always custom: the target is picked on the placement.
 	| { type: 'REMOVE_OBJECT'; custom: true; slot: string }

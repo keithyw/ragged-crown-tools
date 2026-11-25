@@ -40,6 +40,10 @@ export interface TileDef extends BaseDef {
 export interface ObjectDef extends BaseDef {
 	kind: 'object'
 	isSolid: boolean
+	// absent = false. The game draws what is below it (the next thing in the
+	// stack, or the terrain); the zone builder outlines it. Say, a random
+	// encounter space that looks like the ground.
+	isInvisible?: boolean
 	moveCost?: number // spaces only; defaults to 1
 	numberOfUses?: number // absent = unlimited
 	container?: ContainerSpec

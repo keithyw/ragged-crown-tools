@@ -237,6 +237,19 @@ const spawnMonsterSchema = z
 		slot: a.slot ?? crypto.randomUUID(),
 	}))
 
+// A random encounter space ([Combat 12]): always custom, no value on the def.
+const randomEncounterSchema = z
+	.object({
+		type: z.literal('RANDOM_ENCOUNTER'),
+		custom: z.literal(true).optional(),
+		slot: z.string().min(1).optional(),
+	})
+	.transform((a): Extract<Action, { type: 'RANDOM_ENCOUNTER' }> => ({
+		type: a.type,
+		custom: true as const,
+		slot: a.slot ?? crypto.randomUUID(),
+	}))
+
 // Removes another object in the zone: always custom, the target is picked on
 // the placement.
 const removeObjectSchema = z
@@ -351,6 +364,7 @@ export const actionSchema = z.discriminatedUnion('type', [
 	z.object({ type: z.literal('SET_FLAG'), flag: z.string().min(1) }),
 	spawnSchema,
 	spawnMonsterSchema,
+	randomEncounterSchema,
 	removeObjectSchema,
 	z.object({ type: z.literal('REMOVE_SELF') }),
 	z.object({ type: z.literal('TELEPORT'), destination: destinationSchema }),
@@ -410,6 +424,7 @@ export const tileDefSchema = baseDefSchema.extend({
 export const objectDefSchema = baseDefSchema.extend({
 	kind: z.literal('object'),
 	isSolid: z.boolean(),
+	isInvisible: z.boolean().optional(),
 	moveCost: z.number().min(0, 'Cannot be negative').optional(),
 	numberOfUses: z.number().int().min(1).optional(),
 	container: containerSpecSchema.optional(),
@@ -556,6 +571,10 @@ export const customValueSchema = z.union([
 	z.object({
 		type: z.literal('REMOVE_OBJECT'),
 		targetUid: z.string().min(1).optional(),
+	}),
+	z.object({
+		type: z.literal('RANDOM_ENCOUNTER'),
+		repeatable: z.boolean().optional(),
 	}),
 	z.object({
 		type: z.literal('SPAWN_MONSTER'),

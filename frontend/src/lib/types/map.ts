@@ -61,6 +61,10 @@ export type CustomValue =
 			targetUid?: string // the uid of an object placement in this zone
 	  }
 	| {
+			type: 'RANDOM_ENCOUNTER'
+			repeatable?: boolean // absent = false: the space is gone after its roll
+	  }
+	| {
 			type: 'SPAWN_MONSTER'
 			groups?: EncounterGroup[]
 			showAs?: number // index into groups: whose sprite the barrier shows

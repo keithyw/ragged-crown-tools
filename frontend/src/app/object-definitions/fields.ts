@@ -28,6 +28,11 @@ export const fields: FormField<ObjectDefinitionFormData>[] = [
 		type: 'checkbox',
 	},
 	{
+		name: 'isInvisible',
+		label: 'Invisible (the game shows what is below it)',
+		type: 'checkbox',
+	},
+	{
 		name: 'moveCost',
 		label: 'Move Cost (spaces only)',
 		type: 'number',
