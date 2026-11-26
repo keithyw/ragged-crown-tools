@@ -74,7 +74,7 @@ For object requests, the `object-scout` subagent can do step 1 (read what exists
 
 ## Simple interactions
 
-Objects can talk (portals use the same shape, but only the objects skill does this so far). The owner's rule (2026-11-05): **start simple, and widen only after a basic interaction has been generated in bulk (about 5) and the owner has checked them.** So far that means two things:
+Objects can talk (portals use the same shape, but only the objects skill does this so far). The owner's rule (2026-11-05): **start simple, and widen only after a basic interaction has been generated in bulk (about 5) and the owner has checked them.** So far that means the cases below (widened by the owner on 2026-11-25 for the wine cellar revamp, Trello [Combat 19], before the bulk check: message spaces and objects that give an item):
 
 - **A fixed line of dialog.** One interaction: `{ "id": "<uuid>", "on": "BUMP_INTERACT", "actions": [{ "type": "SHOW_DIALOG", "text": "Howdy!" }] }`.
 - **`on`:** `BUMP_INTERACT` for a person or sign the player walks into (the existing `PERSON` and `SIGN` use it). Leave `TALK` to the owner until a talk command exists.
@@ -82,7 +82,13 @@ Objects can talk (portals use the same shape, but only the objects skill does th
 - **The text:** the owner's own words when the request gives them ("only say Howdy!"), verbatim. Otherwise one short line in the character's voice, shown in the proposal for the owner to approve like a name.
 - **Different per placement** (a sign that says something else wherever it stands): send `{ "type": "SHOW_DIALOG", "custom": true }` with **no** `text` and **no** `slot` (the schema makes the slot). The owner fills the text in on each placement in the zone builder.
 - **A random encounter space** (owner, 2026-11-25, Trello [Combat 12]). An object that is a **space** (`isSolid: false`) and **`isInvisible: true`**, so it looks like the ground, with one interaction: `{ "id": "<uuid>", "on": "WALK", "actions": [{ "type": "RANDOM_ENCOUNTER", "custom": true }] }`, with **no** `slot` (the schema makes it). Nothing else goes in it: the chance and the monster come from the zone's difficulty configuration, and whether the space repeats is set on each placement in the zone builder (it defaults to once). Only make one when the request asks for a random encounter spot.
-- **Not yet, even when the request implies it:** `conditions`, `hint`, `limit`, and any other action (`GIVE_ITEM`, `TAKE_ITEM`, `SPAWN`, `SPAWN_MONSTER`, `REMOVE_OBJECT`, `MODIFY_ATTRIBUTE`, `REMOVE_SELF` and the rest). Create the object with what is allowed and say what you left out. An object that only needs a body gets no interactions.
+- **A message space** (owner, 2026-11-25). A **space** (`isSolid: false`) that shows a line of flavor text when the player walks onto it: one interaction `{ "id": "<uuid>", "on": "WALK", "actions": [{ "type": "SHOW_DIALOG", "text": "..." }] }`, or the custom form for a line set per placement, as above. Usually visible (a stain, a crack in the floor); `isInvisible: true` only when the request says the spot shouldn't show. No `limit` unless the request asks for the line to show only once (`"limit": 1`).
+- **An object that gives an item when bumped** (owner, 2026-11-25): a barrel that pours wine, a rack with a bottle. A **solid** object with one interaction, `on: BUMP_INTERACT`, whose actions are an optional `SHOW_DIALOG` line first ("You draw a cup of wine.") and then one `GIVE_ITEM`:
+  - **Fixed item:** `{ "type": "GIVE_ITEM", "itemId": "<the item's _id>" }`, plus `"amount": n` only when the item has a `maxQuantity` and more than one is given. The item must exist first (items skill, the hierarchy in this file); the MCP refuses an `itemId` that doesn't. Leave `qualifiers` out (blank means rolled on pickup); weapons and armor from a barrel are the owner's call.
+  - **Item set per placement** (one barrel def that gives ale here and wine there): `{ "type": "GIVE_ITEM", "custom": true }` with **no** `itemId`, `amount` or `slot`. The owner fills it in on each placement.
+  - **`limit`:** always propose one, so a barrel isn't an endless supply: the number the request gives, otherwise `1`, shown in the proposal for the owner to approve. It counts per placement at runtime (DATA-MODEL 4.2).
+  - Don't add `numberOfUses` or `REMOVE_SELF`: the object stays when it is used up.
+- **Not yet, even when the request implies it:** `conditions`, `hint`, and any other action (`TAKE_ITEM`, `SPAWN`, `SPAWN_MONSTER`, `REMOVE_OBJECT`, `MODIFY_ATTRIBUTE`, `REMOVE_SELF` and the rest). Create the object with what is allowed and say what you left out. An object that only needs a body gets no interactions.
 
 When the owner widens this, change this section, not the skills that point at it.
 

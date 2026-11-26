@@ -1,6 +1,6 @@
 ---
 name: objects
-description: Make, redo or adjust Ragged Crown object definitions (solid objects such as a wall or a bar counter, and spaces such as a rug or fire, placed on the map) in the sandbox so the owner can review them. Use when asked to create or tweak objects, furniture, scenery, spaces or simple talking characters. Creates only simple dialog and random encounter space interactions.
+description: Make, redo or adjust Ragged Crown object definitions (solid objects such as a wall or a bar counter, and spaces such as a rug or fire, placed on the map) in the sandbox so the owner can review them. Use when asked to create or tweak objects, furniture, scenery, spaces or simple talking characters. Creates only simple dialog, message space, give-an-item and random encounter space interactions.
 ---
 
 # Objects
@@ -12,10 +12,10 @@ An object def is something placed on top of the terrain: scenery, furniture, a c
 - Collection: `entities`, `kind: "object"`. The collection also holds creatures and portals; don't touch those here.
 - Sprite category: `object`.
 - Batch cap: the default, 10.
-- Extra proposal columns: solid or space (and `moveCost` if set), invisible or not, `container` capacity if any, what it says when bumped (the line, if it has dialog), the behaviour you are leaving out if the request implied one.
+- Extra proposal columns: solid or space (and `moveCost` if set), invisible or not, `container` capacity if any, what it says when bumped or walked on (the line, if it has dialog), what it gives and its `limit` (if it gives an item), the behaviour you are leaving out if the request implied one.
 - Sandbox UI page: object definitions.
 
-**Interactions: simple dialog and the random encounter space only.** An NPC or sign can say a fixed line, or leave the line to each placement; an invisible space can start a random encounter; the rules are in "Simple interactions" in `RULES.md` (Trello [Skills 14]). Everything else (keys, items given or taken, conditions, limits, stat effects, quest givers) is **not created here yet**: make the body, say plainly what behaviour was left out, and let the owner add it in the interaction editor in the UI. Other objects get no interactions at all.
+**Interactions: the simple ones only.** An NPC or sign can say a fixed line, or leave the line to each placement; a space can show a line when walked on; a solid object can give an item when bumped, with a `limit`; an invisible space can start a random encounter; the rules are in "Simple interactions" in `RULES.md` (Trello [Skills 14]). Everything else (keys, items taken, conditions, stat effects, quest givers) is **not created here yet**: make the body, say plainly what behaviour was left out, and let the owner add it in the interaction editor in the UI. Other objects get no interactions at all.
 
 ## Object, space or item?
 
@@ -40,7 +40,7 @@ An object def is something placed on top of the terrain: scenery, furniture, a c
 - `moveCost`: spaces only. Leave it out for a solid object (the forms drop it) and leave it out for an ordinary space too, since it defaults to 1. Set it only when entering should be harder (quicksand, deep mud): a whole number, 0 or more.
 - `numberOfUses`: how many times the thing can be used before it disappears; 1 or more; absent is unlimited. Nothing uses an object until it has interactions, so leave it out unless asked.
 - `container`: `{ "capacity": n }` for a chest, barrel, cabinet or corpse that holds things, `capacity` 1 or more. `maxDepth` only if it may hold other containers, counting itself (2 holds a bag that holds items); the engine caps it at 3. Leave it out for anything that doesn't hold things.
-- `interactions`: only the simple ones from `RULES.md`: dialog, and only on something that talks; or the random encounter action, only on an invisible space. A person who says "Howdy!":
+- `interactions`: only the simple ones from `RULES.md`: dialog, on something that talks or a message space; `GIVE_ITEM` on a solid object that gives something; or the random encounter action, only on an invisible space. A person who says "Howdy!":
 
 ```json
 {
@@ -73,4 +73,4 @@ A single symbol on `bg-black`, often an emoji, as the existing objects do.
 
 ## Fixing one
 
-Many existing objects carry `interactions` far beyond the simple dialog (keys, chests, quest givers), so this is the case the shared rule about sending them back is for. Send them back unchanged, and don't add to them.
+Many existing objects carry `interactions` far beyond the simple ones (keys, chests, quest givers), so this is the case the shared rule about sending them back is for. Send them back unchanged, and don't add to them.

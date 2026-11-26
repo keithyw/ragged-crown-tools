@@ -19,7 +19,7 @@ A request in the owner's words ("furniture for a tavern", "a dead rat and a rat'
 2. Decide for each thing needed: reuse an existing def, or a new one and why. Merge near copies.
 3. For each new def, check the `id` is free on both servers (all of `entities`, no `kind` filter).
 4. For each new def, pick its sprite: an existing one that really is that thing (give its sandbox `_id`), or new.
-5. Draft the fields the skill lists: solid or space, `moveCost` if any, `container` if any, the dialog line if it talks, glyph, description.
+5. Draft the fields the skill lists: solid or space, `moveCost` if any, `container` if any, the dialog line if it talks or is a message space, what it gives and its `limit` if it gives an item, glyph, description.
 
 Over the batch cap, propose the most useful ones up to the cap and list the rest by name.
 
@@ -36,4 +36,4 @@ Your report is all the main session sees, so keep it short. No full documents, n
 1. The proposal table: `id`, name, solid/space (and `moveCost`), container, bumped (the line, or nothing), sprite (`reuse SPRITE_ID <_id>` or `new`), one-line reason. Then one line each for description and glyph.
 2. Existing defs to reuse instead of creating, one line each with the reason.
 3. For each `new` sprite, a one-line brief for the `sprite-artist`: `id`, name, what it should show.
-4. One line each on anything left out (behaviour beyond simple dialog and the random encounter space), anything unsure, and any `id` that was taken.
+4. One line each on anything left out (behaviour beyond the simple interactions in `RULES.md`), anything unsure, and any `id` that was taken.
