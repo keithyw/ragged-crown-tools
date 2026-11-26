@@ -92,6 +92,8 @@ export const interactionTypeSchema = z.enum([
 ]) satisfies z.ZodType<InteractionType>
 
 const amount = z.number().int().min(1)
+// A whole-number percentage (GIVE_ITEM's chance, [Interactions 16]).
+const chance = z.number().int().min(0).max(100)
 
 // Like the custom actions below: a custom item check leaves the item and amount
 // to each placement, so nothing but the flag is kept (DATA-MODEL.md 4.6).
@@ -331,6 +333,8 @@ const giveItemSchema = z
 		itemId: z.string().optional(),
 		amount: amount.optional(),
 		qualifiers: qualifiersSchema.optional(),
+		chance: chance.optional(),
+		giveLimit: amount.optional(),
 	})
 	.superRefine((a, ctx) => {
 		if (!a.custom && !a.itemId) {
@@ -353,6 +357,8 @@ const giveItemSchema = z
 					itemId: a.itemId ?? '',
 					amount: a.amount,
 					qualifiers: a.qualifiers,
+					chance: a.chance,
+					giveLimit: a.giveLimit,
 				},
 	)
 
@@ -560,6 +566,8 @@ export const customValueSchema = z.union([
 		itemId: z.string().optional(),
 		amount: amount.optional(),
 		qualifiers: qualifiersSchema.optional(),
+		chance: chance.optional(),
+		giveLimit: amount.optional(),
 	}),
 	z.object({
 		type: z.literal('SPAWN'),

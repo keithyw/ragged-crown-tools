@@ -79,12 +79,27 @@ export const CustomValueInput = ({
 			// change and go when the item changes ([Inventory 30]).
 			const currentQualifiers =
 				current?.type === 'GIVE_ITEM' ? current.qualifiers : undefined
+			// A give's chance and limit ([Interactions 16]) stay through every
+			// other change, the item included.
+			const currentGive: { chance?: number; giveLimit?: number } =
+				current?.type === 'GIVE_ITEM'
+					? { chance: current.chance, giveLimit: current.giveLimit }
+					: {}
 			const withQualifiers = (
 				next: { itemId?: string; amount?: number },
 				qualifiers: Qualifiers | undefined,
+				give: { chance?: number; giveLimit?: number } = currentGive,
 			): CustomValue =>
 				type === 'GIVE_ITEM'
-					? { type, ...next, ...(qualifiers && { qualifiers }) }
+					? {
+							type,
+							...next,
+							...(qualifiers && { qualifiers }),
+							...(give.chance !== undefined && { chance: give.chance }),
+							...(give.giveLimit !== undefined && {
+								giveLimit: give.giveLimit,
+							}),
+						}
 					: { type, ...next }
 			// Only an item with a maxQuantity has an amount (DATA-MODEL.md 4.3). A stored
 			// amount is still shown, so stored data is never hidden.
@@ -151,6 +166,60 @@ export const CustomValueInput = ({
 								)
 							}
 						/>
+					)}
+					{type === 'GIVE_ITEM' && (
+						<>
+							<TextInput
+								id={`${id}-chance`}
+								label='Chance % (blank = always)'
+								type='number'
+								inputWidth='sm'
+								min={0}
+								max={100}
+								step={1}
+								value={currentGive.chance ?? ''}
+								onChange={(e) => {
+									const n = parseNumberInput(e.target.value)
+									// Anything but a whole number from 0 to 100 is left blank.
+									onChange(
+										withQualifiers(
+											{ itemId: current?.itemId, amount: current?.amount },
+											currentQualifiers,
+											{
+												...currentGive,
+												chance:
+													Number.isInteger(n) && n >= 0 && n <= 100
+														? n
+														: undefined,
+											},
+										),
+									)
+								}}
+							/>
+							<TextInput
+								id={`${id}-give-limit`}
+								label='Times it can give (blank = unlimited)'
+								type='number'
+								inputWidth='sm'
+								min={1}
+								step={1}
+								value={currentGive.giveLimit ?? ''}
+								onChange={(e) => {
+									const n = parseNumberInput(e.target.value)
+									onChange(
+										withQualifiers(
+											{ itemId: current?.itemId, amount: current?.amount },
+											currentQualifiers,
+											{
+												...currentGive,
+												giveLimit:
+													Number.isInteger(n) && n >= 1 ? n : undefined,
+											},
+										),
+									)
+								}}
+							/>
+						</>
 					)}
 				</div>
 			)

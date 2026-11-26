@@ -43,6 +43,8 @@ export type Action =
 			itemId: string
 			amount?: number
 			qualifiers?: Qualifiers // weapons and armor; blank = rolled on pickup
+			chance?: number // 0-100, percent per trigger; absent = always gives
+			giveLimit?: number // times it may give; absent = unlimited
 			custom?: never
 	  }
 	| { type: 'GIVE_ITEM'; custom: true; slot: string }

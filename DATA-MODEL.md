@@ -321,7 +321,7 @@ So a generic townsperson ("Hello good sirs! Welcome to X!") is an unconditional 
 
 Interactions can be **unlimited** (a generic NPC's "Hello and welcome to town X"), **once** (the quest payout), or **limited to N** (a fishing spot that yields fish 10 times). That is `limit`: absent, `1`, or `N`.
 
-- An interaction's count goes down only when it **runs**. If its conditions fail, it stays and nothing is used up: a player with 9 of 10 bones gets the "bring me more" dialog, and the payout is still there for later.
+- An interaction's count goes down only when it **runs**. If its conditions fail, it stays and nothing is used up: a player with 9 of 10 bones gets the "bring me more" dialog, and the payout is still there for later. A run stopped by a `GIVE_ITEM`'s failed `chance` or used-up `giveLimit` (4.4) doesn't count either.
 - Once an interaction has used up its `limit`, it is removed from that placement's runtime copy and is skipped from then on.
 - The count is tracked in runtime/save state per (placement `uid`, interaction `id`), never in the authored zone data.
 - Richer rules (a WoW-style daily quest, which needs a notion of time) are future work. The model only needs conditions plus limits for the basic cases now, and grows as interactions and objects are designed.
@@ -342,9 +342,16 @@ Interactions can be **unlimited** (a generic NPC's "Hello and welcome to town X"
 
 ### 4.4 Initial actions
 
-`SHOW_DIALOG`, `GIVE_ITEM { itemId, amount?, qualifiers? }`, `TAKE_ITEM`, `GIVE_CURRENCY`, `SET_FLAG`, `SPAWN { defKind, defId, quantity?, qualifiers? }` (adds to this cell's stack at runtime), `SPAWN_MONSTER` (a barrier's set encounter, below), `RANDOM_ENCOUNTER` (a random encounter space, below), `REMOVE_SELF`, `REMOVE_OBJECT` (removes another object in the zone, below), `TELEPORT { destination }`, `PLAY_SOUND`, `MODIFY_ATTRIBUTE`.
+`SHOW_DIALOG`, `GIVE_ITEM { itemId, amount?, qualifiers?, chance?, giveLimit? }` (below), `TAKE_ITEM`, `GIVE_CURRENCY`, `SET_FLAG`, `SPAWN { defKind, defId, quantity?, qualifiers? }` (adds to this cell's stack at runtime), `SPAWN_MONSTER` (a barrier's set encounter, below), `RANDOM_ENCOUNTER` (a random encounter space, below), `REMOVE_SELF`, `REMOVE_OBJECT` (removes another object in the zone, below), `TELEPORT { destination }`, `PLAY_SOUND`, `MODIFY_ATTRIBUTE`.
 
 The engine implements them incrementally ([Game 2]). Fields not listed here are decided when each type is written.
+
+**A give with a chance (`GIVE_ITEM`'s `chance` and `giveLimit`, owner, 2026-11-25, [Interactions 16]; names provisional).** A wine rack gives a bottle 5% of the times it is bumped, and only once, so it can't be farmed; a well gives water every time.
+- `chance`: a whole-number percentage, 0 to 100, rolled on each trigger. Absent = always gives.
+- `giveLimit`: how many times the give may **succeed**, a whole number, 1 or more. Absent = unlimited. It is separate from the interaction's `limit` (which counts runs, 4.2) and is runtime state per placement `uid`, never zone data.
+- **Checked before any of the interaction's actions run.** On a failed roll, or once `giveLimit` is used up, none of its actions run (no "You search the rack." line first), the player sees **"Nothing there!"**, and nothing is counted, `limit` included. On a success the actions run as usual and both counts go up.
+- The object stays either way (no `REMOVE_SELF`, no `numberOfUses`).
+- A custom `GIVE_ITEM` carries neither on the def; the placement's value sets them with the item (4.6).
 
 **Stat changes (`MODIFY_ATTRIBUTE`).** One action changes any numeric stat of a character. `GIVE_XP` is not a separate type: experience is just another stat.
 
@@ -385,7 +392,7 @@ An action's (or condition's) value can be left for each placement to fill in, so
 ```ts
 { type: 'SHOW_DIALOG'; text: string } | { type: 'SHOW_DIALOG'; custom: true; slot: string }
 { type: 'SPAWN'; defKind; defId; quantity? } | { type: 'SPAWN'; custom: true; slot: string }
-{ type: 'GIVE_ITEM'; itemId; amount?; qualifiers? } | { type: 'GIVE_ITEM'; custom: true; slot: string }
+{ type: 'GIVE_ITEM'; itemId; amount?; qualifiers?; chance?; giveLimit? } | { type: 'GIVE_ITEM'; custom: true; slot: string }
 { type: 'TAKE_ITEM'; itemId; amount? } | { type: 'TAKE_ITEM'; custom: true; slot: string }
 { type: 'HAS_ITEM'; itemId; amount } | { type: 'HAS_ITEM'; custom: true; slot: string } // a condition
 { type: 'SPAWN_MONSTER'; custom: true; slot: string } // always custom, see below
@@ -398,7 +405,7 @@ A placement fills the slots in with `customValues`, keyed by `slot`:
 type CustomValue =
 	| { type: 'SHOW_DIALOG'; text?: string }
 	| { type: 'TAKE_ITEM' | 'HAS_ITEM'; itemId?: string; amount?: number }
-	| { type: 'GIVE_ITEM'; itemId?: string; amount?: number; qualifiers?: Qualifiers }
+	| { type: 'GIVE_ITEM'; itemId?: string; amount?: number; qualifiers?: Qualifiers; chance?: number; giveLimit?: number }
 	| { type: 'SPAWN'; defKind?: Kind; defId?: string; quantity?: number; qualifiers?: Qualifiers }
 	| { type: 'SPAWN_MONSTER'; groups?: EncounterGroup[]; showAs?: number; hideSprite?: boolean }
 	| { type: 'REMOVE_OBJECT'; targetUid?: string }

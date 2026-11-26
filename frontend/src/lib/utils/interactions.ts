@@ -227,12 +227,31 @@ export const ACTION_TYPES: ActionTypeConfig[] = [
 		fields: [
 			{ key: 'itemId', label: 'Item', input: 'item' },
 			{ key: 'amount', label: 'Amount', input: 'number', stackableOnly: true },
+			// [Interactions 16]: rolled, and counted per placement, before any of
+			// the interaction's actions run.
+			{
+				key: 'chance',
+				label: 'Chance % (blank = always)',
+				input: 'number',
+				optional: true,
+			},
+			{
+				key: 'giveLimit',
+				label: 'Times it can give (blank = unlimited)',
+				input: 'number',
+				optional: true,
+			},
 		],
 		blank: () => ({ type: 'GIVE_ITEM', itemId: '', amount: 1 }),
 		summary: (a, ctx) => {
 			if (a.type !== 'GIVE_ITEM') return ''
 			if (a.custom) return 'give an item (set per placement)'
-			return `give ${ctx.defName('item', a.itemId)}${a.amount && a.amount > 1 ? ` x${a.amount}` : ''}`
+			const odds = [
+				a.chance !== undefined && `${a.chance}%`,
+				a.giveLimit !== undefined &&
+					(a.giveLimit === 1 ? 'once' : `up to ${a.giveLimit}x`),
+			].filter(Boolean)
+			return `give ${ctx.defName('item', a.itemId)}${a.amount && a.amount > 1 ? ` x${a.amount}` : ''}${odds.length ? ` (${odds.join(', ')})` : ''}`
 		},
 	},
 	{
