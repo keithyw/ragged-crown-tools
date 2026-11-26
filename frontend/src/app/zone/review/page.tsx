@@ -10,6 +10,7 @@ import {
 	SpinnerSection,
 	ZoneRedoModal,
 } from '@/components'
+import { clearRedoDraft } from '@/components/ui/modals/redoDraft'
 import { useCollection } from '@/hooks'
 import { URLS } from '@/lib/constants'
 import { collectionService, StoredDoc } from '@/lib/services'
@@ -72,6 +73,10 @@ const ZoneReviewPage = () => {
 				})
 			}),
 		)
+		// An approved zone's unsent redo note is moot.
+		results.forEach((r, i) => {
+			if (r.status === 'fulfilled') clearRedoDraft(chosen[i]._id)
+		})
 		const failed = results.filter((r) => r.status === 'rejected').length
 		if (failed > 0) {
 			toast.error(`${failed} of ${chosen.length} could not be approved`)
@@ -98,6 +103,7 @@ const ZoneReviewPage = () => {
 			toast.error('Could not save the note')
 			return
 		}
+		clearRedoDraft(_id)
 		toast.success(`${zone.name} queued for redo`)
 		setRedoTarget(null)
 		refresh()

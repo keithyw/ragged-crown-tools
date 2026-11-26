@@ -4,9 +4,10 @@ import { useState } from 'react'
 import { DialogTitle } from '@headlessui/react'
 import { BaseModal, Button } from '@/components'
 import { type ReviewedZone } from '@/lib/types'
+import { loadRedoDraft, saveRedoDraft } from './redoDraft'
 
 interface ZoneRedoModalProps {
-	zone: Pick<ReviewedZone, 'name' | 'id' | 'reviewNote'>
+	zone: Pick<ReviewedZone, 'name' | 'id' | 'reviewNote'> & { _id: string }
 	// Saves the note and queues the zone for Claude. Resolves when done.
 	onSave: (note: string) => Promise<void>
 	onClose: () => void
@@ -14,13 +15,16 @@ interface ZoneRedoModalProps {
 
 // A zone and one field: what needs to change in it. Mounted only while a zone
 // is chosen (the caller keys it), so the note always starts from that zone's
-// current one.
+// current one, or the unsent draft the owner left for it. The caller clears the
+// draft once the note is saved.
 export const ZoneRedoModal = ({
 	zone,
 	onSave,
 	onClose,
 }: ZoneRedoModalProps) => {
-	const [note, setNote] = useState(zone.reviewNote ?? '')
+	const [note, setNote] = useState(
+		() => loadRedoDraft(zone._id) ?? zone.reviewNote ?? '',
+	)
 	const [isSaving, setIsSaving] = useState(false)
 
 	const save = async () => {
@@ -45,7 +49,10 @@ export const ZoneRedoModal = ({
 				What needs to change in the zone?
 				<textarea
 					value={note}
-					onChange={(e) => setNote(e.target.value)}
+					onChange={(e) => {
+						setNote(e.target.value)
+						saveRedoDraft(zone._id, e.target.value)
+					}}
 					rows={4}
 					autoFocus
 					className='mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-sm text-gray-900 shadow-sm focus:border-blue-500 focus:ring-blue-500 focus:outline-none'

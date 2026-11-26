@@ -32,6 +32,7 @@ import {
 	type NewMapValues,
 	type StackDef,
 } from '@/components'
+import { clearRedoDraft } from '@/components/ui/modals/redoDraft'
 import { useCollection } from '@/hooks'
 import type {
 	ArmorDef,
@@ -520,6 +521,7 @@ export const ZoneBuilder = ({
 		}
 		try {
 			await onSave(parsed.data)
+			if (zoneId && parsed.data.status === 'approved') clearRedoDraft(zoneId)
 		} catch (e: unknown) {
 			handleFormErrors<ZoneDetailsFormData>(
 				e,
@@ -894,12 +896,14 @@ export const ZoneBuilder = ({
 			{isRedoOpen && onSendForRedo && (
 				<ZoneRedoModal
 					zone={{
+						_id: zoneId ?? '',
 						name: initialZone?.name ?? '',
 						id: initialZone?.id ?? '',
 						reviewNote: review?.reviewNote,
 					}}
 					onSave={async (note) => {
 						await onSendForRedo(note)
+						if (zoneId) clearRedoDraft(zoneId)
 						// The zone now has the new status; drop any pending choice.
 						setStatusChoice(null)
 						setIsRedoOpen(false)
