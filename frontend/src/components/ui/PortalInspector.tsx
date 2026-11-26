@@ -6,12 +6,14 @@ import { PortalDef } from '@/lib/types'
 interface PortalInspectorProps {
 	portal: PortalDef
 	onEdit: () => void
+	onDuplicate: () => void
 	onDelete: () => void
 }
 
 export const PortalInspector = ({
 	portal,
 	onEdit,
+	onDuplicate,
 	onDelete,
 }: PortalInspectorProps) => {
 	const details = [
@@ -38,12 +40,15 @@ export const PortalInspector = ({
 					<TileDetails key={d.key} description={d.key} val={d.val} />
 				))}
 			</dl>
-			<div className='flex w-full gap-2'>
+			<div className='flex w-full flex-wrap gap-2'>
 				<Button actionType='edit' onClick={onEdit}>
 					Edit
 				</Button>
 				<Button actionType='delete' onClick={onDelete}>
 					Delete
+				</Button>
+				<Button actionType='neutral' onClick={onDuplicate}>
+					Duplicate
 				</Button>
 			</div>
 		</div>

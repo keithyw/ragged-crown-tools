@@ -1,16 +1,23 @@
 'use client'
 
+import toast from 'react-hot-toast'
+import { Suspense, useEffect } from 'react'
+import { useSearchParams } from 'next/navigation'
 import { Controller, get } from 'react-hook-form'
 import { CreateFormLayout, FormInput, InteractionsEditor } from '@/components'
 import { useCreateRecord } from '@/hooks'
 import { URLS } from '@/lib/constants'
 import { collectionService } from '@/lib/services'
+import { PortalDef } from '@/lib/types'
 import { portalDefinitionSchema } from '@/schemas'
 import { fields } from '@/app/portal-definitions/fields'
 
-const CreatePortalDefinitionPage = () => {
+const CreatePortalDefinitionForm = () => {
+	// ?from=<_id> pre-fills the form from an existing portal (Duplicate).
+	const from = useSearchParams().get('from')
 	const {
 		control,
+		reset,
 		onSubmit,
 		register,
 		formState: { errors, isSubmitting },
@@ -32,6 +39,35 @@ const CreatePortalDefinitionPage = () => {
 			return `Portal Definition Created`
 		},
 	})
+
+	useEffect(() => {
+		if (!from) return
+		let cancelled = false
+		collectionService.get<PortalDef>('entities', from).then(
+			(p) => {
+				if (cancelled) return
+				// Never copied: _id, updated_at, and the id (unique index, and
+				// the promotion key). Destinations live on placements, not here.
+				reset({
+					kind: 'portal',
+					id: '',
+					name: `${p.name} (copy)`,
+					description: p.description,
+					glyph: p.glyph,
+					spriteId: p.spriteId,
+					twoWay: p.twoWay ?? false,
+					interactions: p.interactions,
+				})
+			},
+			() => {
+				if (!cancelled) toast.error('Failed to load the portal to duplicate')
+			},
+		)
+		return () => {
+			cancelled = true
+		}
+	}, [from, reset])
+
 	return (
 		<CreateFormLayout
 			title='Create Portal Definition'
@@ -68,5 +104,11 @@ const CreatePortalDefinitionPage = () => {
 		</CreateFormLayout>
 	)
 }
+
+const CreatePortalDefinitionPage = () => (
+	<Suspense>
+		<CreatePortalDefinitionForm />
+	</Suspense>
+)
 
 export default CreatePortalDefinitionPage

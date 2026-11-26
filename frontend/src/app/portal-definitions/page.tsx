@@ -73,6 +73,11 @@ const PortalDefinitionsPage = () => {
 										`${URLS.PORTAL_DEFINITIONS}/${selectedPortal._id}/edit`,
 									)
 								}
+								onDuplicate={() =>
+									router.push(
+										`${URLS.PORTAL_DEFINITIONS}/create?from=${selectedPortal._id}`,
+									)
+								}
 								onDelete={() => {
 									deleteController.openDeleteModal(selectedPortal)
 									setSelectedPortal(null)
