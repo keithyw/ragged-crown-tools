@@ -18,10 +18,10 @@ Every def shares a base:
 
 | Field          | Type     | Notes                                                       |
 | -------------- | -------- | ----------------------------------------------------------- |
-| `_id`          | string   | Mongo ObjectID, server-generated. The only key.             |
-| `id`           | string?  | Legacy, user-facing label (e.g. `T001`). Display only.      |
+| `_id`          | string   | Mongo ObjectID, server-generated. Used for references.      |
+| `id`           | string?  | Business key (e.g. `GOLD`): stable, unique, rarely changed. |
 | `kind`         | `Kind`   | Discriminator, see below.                                   |
-| `name`         | string   |                                                             |
+| `name`         | string   | What the player and designer see.                           |
 | `description`  | string?  |                                                             |
 | `glyph`        | `Glyph`  | What it looks like on the map (1.2).                        |
 | `spriteId`     | string?  | A sprite's `_id`. Drawn instead of the glyph (1.2).         |
@@ -65,10 +65,10 @@ The legacy category types that used to be in `map.ts` (`TileType`, `TileType2`, 
 | ---------- | ----------- | ------------------------------------------------------------------------------------ |
 | `terrain`  | `tile_defs` | Today's `TileDef` fields minus the glyph and `isConsumable`: `moveCost`, `isWalkable?`, `encounterRate?`, `code?` (tools only, below) |
 | `object`   | `entities`  | `isSolid`, `isInvisible?`, `moveCost?` (spaces only, default 1), `numberOfUses?`, `container?`, `interactions?` |
-| `item`     | `items`     | `weight`, `maxQuantity?`, `numberOfUses?`, `isQuestItem?`, `container?`, `interactions?` (reserved for item use, deferred). `category` is deferred |
+| `item`     | `items`     | `weight`, `maxQuantity?`, `numberOfUses?`, `isQuestItem?`, `isCurrency?` (section 8), `container?`, `interactions?` (reserved for item use, deferred). `category` is deferred |
 | `weapon`   | `items`     | The item core (`weight`, `maxQuantity?`, `numberOfUses?`, `isQuestItem?`, `interactions?`, no `container`) plus `type`, `damage`, `isTwoHanded?`, `isMissile?`, `isThrown?` (below) |
 | `armor`    | `items`     | The item core plus `type` (the slot it is worn in) and `defenseValue` (below) |
-| `monster`  | `monsters`  | `level`, `hp`, `defenseValue`, `damage`, `removalChance`, `initiative?`, `xp`, `rarity`, `numberAppearing`, `terrainIds?`, `isUnique?` (below) |
+| `monster`  | `monsters`  | `level`, `hp`, `defenseValue`, `damage`, `removalChance`, `initiative?`, `xp`, `rarity`, `numberAppearing`, `terrainIds?`, `isUnique?`, `currency?` (below) |
 | `portal`   | `entities`  | `twoWay`, `interactions?`: always walkable; its destination is set per placement     |
 
 `entities` holds several kinds and is filtered by `kind` on the server ([Backend 2]).
@@ -118,7 +118,8 @@ Entering a town, castle or dungeon normally lands the player on its `startingPos
 - **`numberAppearing`**: how many appear, as dice (a `RandomRoll`, `{ count, die }`, the same shape as a weapon's `damage`): 3d6 goblins. A placement or group can set its own number instead ([Combat 11]).
 - **`terrainIds`** ([Monsters 11], owner, 2026-11-24): the terrain defs (`tile_defs` `_id`s) it can turn up on in the **open world**. On the world map, when a step rolls an encounter, the game looks for the monsters whose list holds the terrain stepped on and whose level fits the zone's difficulty ([Combat 24]). Optional; **absent or empty means it appears on no terrain**, so it is never drawn from the open world (a dungeon's pool is chosen on the difficulty configuration instead, [Tools 27]). Picked in the monster form from a grid of every terrain (a check mark on each one chosen), not a search, because there are few terrains. The MCP checks each is a terrain that exists.
 - **`isUnique`**: absent = false. A unique monster (a boss) only ever appears as one, and the game ignores `numberAppearing`. A unique monster is for set encounters only and never in a random encounter pool ([Combat 8]).
-- **No attributes and no gear.** Currency, loot tables ([Combat 2]) and special abilities come later.
+- **`currency`** (owner, 2026-11-27, [Currency 1]): what one of this monster carries, a dice roll per currency (section 8). Optional; absent means none. Humanoids usually carry some; the rat and giant spider don't.
+- **No attributes and no gear.** Loot tables ([Currency 1]) and special abilities come later; treasure in a nest or lair comes from a loot table, not from the monster.
 
 A non-combat NPC, such as a townsperson or a friendly gold dragon quest giver, is not a monster: it is a solid **object** with interactions (dialog when bumped).
 
@@ -342,7 +343,7 @@ Interactions can be **unlimited** (a generic NPC's "Hello and welcome to town X"
 
 ### 4.4 Initial actions
 
-`SHOW_DIALOG`, `GIVE_ITEM { itemId, amount?, qualifiers?, chance?, giveLimit? }` (below), `TAKE_ITEM`, `GIVE_CURRENCY`, `SET_FLAG`, `SPAWN { defKind, defId, quantity?, qualifiers? }` (adds to this cell's stack at runtime), `SPAWN_MONSTER` (a barrier's set encounter, below), `RANDOM_ENCOUNTER` (a random encounter space, below), `REMOVE_SELF`, `REMOVE_OBJECT` (removes another object in the zone, below), `TELEPORT { destination }`, `PLAY_SOUND`, `MODIFY_ATTRIBUTE`.
+`SHOW_DIALOG`, `GIVE_ITEM { itemId, amount?, qualifiers?, chance?, giveLimit? }` (below), `TAKE_ITEM`, `GIVE_CURRENCY` (always custom, section 8), `SET_FLAG`, `SPAWN { defKind, defId, quantity?, qualifiers? }` (adds to this cell's stack at runtime), `SPAWN_MONSTER` (a barrier's set encounter, below), `RANDOM_ENCOUNTER` (a random encounter space, below), `REMOVE_SELF`, `REMOVE_OBJECT` (removes another object in the zone, below), `TELEPORT { destination }`, `PLAY_SOUND`, `MODIFY_ATTRIBUTE`.
 
 The engine implements them incrementally ([Game 2]). Fields not listed here are decided when each type is written.
 
@@ -397,6 +398,7 @@ An action's (or condition's) value can be left for each placement to fill in, so
 { type: 'HAS_ITEM'; itemId; amount } | { type: 'HAS_ITEM'; custom: true; slot: string } // a condition
 { type: 'SPAWN_MONSTER'; custom: true; slot: string } // always custom, see below
 { type: 'REMOVE_OBJECT'; custom: true; slot: string } // always custom, see below
+{ type: 'GIVE_CURRENCY'; custom: true; slot: string } // always custom, section 8
 ```
 
 A placement fills the slots in with `customValues`, keyed by `slot`:
@@ -409,6 +411,7 @@ type CustomValue =
 	| { type: 'SPAWN'; defKind?: Kind; defId?: string; quantity?: number; qualifiers?: Qualifiers }
 	| { type: 'SPAWN_MONSTER'; groups?: EncounterGroup[]; showAs?: number; hideSprite?: boolean }
 	| { type: 'REMOVE_OBJECT'; targetUid?: string }
+	| { type: 'GIVE_CURRENCY'; amounts?: Partial<Record<Currency, number>>; target?: 'character' | 'party' } // section 8
 
 interface EncounterGroup {
 	defId: string // a monster def's _id
@@ -482,7 +485,7 @@ Zone JSON is the **initial state only**. When a game starts, the player gets a r
 
 **Backend:** stays a schema-less generic store with one entry point. `GetAll` gains string equality filters, sort, and limit/offset ([Backend 2]). It knows nothing about `kind`.
 
-**Shared types:** `frontend/src/lib/types/core.ts`, `defs.ts`, `gear.ts`, `interactions.ts` and `map.ts` (listed in `shared.ts`) are read by the game repo through a `@shared/types` path alias to `shared.ts` ([Game 10]; no shared package, on purpose), so none of them may import tools-only code or runtime values. The game resolves everything by `_id`.
+**Shared types:** `frontend/src/lib/types/core.ts`, `defs.ts`, `gear.ts`, `interactions.ts`, `map.ts` and `currency.ts` (listed in `shared.ts`) are read by the game repo through a `@shared/types` path alias to `shared.ts` ([Game 10]; no shared package, on purpose), so none of them may import tools-only code or runtime values. The game resolves everything by `_id`.
 
 ---
 
@@ -514,6 +517,37 @@ An entry is an **instance**, like a line item on an order: it points at a def an
 - **Equipment** (owner, 2026-11-19, [Inventory 37]; rules in [Inventory 40] weapons, [Inventory 41] armor). An equipped piece **never leaves the inventory** (there is no paper doll, and the inventory is not a backpack the player looks into), so it still counts toward weight; unequipping only clears the mark. The inventory cell shows a **small slot icon over an equipped piece** (a hand over gloves, a chest piece over a breastplate, a helmet over a leather cap). What is equipped is a **separate equipment map on the character**, keyed by slot, pointing at inventory entries by `uid`; it is the same for weapons and armor, and the icons read it. Armor slots: one per armor `type`, except **10 ring slots** (fingers) and **2 earring slots**; one wrists slot (bracers come as a pair), one neck, one brooch, one shield. **A brooch needs a cloak worn**, and taking the cloak off unequips the brooch too. Putting a piece into a taken slot **swaps** it: the old piece is unequipped. A shield and a two-handed weapon exclude each other: equipping a shield unequips a two-handed weapon (the other hand is bare), and equipping a two-handed weapon unequips the shield and anything in the other hand. **Weapons** ([Inventory 40]): a character has two hands and holds one two-handed weapon, two one-handed weapons, or one weapon and a shield. A two-handed weapon never goes with a second weapon; what is two-handed is the def's `isTwoHanded` flag, not its type (bows and crossbows are flagged). A missile weapon (bow, crossbow, sling) needs its ammo **equipped** in the **one ammo slot**, which takes no hand (a quiver of normal arrows and a quiver of +1 arrows are different pieces); ammo has no model yet ([Inventory 42]). A sling is one-handed and goes with a shield. A thrown weapon is one-handed and goes with a shield; held with a second weapon it is used as a melee weapon (two daggers are fine). Equipping a one-handed weapon with both hands full unequips the **first equipped weapon in the inventory array** (there is no primary hand). Whether every one-handed weapon may be dual wielded may become a flag later (size).
 - **Game-only type** (owner, 2026-11-19): `InventoryEntry` lives in the game (`src/types/player.ts`), not in the shared types. The tools never write an inventory. It may become shared if characters the tools author get their own inventory (joinable NPCs and the like), which is out of scope while there are none.
 
+## 8. Currency
+
+_Decided with the owner on 2026-11-27 ([Currency 1]). Names are provisional._
+
+- **Six currencies**, lowest to highest: bronze, copper, iron, silver, gold, platinum. **Gold is the standard.**
+- **Rates** live in **one conversion map in code**, not in the data and not on the items: 5 bronze = 1 copper, 5 copper = 1 iron, 2 iron = 1 silver (10 copper), 10 silver = 1 gold, 3 gold = 1 platinum.
+
+The map (`CURRENCY_VALUES`, `lib/constants/currency.ts`; the game keeps a copy) holds each coin's value **in bronze**, the smallest, so every value is a whole number (in copper, bronze would be 0.2, and sums of decimals drift in code).
+
+| | bronze | copper | iron | silver | gold | platinum |
+| --- | --- | --- | --- | --- | --- | --- |
+| in bronze | 1 | 5 | 25 | 50 | 500 | 1500 |
+
+- **Price anchors** (a guide for designers and skills, not data): a torch 5c (1 iron), standard rations 10s (1g), a long sword 12g, a night at a high-class inn 2-3p (6-9g).
+- **No weight.** Currency never counts toward carrying capacity (weight per coin type was tried and dropped the same day).
+- **Each character holds their own** currency, a `CharacterCurrency` with one whole-number field per currency, shown on the character sheet. Coins never sit in the inventory. An expansion adds a field (a tael for an Asian realm). Like `InventoryEntry`, it is game-only (section 7).
+
+```ts
+type Currency = 'bronze' | 'copper' | 'iron' | 'silver' | 'gold' | 'platinum'
+type CharacterCurrency = Partial<Record<Currency, number>> // a field left out is 0
+```
+
+- **Currency items.** One item def per currency, each with its own sprite, marked **`isCurrency`** (absent = false, never stored `false`). The item's **`id` names the currency**: `GOLD` is `gold` (it is the business key, section 1.1, so renaming it breaks the link). `MUNZ`, a test item, is refurbished as one of the six. A currency item is placed, put in a container and given like any item, with a `quantity` for a pile ("50 gold"), so it needs a large `maxQuantity`; its `weight` is ignored. **Picking one up adds its quantity to the character's `CharacterCurrency`** instead of the inventory.
+- **A flag, not a kind**, for now: it is one checkbox on the item form. If currency ever needs properties of its own (crafting currency, spell reagents), it becomes a subclass of item like weapons and armor. Neither system is designed.
+- **`GIVE_CURRENCY` is always custom**, like `SPAWN_MONSTER`: the def only says "give currency here", and the placement's value lists one or more currencies with their amounts (`amounts`, by currency key, so the picker is the short list of six, not an item search) and who receives (`target`).
+- **Who receives (`target`)** uses the same name and values as `MODIFY_ATTRIBUTE`'s: `character` (absent) or `party`. **`party` means each character receives the full amount**: 100g to the party is 100g to every character. `GIVE_ITEM` gets the same `target`, on the action and on its custom value.
+- **Trade and pool.** Characters can give each other currency. Pooling gathers the whole party's currency onto one chosen character.
+- **No automatic conversion.** Coins stay the type they are. Converting is done at a bank-type place, which is also where the rates are shown to the player. Not built yet.
+- **Monsters** carry currency on the def (`currency`, section 1.3): `Partial<Record<Currency, RandomRoll>>`, the same dice shape as `damage` (`{ gold: { count: 1, die: 4 } }` is 1d4 gold), rolled for each monster beaten. Absent means none. **Winnings are shared** (owner, 2026-11-27): each currency is totalled over the monsters beaten, divided by the number of living party members (a dead character gets no share and isn't counted), and each share is **rounded up**; every living member gets the share, and the total shown is the share times those members (150 silver among 4 is 38 each, shown as 152).
+- **Not designed yet:** loot tables ([Currency 1]), banks, stores and prices in the game.
+
 ---
 
 ## Open questions
@@ -526,7 +560,7 @@ An entry is an **instance**, like a line item on an order: it points at a def an
   - What allowed materials carry (bonuses, penalties, a penalised wooden sword; the lists themselves are settled, [Inventory 14]), the shape of an item instance and where the game stores it ([Inventory 9], [Inventory 17]), and how a placement or `GIVE_ITEM` names a quality or material.
   - What `isQuestItem` enforces in the game ([Inventory 18]).
   - No subcategories and no recursive category logic (decided). Character skills (a "swords" skill covering all swords) come later; AD&D-style specialization is not decided.
-- **Gold and currency.** Deferred. Undecided whether currency is a pooled resource, a per-character stat, or an inventory item with weight, and whether the party can split across locations. `GIVE_CURRENCY` is a placeholder action until then, and gold can be a plain item with a large `maxQuantity` meanwhile.
+- **Gold and currency.** _Decided 2026-11-27: section 8._ Still open: loot tables, banks and stores ([Currency 1]).
 - **Item use.** What using an item does (a wand casting a spell; thieves' tools used on an NPC to get gold) and how it is described. Probably the same Interaction shape with `on: USE`, with conditions (a pickpocket check against the character's skill percentage) and a limit on uses (99, or 1d100). That is why `ItemDef.interactions` stays. Deferred; not part of the object interactions work.
 - **Portal rules.** `twoWay` exists on the def but is unused for now (section 1.3), and a key requirement is a `HAS_ITEM` condition on the def's `WALK` interaction. Still open: single use, blocking the player, and where those live in the data. Designed with the portals ([Tools: Portals 1]) when the first interior building is built.
 - **Boolean logic and branching in conditions.** Today all conditions must pass (AND). Out of scope for the current milestones, so nothing is implemented:

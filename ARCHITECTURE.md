@@ -127,9 +127,8 @@ Answers "does any other document point at this one?" so the frontend can warn be
 - The payload's own `_id` is stripped on create and replace, so clients cannot choose or change keys.
 - `updated_at` is set server-side (UTC) on every write.
 - PUT is a **full replacement** (`FindOneAndReplace`, returning the new document). Any field missing from the body is removed. There is no PATCH.
-- There is a notion of a regular document potentially having its own "id" value. This is somewhat of a legacy element where a shorthand was used for
-  things like TileDefs as opposed to a hexcode to be used in representing each terrain tile for a zone. It might seem confusing for now, but there could be
-  future cases where a manually entered "id" value is required.
+- Most documents also carry their own `id`, a business key entered by hand. It predates the Mongo `_id` (it began as a shorthand for things like tile
+  defs, before a hex code was used for each terrain tile in a zone), and it is meant to be more stable than `_id`: see section 3.4.
 
 ### 3.3 Error mapping
 
@@ -148,12 +147,14 @@ All error bodies are JSON: `{"error": "..."}`.
 
 | Field | Who owns it        | Purpose                                                                                                                                |
 | ----- | ------------------ | -------------------------------------------------------------------------------------------------------------------------------------- |
-| `_id` | Server (ObjectID)  | Technical key: URLs, API calls, React keys, selection state. Users never see it.                                                       |
-| `id`  | User (e.g. `T001`) | Human-readable identifier that other data and the game refer to. Shown in the UI. Refer to Document identity for additional background |
+| `_id` | Server (ObjectID)  | Technical key: URLs, API calls, React keys, selection state, references between documents. Users never see it.                         |
+| `id`  | User (e.g. `GOLD`) | Business key: unique per collection, stable and rarely changed. Game logic and promotion may match on it. Not the display text.         |
 
-`ErrDuplicate` only fires if MongoDB has a **unique index** on the user-facing `id` for that collection. The code does not create indexes today (see Known gaps).
+What people see is the document's `name` (in the UI, and in the game's text for the player), not its `id` (owner, 2026-11-27). `id` is the more stable key of the two: a copied or restored document gets a new `_id` but keeps its `id`. Renaming an `id` is a deliberate change; anything that matches on it breaks until it is updated.
 
-Note: I once added an index by hand on `tile_defs` only, and it is gone (the database has been flushed or recreated since). **Every collection now has a unique `id_unique` index on `id`**, in the real database and the sandbox (created with `make db-indexes` and `make sandbox-indexes`, section 6.3, [Infra 7]; checked by hand 2026-10-30). `_id` is still the real key and `id` is a legacy label filled in by hand. There is no base code to keep the indexes up to date in the way a migration file is used, so a recreated or reset database needs the make target run again.
+`ErrDuplicate` only fires if MongoDB has a **unique index** on `id` for that collection. The code does not create indexes today (see Known gaps).
+
+Note: I once added an index by hand on `tile_defs` only, and it is gone (the database has been flushed or recreated since). **Every collection now has a unique `id_unique` index on `id`**, in the real database and the sandbox (created with `make db-indexes` and `make sandbox-indexes`, section 6.3, [Infra 7]; checked by hand 2026-10-30). `_id` is still the storage key; `id` is the business key, filled in by hand. There is no base code to keep the indexes up to date in the way a migration file is used, so a recreated or reset database needs the make target run again.
 
 ### 3.5 Other
 
@@ -248,7 +249,7 @@ A text-heavy entity (e.g. characters) could reuse `useCollection` and the same c
 
 ## 5. Data contract with the game
 
-- The shared types are `lib/types/core.ts`, `defs.ts`, `gear.ts` (weapons and armor), `interactions.ts` and `map.ts` (zones, placements; listed together in `lib/types/shared.ts`) and are the game's types too (`TileDef`, `Zone`, `Placement`, `Interaction`, `Position`, ...): the game imports them through a `@shared/types` path alias to `shared.ts` ([Game 10]), so there is one copy. **They must stay types-only** (the game imports them with `import type`; runtime helpers are copied into the game) **and the two repos must sit side by side.** A change here can break the game's `tsc -b`. Tools-only types (`sprite.ts`, `zoneSpec.ts`, `zoneReview.ts`, ...) are not in that list on purpose, and nothing in it imports them. A new shared area (inventory, character) gets its own file and a line in `shared.ts`, not an entry in `map.ts` ([Debt 2]).
+- The shared types are `lib/types/core.ts`, `defs.ts`, `gear.ts` (weapons and armor), `interactions.ts`, `map.ts` (zones, placements) and `currency.ts` (listed together in `lib/types/shared.ts`) and are the game's types too (`TileDef`, `Zone`, `Placement`, `Interaction`, `Position`, ...): the game imports them through a `@shared/types` path alias to `shared.ts` ([Game 10]), so there is one copy. **They must stay types-only** (the game imports them with `import type`; runtime helpers are copied into the game) **and the two repos must sit side by side.** A change here can break the game's `tsc -b`. Tools-only types (`sprite.ts`, `zoneSpec.ts`, `zoneReview.ts`, ...) are not in that list on purpose, and nothing in it imports them. A new shared area (inventory, character) gets its own file and a line in `shared.ts`, not an entry in `map.ts` ([Debt 2]).
 - The tool's `tileDefinitionSchema` covers a subset of `TileDef`. Not yet in the form: `type`, `spriteCoords`.
 - Planned change: a zone's `terrain` (`string[][]`) should reference tiles by Mongo `_id`, not the legacy `T001` keys. The game's map/tile loaders will need to resolve by `_id`.
 - Things on the map (objects, items) and their interactions live in a zone's `placements`, keyed by `"x,y"`, not in an `events` collection. See `DATA-MODEL.md`.
@@ -299,7 +300,7 @@ A small local tool that lets Claude read the data in the database through the AP
 | Tool              | Calls                                | Notes                                                                                                                                           |
 | ----------------- | ------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------- |
 | `list_collection` | `GET /collection/{collection}`       | Optional `filters` (string equality, array = "any of"), `sort`, `limit`, `offset`. Returns `total` (from `X-Total-Count`), `returned`, `items`. |
-| `get_doc`         | `GET /collection/{collection}/{_id}` | Takes the Mongo `_id` (24 hex characters), not the user-facing `id`.                                                                            |
+| `get_doc`         | `GET /collection/{collection}/{_id}` | Takes the Mongo `_id` (24 hex characters), not the business key `id`.                                                                            |
 | `find_references` | `GET /references/{collection}/{_id}` | The first document that points at this one, or `referencedBy: null` (section 3.1). `null` is not "safe to delete". Read-only, works on both stacks. |
 | `create_doc`      | `POST /collection/{collection}`      | Create only. Sandbox only. Validated (see below). Errors such as `409` for a duplicate `id` come back readable.                                 |
 | `replace_doc`     | `PUT /collection/{collection}/{_id}` | **Replaces the whole document** (Known gap 1): send the full document, normally from `get_doc`. Sandbox only. Validated (see below).            |
@@ -390,7 +391,7 @@ Agreed 2026-10-29. All four steps work for **sprites** ([Skills 4]); promoting a
 Why promotion is keyed on `id`: the server generates `_id` and strips any `_id` in a request, so a copied document always gets a new one, and `_id` can't link a sandbox document to its real twin.
 
 - **Promotion is an upsert by `id`:** create it if the real database has no document with that `id`, otherwise replace that one. The unique index on `id` (section 6.3) turns an accidental duplicate into a `409`.
-- **This makes `id` a cross-database key for promotion only.** Everywhere else it stays a display label (section 3.4).
+- **`id` is the cross-database key** here because it is the business key (section 3.4).
 - **`make promote-sprites IDS="STONE_WALL,GRASS"`** (`scripts/promote-sprites.ts`, run through the MCP's `tsx`) is a **dry run**: for each `id` it prints `CREATE`, `UPDATE` (with what differs: name, category, background, or how many pixels) or `unchanged`, and writes nothing. Add **`APPLY=1`** to write: it runs `make db-backup` first, then creates or replaces.
 - **It refuses before writing anything** if an `id` isn't in the sandbox, is invalid against `spriteSchema`, matches more than one sprite on either side, or if the sandbox and real API addresses are the same. A failure part-way through a write stops and says how many were written; re-running is safe, because sprites already written show up as `unchanged`.
 - **Only `approved` sprites are promoted** ([Sprite 17]). A sprite with another status, or none, is refused with its status named, and nothing is written. An `UPDATE` also copies the status, so the real copy carries `approved`. Sprites have a review status (`review`, `redo`, `approved`) and a `reviewNote`; the sprite pages, the review page and the redo round use them ([Sprite 12]).
