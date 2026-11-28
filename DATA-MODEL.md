@@ -570,7 +570,7 @@ type CharacterCurrency = Partial<Record<Currency, number>> // a field left out i
 
 ## 9. Moving things
 
-_Decided with the owner on 2026-11-28 ([Game 30]). The fields are in the tools ([Tools 31]). Not built yet: [Tools 32] (content), [Game 31] (the command). Names are provisional._
+_Decided with the owner on 2026-11-28 ([Game 30]). Built: the fields ([Tools 31]), the sandbox content ([Tools 32]) and the game's command ([Game 31]). Names are provisional._
 
 The party can **push** items and some objects around the map, such as a carpet, a chair, a bed, or a container that is an object.
 
