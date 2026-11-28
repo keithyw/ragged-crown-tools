@@ -587,7 +587,7 @@ Items need no flag: every item can be moved.
 **The command** (`M` on the map):
 
 1. The player selects a cell by direction, with Space for the party's own cell. No party member is chosen.
-2. The thing selected is the **top** of that cell's stack. Nothing there: "Move what?"
+2. The thing selected is the **top visible** placement of that cell's stack: invisible objects are passed over, so a hidden one is never the reason for a refusal. Nothing there: "Move what?"
 3. A thing that can't move shows "Can't move!". One too heavy for the party shows "Too heavy!".
 4. The player gives one more direction, and the thing is pushed one cell that way. **Push only, no pulling:** it can never go onto the party's cell.
 5. A destination that can't take it shows "Can't move!".
