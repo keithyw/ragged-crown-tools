@@ -10,8 +10,10 @@ import {
 	TextInput,
 } from '@/components'
 import type { PlaceableDef } from '@/hooks'
+import { CURRENCIES } from '@/lib/constants'
 import type { StoredDoc } from '@/lib/services'
 import type {
+	Currency,
 	CustomValue,
 	EncounterGroup,
 	Kind,
@@ -312,6 +314,57 @@ export const CustomValueInput = ({
 								),
 							)
 						}
+					/>
+				</div>
+			)
+		}
+		case 'GIVE_CURRENCY': {
+			const current = value?.type === 'GIVE_CURRENCY' ? value : undefined
+			// No amounts and a single character are not stored.
+			const make = (
+				amounts: Partial<Record<Currency, number>>,
+				party: boolean,
+			): CustomValue => ({
+				type: 'GIVE_CURRENCY',
+				...(Object.keys(amounts).length > 0 && { amounts }),
+				...(party && { target: 'party' }),
+			})
+			const amounts = current?.amounts ?? {}
+			const isParty = current?.target === 'party'
+			return (
+				<div className='mb-4 rounded border border-gray-200 bg-gray-50 p-3'>
+					<div className='mb-2 font-bold text-gray-700'>{slotLabel(slot)}</div>
+					<div className='grid grid-cols-3 gap-x-3'>
+						{CURRENCIES.map((c) => (
+							<TextInput
+								key={c}
+								id={`${id}-${c}`}
+								label={c[0].toUpperCase() + c.slice(1)}
+								type='number'
+								inputWidth='sm'
+								min={1}
+								step={1}
+								value={amounts[c] ?? ''}
+								onChange={(e) => {
+									const n = parseNumberInput(e.target.value)
+									// Anything but a whole number of 1 or more is left out.
+									const next = { ...amounts }
+									if (Number.isInteger(n) && n >= 1) next[c] = n
+									else delete next[c]
+									onChange(make(next, isParty))
+								}}
+							/>
+						))}
+					</div>
+					<SelectDropdown
+						id={`${id}-target`}
+						label='Who receives'
+						options={[
+							{ value: 'character', label: 'One character' },
+							{ value: 'party', label: 'Each party member (full amount)' },
+						]}
+						selectedValue={isParty ? 'party' : 'character'}
+						onSelect={(v) => onChange(make(amounts, v === 'party'))}
 					/>
 				</div>
 			)

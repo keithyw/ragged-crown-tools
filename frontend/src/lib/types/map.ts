@@ -3,9 +3,10 @@
 // (see ARCHITECTURE.md 5).
 
 import type { Destination, Kind, Position } from './core'
+import type { Currency } from './currency'
 import type { TileDef } from './defs'
 import type { Qualifiers } from './gear'
-import type { Interaction } from './interactions'
+import type { Interaction, StatTarget } from './interactions'
 
 export type Direction = 'north' | 'south' | 'east' | 'west'
 
@@ -57,6 +58,11 @@ export type CustomValue =
 			defId?: string
 			quantity?: number
 			qualifiers?: Qualifiers
+	  }
+	| {
+			type: 'GIVE_CURRENCY'
+			amounts?: Partial<Record<Currency, number>> // whole numbers, 1 or more
+			target?: StatTarget // absent = character; party = each gets the full amount
 	  }
 	| {
 			type: 'REMOVE_OBJECT'

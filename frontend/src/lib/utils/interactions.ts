@@ -255,6 +255,15 @@ export const ACTION_TYPES: ActionTypeConfig[] = [
 		},
 	},
 	{
+		// Always set per placement: the amounts are filled in on the placement
+		// ([Currency 6]).
+		type: 'GIVE_CURRENCY',
+		label: 'Give currency (set per placement)',
+		fields: [],
+		blank: () => ({ type: 'GIVE_CURRENCY', custom: true }) as Action,
+		summary: () => 'give currency (set per placement)',
+	},
+	{
 		type: 'REMOVE_SELF',
 		label: 'Remove this object',
 		fields: [],

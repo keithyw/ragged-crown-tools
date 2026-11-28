@@ -17,11 +17,12 @@ export const CURRENCY_VALUES: Record<Currency, number> = {
 	platinum: 1500,
 }
 
+// The currencies, lowest to highest.
+export const CURRENCIES = Object.keys(CURRENCY_VALUES) as Currency[]
+
 // A currency item's `id` is its currency in capitals (`GOLD` is 'gold'); the
 // game matches on it when coins are picked up ([Currency 4]).
-const CURRENCY_ITEM_IDS = Object.keys(CURRENCY_VALUES).map((c) =>
-	c.toUpperCase(),
-)
+const CURRENCY_ITEM_IDS = CURRENCIES.map((c) => c.toUpperCase())
 
 // Why an `isCurrency` item can't have this id, or undefined if it can. Used by
 // the item form and the MCP.

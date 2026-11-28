@@ -50,7 +50,6 @@ export type Action =
 	| { type: 'GIVE_ITEM'; custom: true; slot: string }
 	| { type: 'TAKE_ITEM'; itemId: string; amount?: number; custom?: never }
 	| { type: 'TAKE_ITEM'; custom: true; slot: string }
-	| { type: 'GIVE_CURRENCY'; amount: number }
 	| { type: 'SET_FLAG'; flag: string }
 	| {
 			type: 'SPAWN'
@@ -71,6 +70,9 @@ export type Action =
 	// Removes another object from this zone (the quest giver clears the trees).
 	// Always custom: the target is picked on the placement.
 	| { type: 'REMOVE_OBJECT'; custom: true; slot: string }
+	// Pays the player ([Currency 6]). Always custom: which currencies, how much
+	// of each and who receives are filled in per placement.
+	| { type: 'GIVE_CURRENCY'; custom: true; slot: string }
 	| { type: 'REMOVE_SELF' }
 	| { type: 'TELEPORT'; destination: Destination }
 	| { type: 'PLAY_SOUND'; sound: string }

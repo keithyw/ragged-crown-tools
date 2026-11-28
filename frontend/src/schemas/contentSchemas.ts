@@ -1,5 +1,6 @@
 import { z } from 'zod'
 // Relative, not '@/': the MCP runs this file through tsx (ARCHITECTURE.md 6.1).
+import { CURRENCIES } from '../lib/constants/currency'
 import {
 	ARMOR_MATERIALS,
 	ARMOR_TYPES,
@@ -266,6 +267,20 @@ const removeObjectSchema = z
 		slot: a.slot ?? crypto.randomUUID(),
 	}))
 
+// Pays the player ([Currency 6]): always custom, the amounts are filled in on
+// the placement.
+const giveCurrencySchema = z
+	.object({
+		type: z.literal('GIVE_CURRENCY'),
+		custom: z.literal(true).optional(),
+		slot: z.string().min(1).optional(),
+	})
+	.transform((a): Extract<Action, { type: 'GIVE_CURRENCY' }> => ({
+		type: a.type,
+		custom: true as const,
+		slot: a.slot ?? crypto.randomUUID(),
+	}))
+
 export const characterStatSchema = z.enum([
 	'strength',
 	'dexterity',
@@ -366,7 +381,7 @@ export const actionSchema = z.discriminatedUnion('type', [
 	showDialogSchema,
 	giveItemSchema,
 	itemActionSchema('TAKE_ITEM'),
-	z.object({ type: z.literal('GIVE_CURRENCY'), amount }),
+	giveCurrencySchema,
 	z.object({ type: z.literal('SET_FLAG'), flag: z.string().min(1) }),
 	spawnSchema,
 	spawnMonsterSchema,
@@ -576,6 +591,11 @@ export const customValueSchema = z.union([
 		defId: z.string().optional(),
 		quantity: amount.optional(),
 		qualifiers: qualifiersSchema.optional(),
+	}),
+	z.object({
+		type: z.literal('GIVE_CURRENCY'),
+		amounts: z.partialRecord(z.enum(CURRENCIES), amount).optional(),
+		target: z.enum(['character', 'party']).optional(),
 	}),
 	z.object({
 		type: z.literal('REMOVE_OBJECT'),
