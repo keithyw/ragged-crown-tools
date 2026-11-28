@@ -63,6 +63,7 @@ export interface CarriedDef extends BaseDef {
 // Weapons and armor (gear.ts) are stored there too, told apart by `kind`.
 export interface ItemDef extends CarriedDef {
 	kind: 'item'
+	isCurrency?: boolean // absent = false. `id` names the currency (DATA-MODEL.md 8)
 	container?: ContainerSpec
 }
 

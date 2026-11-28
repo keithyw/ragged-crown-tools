@@ -43,6 +43,7 @@ const EditItemDefinitionPage = () => {
 				maxQuantity: i.maxQuantity,
 				numberOfUses: i.numberOfUses,
 				isQuestItem: i.isQuestItem ?? false,
+				isCurrency: i.isCurrency ?? false,
 				container: {
 					capacity: i.container?.capacity ?? 0,
 					maxDepth: i.container?.maxDepth ?? 0,

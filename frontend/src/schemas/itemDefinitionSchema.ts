@@ -1,4 +1,5 @@
 import { z } from 'zod'
+import { currencyIdProblem } from '../lib/constants/currency'
 import { itemDefSchema } from './contentSchemas'
 
 const wholeNumber = (label: string) =>
@@ -24,11 +25,16 @@ export const itemDefinitionSchema = itemDefSchema
 			})
 			.optional(),
 	})
-	// Typed as its own input, so the form keeps a plain boolean for the flag.
+	.superRefine((item, ctx) => {
+		const why = item.isCurrency && currencyIdProblem(item.id)
+		if (why) ctx.addIssue({ code: 'custom', path: ['id'], message: why })
+	})
+	// Typed as its own input, so the form keeps a plain boolean for the flags.
 	.transform((item): typeof item => ({
 		...item,
 		// A flag that is off is left out ("absent = false"), not saved as false.
 		isQuestItem: item.isQuestItem || undefined,
+		isCurrency: item.isCurrency || undefined,
 		container:
 			item.container && item.container.capacity > 0
 				? item.container

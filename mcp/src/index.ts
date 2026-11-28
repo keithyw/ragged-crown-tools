@@ -15,6 +15,7 @@ import {
 	weaponDefSchema,
 	armorDefSchema,
 } from '../../frontend/src/schemas/contentSchemas'
+import { currencyIdProblem } from '../../frontend/src/lib/constants/currency'
 import { qualifierProblem } from '../../frontend/src/lib/constants/gear'
 import { SPRITE_CATEGORIES } from '../../frontend/src/lib/types/sprite'
 import {
@@ -533,11 +534,12 @@ const DEF_SHAPES = {
 }
 const SERVER_FIELDS = new Set(['_id', 'updated_at'])
 
-// Checks a document against the frontend's schema for its collection, plus two
+// Checks a document against the frontend's schema for its collection, plus the
 // rules that only the forms enforce, and returns the parsed copy, which is
 // what gets sent: the same shape the frontend would save.
 //   - `create`: a def needs an `id` (the schema leaves it optional).
 //   - a def's glyph classes must be in the palette.
+//   - an `isCurrency` item's `id` must name a currency.
 // Unknown top-level keys are still stripped (zod's default), but come back as
 // warnings. `events` is a placeholder with no schema.
 function validate(
@@ -579,6 +581,7 @@ function validate(
 		id?: string
 		kind?: keyof typeof DEF_SHAPES
 		glyph?: { color: string; bg: string }
+		isCurrency?: boolean
 	}
 	const problems: string[] = []
 	if (create && allowed && !data.id) {
@@ -596,6 +599,10 @@ function validate(
 				)
 			}
 		}
+	}
+	if (data.kind === 'item' && data.isCurrency) {
+		const why = currencyIdProblem(data.id)
+		if (why) problems.push(`- id: ${why}`)
 	}
 	if (problems.length > 0) {
 		throw new Error(`Invalid document:\n${problems.join('\n')}`)

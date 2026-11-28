@@ -24,6 +24,7 @@ const CreateItemDefinitionPage = () => {
 			// The backfill glyph, so a def can be saved before it has a sprite.
 			glyph: { symbol: '??', color: 'text-white', bg: 'bg-black' },
 			isQuestItem: false,
+			isCurrency: false,
 			container: { capacity: 0, maxDepth: 0 },
 			description: '',
 		},

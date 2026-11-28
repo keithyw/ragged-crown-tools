@@ -52,6 +52,11 @@ export const fields: FormField<ItemDefinitionFormData>[] = [
 		type: 'checkbox',
 	},
 	{
+		name: 'isCurrency',
+		label: 'Currency (the ID names the coin: GOLD, SILVER, ...)',
+		type: 'checkbox',
+	},
+	{
 		name: 'container.capacity',
 		label: 'Container Capacity (0 = not a container)',
 		type: 'number',

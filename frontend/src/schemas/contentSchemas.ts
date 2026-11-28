@@ -457,6 +457,7 @@ const carriedShape = {
 export const itemDefSchema = baseDefSchema.extend({
 	kind: z.literal('item'),
 	...carriedShape,
+	isCurrency: z.boolean().optional(),
 	container: containerSpecSchema.optional(),
 }) satisfies z.ZodType<ItemDef>
 

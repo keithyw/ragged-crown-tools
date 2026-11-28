@@ -4,6 +4,7 @@ import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import {
 	Breadcrumbs,
+	Button,
 	ConfirmationModal,
 	CreateItemSection,
 	ItemInspector,
@@ -15,11 +16,17 @@ import { URLS } from '@/lib/constants'
 import { collectionService, StoredDoc } from '@/lib/services'
 import { ItemDef } from '@/lib/types'
 
+const FILTERS = [
+	{ currencyOnly: false, label: 'All' },
+	{ currencyOnly: true, label: 'Currency' },
+]
+
 const ItemDefinitionsPage = () => {
 	const router = useRouter()
 	const [selectedItem, setSelectedItem] = useState<StoredDoc<ItemDef> | null>(
 		null,
 	)
+	const [currencyOnly, setCurrencyOnly] = useState(false)
 	const {
 		items: itemDefs,
 		isLoading,
@@ -34,6 +41,10 @@ const ItemDefinitionsPage = () => {
 		onSuccess: refresh,
 		itemNameProp: 'name',
 	})
+
+	const shownDefs = currencyOnly
+		? itemDefs.filter((d) => d.isCurrency)
+		: itemDefs
 
 	if (isLoading) {
 		return <SpinnerSection spinnerMessage='Loading Items' />
@@ -50,9 +61,32 @@ const ItemDefinitionsPage = () => {
 				Create Item Definition
 			</CreateItemSection>
 			{itemDefs.length > 0 && (
+				<div className='mb-4 flex gap-2'>
+					{FILTERS.map((f) => (
+						<Button
+							key={f.label}
+							type='button'
+							actionType={currencyOnly === f.currencyOnly ? 'edit' : 'neutral'}
+							onClick={() => {
+								setCurrencyOnly(f.currencyOnly)
+								// So the inspector never shows an item the filter hid.
+								setSelectedItem(null)
+							}}
+						>
+							{f.label}
+						</Button>
+					))}
+				</div>
+			)}
+			{itemDefs.length > 0 && (
 				<div className='grid items-start gap-6 lg:grid-cols-[1fr_16rem]'>
 					<div className='grid grid-cols-[repeat(auto-fill,7rem)] content-start gap-4'>
-						{itemDefs.map((d) => (
+						{shownDefs.length === 0 && (
+							<p className='col-span-full text-sm text-gray-500'>
+								No currency items yet.
+							</p>
+						)}
+						{shownDefs.map((d) => (
 							<TileCard
 								key={d._id}
 								tile={d}
