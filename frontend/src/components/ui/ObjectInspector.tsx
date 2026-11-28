@@ -17,6 +17,11 @@ export const ObjectInspector = ({
 	const details = [
 		{ key: 'Type', val: object.isSolid ? 'Solid object' : 'Space' },
 		...(object.isInvisible ? [{ key: 'Invisible', val: 'Yes' }] : []),
+		...(object.isMoveable ? [{ key: 'Moveable', val: 'Yes' }] : []),
+		...(object.isStackable ? [{ key: 'Stackable', val: 'Yes' }] : []),
+		...(object.weight !== undefined
+			? [{ key: 'Weight', val: String(object.weight) }]
+			: []),
 		{ key: 'Color', val: object.glyph.color },
 		{ key: 'Background', val: object.glyph.bg },
 		// moveCost only applies to spaces

@@ -470,6 +470,23 @@ export const objectDefSchema = baseDefSchema.extend({
 	kind: z.literal('object'),
 	isSolid: z.boolean(),
 	isInvisible: z.boolean().optional(),
+	// A flag that is off is left out, never stored false. Typed as a boolean so
+	// the form keeps a plain checkbox.
+	isMoveable: z
+		.boolean()
+		.optional()
+		.transform((v) => (v || undefined) as boolean | undefined),
+	isStackable: z
+		.boolean()
+		.optional()
+		.transform((v) => (v || undefined) as boolean | undefined),
+	// An item's weight rules; whether one is required depends on isMoveable,
+	// which the form and the MCP check (moveWeightProblem).
+	weight: z
+		.number({ error: 'Weight must be a number' })
+		.min(0, 'Cannot be negative')
+		.transform((v) => Math.round(v * 100) / 100)
+		.optional(),
 	moveCost: z.number().min(0, 'Cannot be negative').optional(),
 	numberOfUses: z.number().int().min(1).optional(),
 	container: containerSpecSchema.optional(),

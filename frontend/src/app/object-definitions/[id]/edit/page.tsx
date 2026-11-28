@@ -27,6 +27,8 @@ const EditObjectDefinitionPage = () => {
 			glyph: { symbol: '', color: '', bg: '' },
 			isSolid: true,
 			isInvisible: false,
+			isMoveable: false,
+			isStackable: false,
 			moveCost: 1,
 			container: { capacity: 0, maxDepth: 0 },
 			description: '',
@@ -48,6 +50,9 @@ const EditObjectDefinitionPage = () => {
 				spriteId: o.spriteId,
 				isSolid: o.isSolid,
 				isInvisible: o.isInvisible ?? false,
+				isMoveable: o.isMoveable ?? false,
+				isStackable: o.isStackable ?? false,
+				weight: o.weight,
 				moveCost: o.moveCost ?? 1,
 				numberOfUses: o.numberOfUses,
 				container: {

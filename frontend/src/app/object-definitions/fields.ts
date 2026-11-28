@@ -33,6 +33,23 @@ export const fields: FormField<ObjectDefinitionFormData>[] = [
 		type: 'checkbox',
 	},
 	{
+		name: 'isMoveable',
+		label: 'Moveable (the party can push it)',
+		type: 'checkbox',
+	},
+	{
+		name: 'isStackable',
+		label: 'Stackable (things can be pushed on top of it)',
+		type: 'checkbox',
+	},
+	{
+		name: 'weight',
+		label: 'Weight (required when moveable; up to 2 decimals)',
+		type: 'number',
+		inputWidth: 'xs',
+		inputAttrs: { min: 0, step: 0.01 },
+	},
+	{
 		name: 'moveCost',
 		label: 'Move Cost (spaces only)',
 		type: 'number',

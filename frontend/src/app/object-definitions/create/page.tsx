@@ -25,6 +25,8 @@ const CreateObjectDefinitionPage = () => {
 			glyph: { symbol: '??', color: 'text-white', bg: 'bg-black' },
 			isSolid: true,
 			isInvisible: false,
+			isMoveable: false,
+			isStackable: false,
 			moveCost: 1,
 			container: { capacity: 0, maxDepth: 0 },
 			description: '',

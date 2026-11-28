@@ -1,4 +1,5 @@
 import { z } from 'zod'
+import { moveWeightProblem } from '../lib/constants/objects'
 import { objectDefSchema } from './contentSchemas'
 
 const wholeNumber = (label: string) =>
@@ -14,6 +15,7 @@ const wholeNumber = (label: string) =>
 //   - moveCost only applies to spaces, so a solid object doesn't keep one
 //   - an empty interactions list is left out
 //   - isInvisible is stored only when true
+// A moveable object needs a weight.
 export const objectDefinitionSchema = objectDefSchema
 	.extend({
 		id: z
@@ -27,6 +29,10 @@ export const objectDefinitionSchema = objectDefSchema
 				maxDepth: wholeNumber('Depth'),
 			})
 			.optional(),
+	})
+	.superRefine((object, ctx) => {
+		const why = moveWeightProblem(object)
+		if (why) ctx.addIssue({ code: 'custom', path: ['weight'], message: why })
 	})
 	.transform(
 		({ container, isSolid, isInvisible, moveCost, interactions, ...rest }) => ({

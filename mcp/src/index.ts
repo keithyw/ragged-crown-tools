@@ -17,6 +17,7 @@ import {
 } from '../../frontend/src/schemas/contentSchemas'
 import { currencyIdProblem } from '../../frontend/src/lib/constants/currency'
 import { qualifierProblem } from '../../frontend/src/lib/constants/gear'
+import { moveWeightProblem } from '../../frontend/src/lib/constants/objects'
 import { SPRITE_CATEGORIES } from '../../frontend/src/lib/types/sprite'
 import {
 	parseSpritePixels,
@@ -540,6 +541,7 @@ const SERVER_FIELDS = new Set(['_id', 'updated_at'])
 //   - `create`: a def needs an `id` (the schema leaves it optional).
 //   - a def's glyph classes must be in the palette.
 //   - an `isCurrency` item's `id` must name a currency.
+//   - a moveable object needs a weight.
 // Unknown top-level keys are still stripped (zod's default), but come back as
 // warnings. `events` is a placeholder with no schema.
 function validate(
@@ -582,6 +584,8 @@ function validate(
 		kind?: keyof typeof DEF_SHAPES
 		glyph?: { color: string; bg: string }
 		isCurrency?: boolean
+		isMoveable?: boolean
+		weight?: number
 	}
 	const problems: string[] = []
 	if (create && allowed && !data.id) {
@@ -599,6 +603,10 @@ function validate(
 				)
 			}
 		}
+	}
+	if (data.kind === 'object') {
+		const why = moveWeightProblem(data)
+		if (why) problems.push(`- weight: ${why}`)
 	}
 	if (data.kind === 'item' && data.isCurrency) {
 		const why = currencyIdProblem(data.id)

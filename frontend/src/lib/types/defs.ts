@@ -45,6 +45,10 @@ export interface ObjectDef extends BaseDef {
 	// stack, or the terrain); the zone builder outlines it. Say, a random
 	// encounter space that looks like the ground.
 	isInvisible?: boolean
+	// Moving things (DATA-MODEL.md 9). Both flags: absent = false.
+	isMoveable?: boolean // the party can push it
+	isStackable?: boolean // things may be pushed on top of it
+	weight?: number // as on an item; required when isMoveable
 	moveCost?: number // spaces only; defaults to 1
 	numberOfUses?: number // absent = unlimited
 	container?: ContainerSpec

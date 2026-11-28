@@ -64,7 +64,7 @@ The legacy category types that used to be in `map.ts` (`TileType`, `TileType2`, 
 | Kind       | Collection  | Kind-specific fields                                                                 |
 | ---------- | ----------- | ------------------------------------------------------------------------------------ |
 | `terrain`  | `tile_defs` | Today's `TileDef` fields minus the glyph and `isConsumable`: `moveCost`, `isWalkable?`, `encounterRate?`, `code?` (tools only, below) |
-| `object`   | `entities`  | `isSolid`, `isInvisible?`, `moveCost?` (spaces only, default 1), `numberOfUses?`, `container?`, `interactions?` |
+| `object`   | `entities`  | `isSolid`, `isInvisible?`, `moveCost?` (spaces only, default 1), `numberOfUses?`, `container?`, `interactions?`, `isMoveable?`, `isStackable?`, `weight?` (section 9) |
 | `item`     | `items`     | `weight`, `maxQuantity?`, `numberOfUses?`, `isQuestItem?`, `isCurrency?` (section 8), `container?`, `interactions?` (reserved for item use, deferred). `category` is deferred |
 | `weapon`   | `items`     | The item core (`weight`, `maxQuantity?`, `numberOfUses?`, `isQuestItem?`, `interactions?`, no `container`) plus `type`, `damage`, `isTwoHanded?`, `isMissile?`, `isThrown?` (below) |
 | `armor`    | `items`     | The item core plus `type` (the slot it is worn in) and `defenseValue` (below) |
@@ -567,6 +567,43 @@ type CharacterCurrency = Partial<Record<Currency, number>> // a field left out i
 - **No automatic conversion.** Coins stay the type they are. Converting is done at a bank-type place, which is also where the rates are shown to the player. Not built yet.
 - **Monsters** carry currency on the def (`currency`, section 1.3): `Partial<Record<Currency, RandomRoll>>`, the same dice shape as `damage` (`{ gold: { count: 1, die: 4 } }` is 1d4 gold), rolled for each monster beaten. Absent means none. **Winnings are shared** (owner, 2026-11-27): each currency is totalled over the monsters beaten, divided by the number of living party members (a dead character gets no share and isn't counted), and each share is **rounded up**; every living member gets the share, and the total shown is the share times those members (150 silver among 4 is 38 each, shown as 152).
 - **Not designed yet:** loot tables ([Currency 1]), banks, stores and prices in the game.
+
+## 9. Moving things
+
+_Decided with the owner on 2026-11-28 ([Game 30]). The fields are in the tools ([Tools 31]). Not built yet: [Tools 32] (content), [Game 31] (the command). Names are provisional._
+
+The party can **push** items and some objects around the map, such as a carpet, a chair, a bed, or a container that is an object.
+
+**Fields on an object def** (spaces included; portals and monsters never move):
+
+| Field         | Type     | Notes                                                                                  |
+| ------------- | -------- | -------------------------------------------------------------------------------------- |
+| `isMoveable`  | boolean? | It can be pushed. Absent = false, never stored `false`. A wall or fireplace lacks it.   |
+| `isStackable` | boolean? | Other things may be pushed on top of it (a table, a bed, a carpet). Absent = false, never stored `false`. Unrelated to an item's old `stackable` flag. |
+| `weight`      | number?  | Same scale and name as an item's. Required when `isMoveable`.                           |
+
+Items need no flag: every item can be moved.
+
+**The command** (`M` on the map):
+
+1. The player selects a cell by direction, with Space for the party's own cell. No party member is chosen.
+2. The thing selected is the **top** of that cell's stack. Nothing there: "Move what?"
+3. A thing that can't move shows "Can't move!". One too heavy for the party shows "Too heavy!".
+4. The player gives one more direction, and the thing is pushed one cell that way. **Push only, no pulling:** it can never go onto the party's cell.
+5. A destination that can't take it shows "Can't move!".
+
+**Strength** applies to items and objects alike (a coffin may be an item and very heavy). The limit is every living party member's carry limit (strength x 20) added together. What they already carry doesn't lower it. The thing's weight is its def's `weight`, times its `quantity` for a pile, plus everything in its `contents`, nested contents included. Over the limit is too heavy.
+
+**Destination.** The same rules for items and objects:
+
+- Inside the zone, on walkable terrain, with no monster or portal.
+- An empty cell, or on top of items, is fine.
+- **Every** object in the destination stack must be `isStackable`: a chest can go on a table or a bed, not on a wall or into a fireplace, and an item lying on a wall doesn't change that.
+- **Invisible objects don't count** (`isInvisible`): they never stop a move. The moved thing then lies on top, so by the top-of-stack rule (2.1) the hidden one can't fire while covered. That is intended (owner, 2026-11-28): covering a recurring trap is a way to stop anyone stepping on it again, and the player deals with the consequences of covering a trigger rather than being refused for a reason they can't see.
+
+Only the top placement moves; what was beneath it stays and is uncovered. The placement keeps its `uid`, `contents` and other values. A move triggers no interaction, so a trapped or locked container can be moved without springing it. Moved things stay moved in runtime state (section 5).
+
+Pushing a thing off a stack, or covering one, is the only effect. Merging item piles at the destination is not designed.
 
 ---
 
