@@ -6,7 +6,7 @@ import type { Destination, Kind, Position } from './core'
 import type { Currency } from './currency'
 import type { TileDef } from './defs'
 import type { Qualifiers } from './gear'
-import type { Interaction, StatTarget } from './interactions'
+import type { GiveFields, Interaction, StatTarget } from './interactions'
 
 export type Direction = 'north' | 'south' | 'east' | 'west'
 
@@ -44,15 +44,7 @@ export type CustomValue =
 			itemId?: string
 			amount?: number
 	  }
-	| {
-			type: 'GIVE_ITEM'
-			itemId?: string
-			amount?: number
-			qualifiers?: Qualifiers
-			chance?: number // as on the action: 0-100, absent = always gives
-			giveLimit?: number // as on the action: absent = unlimited
-			target?: StatTarget // as on the action: absent = character
-	  }
+	| ({ type: 'GIVE_ITEM' } & GiveFields) // as on the action
 	| {
 			type: 'SPAWN'
 			defKind?: Kind

@@ -6,6 +6,7 @@ import {
 	BaseModal,
 	Button,
 	CheckboxInput,
+	GiveItemList,
 	ItemCombobox,
 	QualifierPicker,
 	SelectDropdown,
@@ -23,6 +24,7 @@ import type {
 import {
 	ACTION_TYPES,
 	CONDITION_TYPES,
+	giveEntries,
 	INTERACTION_TRIGGERS,
 	parseNumberInput,
 	summarizeCondition,
@@ -50,6 +52,15 @@ const issueText = (issue: { path: PropertyKey[]; message: string }) => {
 		return issue.path[2] === 'itemId'
 			? `Condition ${n}: choose an item`
 			: `Condition ${n}: enter an amount of 1 or more`
+	}
+	if (
+		issue.path[0] === 'actions' &&
+		typeof issue.path[1] === 'number' &&
+		issue.path[2] === 'items'
+	) {
+		const item =
+			typeof issue.path[3] === 'number' ? `, item ${issue.path[3] + 1}` : ''
+		return `Action ${issue.path[1] + 1}${item}: ${issue.message}`
 	}
 	if (
 		issue.path[0] === 'actions' &&
@@ -500,15 +511,14 @@ const InteractionForm = ({
 								/>
 							)}
 							{action.type === 'GIVE_ITEM' && !action.custom && (
-								<QualifierPicker
-									id={`action-${i}-qualifiers`}
-									def={items.find((d) => d._id === action.itemId)}
-									value={action.qualifiers}
-									onChange={(q) => {
-										const rest = { ...action }
-										delete rest.qualifiers
-										setAction(i, q ? { ...rest, qualifiers: q } : rest)
-									}}
+								<GiveItemList
+									id={`action-${i}-gives`}
+									entries={giveEntries(action)}
+									onChange={(next) =>
+										setAction(i, { type: 'GIVE_ITEM', items: next })
+									}
+									items={items}
+									itemsLoading={defsLoading}
 								/>
 							)}
 							{config?.customizable && (

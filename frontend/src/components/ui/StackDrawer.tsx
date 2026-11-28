@@ -312,7 +312,8 @@ export const StackDrawer = ({
 											// Stored before slots existed: no key to save a value under.
 											slot.slot ? (
 												<CustomValueInput
-													key={slot.slot}
+													// Placements of one def share slot ids.
+													key={`${selected.uid}-${slot.slot}`}
 													id={`custom-${slot.slot}`}
 													slot={slot}
 													value={selected.customValues?.[slot.slot]}

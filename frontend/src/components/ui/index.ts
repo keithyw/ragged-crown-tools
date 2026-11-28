@@ -1,5 +1,6 @@
 export * from './Chip'
 export * from './CustomValueInput'
+export * from './GiveItemList'
 export * from './InteractionsEditor'
 export * from './ItemCombobox'
 export * from './ItemChipPicker'

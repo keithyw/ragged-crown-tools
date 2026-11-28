@@ -10,6 +10,7 @@ import {
 	WEAPON_TYPES,
 } from '../lib/constants/gear'
 import { MONSTER_RARITIES } from '../lib/constants/monsters'
+import { giveEntries } from '../lib/utils/gives'
 import type {
 	Action,
 	ArmorDef,
@@ -18,6 +19,8 @@ import type {
 	ContainerSpec,
 	CustomValue,
 	Destination,
+	GiveEntry,
+	GiveFields,
 	Glyph,
 	Interaction,
 	InteractionType,
@@ -338,26 +341,53 @@ const itemActionSchema = <T extends 'TAKE_ITEM'>(type: T) =>
 				: { type: a.type, itemId: a.itemId ?? '', amount: a.amount },
 		)
 
-// GIVE_ITEM hands over an instance, so it can say which one (weapons and armor).
-// Same as itemActionSchema otherwise; kept apart so TAKE_ITEM doesn't get the field.
+// One item of a give ([Interactions 18]).
+const giveEntrySchema = z.object({
+	uid: z.string().min(1).optional(),
+	itemId: z.string().min(1, 'Choose an item.'),
+	amount: amount.optional(),
+	qualifiers: qualifiersSchema.optional(),
+	chance: chance.optional(),
+	giveLimit: amount.optional(),
+	target: z.enum(['character', 'party']).optional(),
+})
+
+// A give's fields. The single-item ones are how a give was stored before lists;
+// they are accepted and saved as a list of one.
+const giveFields = {
+	items: z.array(giveEntrySchema).optional(),
+	itemId: z.string().optional(),
+	amount: amount.optional(),
+	qualifiers: qualifiersSchema.optional(),
+	chance: chance.optional(),
+	giveLimit: amount.optional(),
+	target: z.enum(['character', 'party']).optional(),
+}
+
+// The list to store. Every entry gets a `uid`, kept from then on, and
+// 'character' is what an absent target means, so it isn't stored.
+const savedGives = (give: GiveFields): GiveEntry[] =>
+	giveEntries(give).map(({ uid, target, ...entry }) => ({
+		uid: uid ?? crypto.randomUUID(),
+		...entry,
+		...(target === 'party' && { target }),
+	}))
+
+// GIVE_ITEM hands over a list of items, each an instance that can say which one
+// (weapons and armor). A custom one leaves the list to each placement.
 const giveItemSchema = z
 	.object({
 		type: z.literal('GIVE_ITEM'),
 		custom: z.boolean().optional(),
 		slot: z.string().min(1).optional(),
-		itemId: z.string().optional(),
-		amount: amount.optional(),
-		qualifiers: qualifiersSchema.optional(),
-		chance: chance.optional(),
-		giveLimit: amount.optional(),
-		target: z.enum(['character', 'party']).optional(),
+		...giveFields,
 	})
 	.superRefine((a, ctx) => {
-		if (!a.custom && !a.itemId) {
+		if (!a.custom && giveEntries(a).length === 0) {
 			ctx.addIssue({
 				code: 'custom',
-				path: ['itemId'],
-				message: 'Choose an item.',
+				path: ['items'],
+				message: 'Add an item.',
 			})
 		}
 	})
@@ -368,16 +398,7 @@ const giveItemSchema = z
 					custom: true as const,
 					slot: a.slot ?? crypto.randomUUID(),
 				}
-			: {
-					type: a.type,
-					itemId: a.itemId ?? '',
-					amount: a.amount,
-					qualifiers: a.qualifiers,
-					chance: a.chance,
-					giveLimit: a.giveLimit,
-					// 'character' is what absent means, so it isn't stored.
-					target: a.target === 'party' ? a.target : undefined,
-				},
+			: { type: a.type, items: savedGives(a) },
 	)
 
 export const actionSchema = z.discriminatedUnion('type', [
@@ -585,15 +606,12 @@ export const customValueSchema = z.union([
 		itemId: z.string().optional(),
 		amount: amount.optional(),
 	}),
-	z.object({
-		type: z.literal('GIVE_ITEM'),
-		itemId: z.string().optional(),
-		amount: amount.optional(),
-		qualifiers: qualifiersSchema.optional(),
-		chance: chance.optional(),
-		giveLimit: amount.optional(),
-		target: z.enum(['character', 'party']).optional(),
-	}),
+	z
+		.object({ type: z.literal('GIVE_ITEM'), ...giveFields })
+		.transform((v): Extract<CustomValue, { type: 'GIVE_ITEM' }> => {
+			const items = savedGives(v)
+			return { type: v.type, ...(items.length > 0 && { items }) }
+		}),
 	z.object({
 		type: z.literal('SPAWN'),
 		defKind: kindSchema.optional(),

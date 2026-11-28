@@ -702,6 +702,8 @@ type Loose = {
 	defKind?: string
 	defId?: string
 	qualifiers?: { quality?: string; material?: string }
+	// A GIVE_ITEM's list ([Interactions 18]).
+	items?: { itemId: string; qualifiers?: Loose['qualifiers'] }[]
 }
 
 // A def's references to other documents must exist, as they always do through
@@ -766,14 +768,25 @@ async function checkReferences(doc: unknown) {
 		})
 		it.actions.forEach((a, j) => {
 			const path = `interactions.${i}.actions.${j}`
-			if ((a.type === 'GIVE_ITEM' || a.type === 'TAKE_ITEM') && a.itemId) {
+			if (a.type === 'TAKE_ITEM' && a.itemId) {
 				refs.push({
 					path: `${path}.itemId`,
 					collection: 'items',
 					_id: a.itemId,
 					what: 'item',
-					// Only a GIVE_ITEM hands out an instance; TAKE_ITEM has none.
-					qualifiers: a.type === 'GIVE_ITEM' ? a.qualifiers : undefined,
+				})
+			}
+			// The parsed copy always has a list, whichever form was sent. Only a
+			// GIVE_ITEM hands out an instance, so only it has qualifiers.
+			if (a.type === 'GIVE_ITEM') {
+				a.items?.forEach((g, k) => {
+					refs.push({
+						path: `${path}.items.${k}.itemId`,
+						collection: 'items',
+						_id: g.itemId,
+						what: 'item',
+						qualifiers: g.qualifiers,
+					})
 				})
 			}
 			if (a.type === 'SPAWN' && a.defKind && a.defId) {
@@ -941,6 +954,19 @@ async function checkZonePlacements(collection: string, doc: unknown) {
 						)
 					}
 				}
+				// A give's items must be carried defs that exist ([Interactions 18]).
+				for (const [k, g] of (v.items ?? []).entries()) {
+					const where = `${at}.customValues.${slot}.items.${k}`
+					const item = defs.get(g.itemId)
+					if (!item || !['item', 'weapon', 'armor'].includes(item.kind)) {
+						problems.push(
+							`- ${where}.itemId: no item, weapon or armor with _id '${g.itemId}'`,
+						)
+						continue
+					}
+					const bad = g.qualifiers && qualifierProblem(item, g.qualifiers)
+					if (bad) problems.push(`- ${where}.qualifiers: ${bad}`)
+				}
 				const target = defs.get(String(v.itemId ?? v.defId))
 				const why =
 					target && v.qualifiers && qualifierProblem(target, v.qualifiers)
@@ -983,6 +1009,7 @@ type Loose2 = {
 			defId?: string
 			qualifiers?: Loose['qualifiers']
 			groups?: { defId: string }[]
+			items?: { itemId: string; qualifiers?: Loose['qualifiers'] }[]
 		}
 	>
 	contents?: Loose2[]

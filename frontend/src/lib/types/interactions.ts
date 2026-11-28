@@ -29,6 +29,26 @@ export type CharacterStat =
 export type StatBar = 'current' | 'max'
 export type StatTarget = 'character' | 'party'
 
+// One thing a GIVE_ITEM hands over ([Interactions 18]).
+export interface GiveEntry {
+	// Its giveLimit count is kept by it. Absent only on a give stored before
+	// lists, until it is next saved.
+	uid?: string
+	itemId: string
+	amount?: number
+	qualifiers?: Qualifiers // weapons and armor; blank = rolled on pickup
+	chance?: number // 0-100, percent per trigger; absent = always gives
+	giveLimit?: number // times it may give; absent = unlimited
+	target?: StatTarget // absent = character; party = each gets the full amount
+}
+
+// What a give holds, on an action or a placement's value. The tools save
+// `items`; the single-item fields are how a give was stored before lists and
+// are only ever read.
+export interface GiveFields extends Partial<Omit<GiveEntry, 'uid'>> {
+	items?: GiveEntry[]
+}
+
 // Fields beyond SPAWN and TELEPORT are provisional (DATA-MODEL.md 4.4).
 // `custom: true` means the value is left to each placement (a custom NPC's
 // dialog, a chest's contents), so the action carries no value fields at all
@@ -38,16 +58,7 @@ export type StatTarget = 'character' | 'party'
 export type Action =
 	| { type: 'SHOW_DIALOG'; text: string; custom?: never }
 	| { type: 'SHOW_DIALOG'; custom: true; slot: string }
-	| {
-			type: 'GIVE_ITEM'
-			itemId: string
-			amount?: number
-			qualifiers?: Qualifiers // weapons and armor; blank = rolled on pickup
-			chance?: number // 0-100, percent per trigger; absent = always gives
-			giveLimit?: number // times it may give; absent = unlimited
-			target?: StatTarget // absent = character; party = each gets the full amount
-			custom?: never
-	  }
+	| ({ type: 'GIVE_ITEM'; custom?: never } & GiveFields)
 	| { type: 'GIVE_ITEM'; custom: true; slot: string }
 	| { type: 'TAKE_ITEM'; itemId: string; amount?: number; custom?: never }
 	| { type: 'TAKE_ITEM'; custom: true; slot: string }

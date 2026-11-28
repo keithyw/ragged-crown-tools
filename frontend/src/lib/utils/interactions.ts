@@ -2,11 +2,13 @@ import type {
 	Action,
 	CharacterStat,
 	Condition,
+	GiveEntry,
 	Interaction,
 	InteractionType,
 	Kind,
 	StatTarget,
 } from '@/lib/types'
+import { giveEntries } from './gives'
 
 // What can start an interaction on an object or space. PICKUP and DROP are for
 // items, so they are not offered here.
@@ -84,6 +86,27 @@ export interface ActionTypeConfig {
 	normalize?: (action: Action) => Action
 	// A short phrase for the list ("change hp by +10").
 	summary: (action: Action, ctx: SummaryContext) => string
+}
+
+// One item of a give: "Torch x2", "Cloak (normal fur; 40%, once, party)".
+export const summarizeGive = (
+	entry: GiveEntry,
+	ctx: SummaryContext = NO_NAMES,
+) => {
+	const gear = [entry.qualifiers?.quality, entry.qualifiers?.material]
+		.filter(Boolean)
+		.join(' ')
+	const odds = [
+		entry.chance !== undefined && `${entry.chance}%`,
+		entry.giveLimit !== undefined &&
+			(entry.giveLimit === 1 ? 'once' : `up to ${entry.giveLimit}x`),
+		entry.target === 'party' && 'party',
+	]
+		.filter(Boolean)
+		.join(', ')
+	const detail = [gear, odds].filter(Boolean).join('; ')
+	const amount = entry.amount && entry.amount > 1 ? ` x${entry.amount}` : ''
+	return `${ctx.defName('item', entry.itemId)}${amount}${detail ? ` (${detail})` : ''}`
 }
 
 // The action types the editor can author, config-as-code like the form fields.
@@ -229,44 +252,16 @@ export const ACTION_TYPES: ActionTypeConfig[] = [
 	},
 	{
 		type: 'GIVE_ITEM',
-		label: 'Give item (to the player)',
+		label: 'Give items (to the player)',
 		customizable: true,
-		fields: [
-			{ key: 'itemId', label: 'Item', input: 'item' },
-			{ key: 'amount', label: 'Amount', input: 'number', stackableOnly: true },
-			// [Interactions 16]: rolled, and counted per placement, before any of
-			// the interaction's actions run.
-			{
-				key: 'chance',
-				label: 'Chance % (blank = always)',
-				input: 'number',
-				optional: true,
-			},
-			{
-				key: 'giveLimit',
-				label: 'Times it can give (blank = unlimited)',
-				input: 'number',
-				optional: true,
-			},
-			{
-				key: 'target',
-				label: 'Who receives',
-				input: 'select',
-				options: RECEIVERS,
-				defaultValue: 'character',
-			},
-		],
-		blank: () => ({ type: 'GIVE_ITEM', itemId: '', amount: 1 }),
+		// Its list has its own form (GiveItemList, [Interactions 18]).
+		fields: [],
+		blank: () => ({ type: 'GIVE_ITEM', items: [] }),
 		summary: (a, ctx) => {
 			if (a.type !== 'GIVE_ITEM') return ''
-			if (a.custom) return 'give an item (set per placement)'
-			const odds = [
-				a.chance !== undefined && `${a.chance}%`,
-				a.giveLimit !== undefined &&
-					(a.giveLimit === 1 ? 'once' : `up to ${a.giveLimit}x`),
-				a.target === 'party' && 'party',
-			].filter(Boolean)
-			return `give ${ctx.defName('item', a.itemId)}${a.amount && a.amount > 1 ? ` x${a.amount}` : ''}${odds.length ? ` (${odds.join(', ')})` : ''}`
+			if (a.custom) return 'give items (set per placement)'
+			const list = giveEntries(a).map((e) => summarizeGive(e, ctx))
+			return `give ${list.join(' + ') || 'nothing'}`
 		},
 	},
 	{

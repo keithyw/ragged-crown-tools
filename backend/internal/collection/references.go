@@ -48,6 +48,10 @@ var referenceSources = map[string][]refSource{
 		{"entities", "interactions.conditions.itemId"},
 		{"items", "interactions.actions.itemId"},
 		{"entities", "interactions.actions.itemId"},
+		// a GIVE_ITEM's list ([Interactions 18]); the line above still covers
+		// gives stored before lists
+		{"items", "interactions.actions.items.itemId"},
+		{"entities", "interactions.actions.items.itemId"},
 		// SPAWN actions
 		{"items", "interactions.actions.defId"},
 		{"entities", "interactions.actions.defId"},

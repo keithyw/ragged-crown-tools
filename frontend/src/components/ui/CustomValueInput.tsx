@@ -3,6 +3,7 @@
 import {
 	Button,
 	CheckboxInput,
+	GiveItemList,
 	ItemCombobox,
 	QualifierPicker,
 	SelectDropdown,
@@ -19,10 +20,10 @@ import type {
 	Kind,
 	MonsterDef,
 	Qualifiers,
-	StatTarget,
 } from '@/lib/types'
 import {
 	defKey,
+	giveEntries,
 	parseNumberInput,
 	RECEIVERS,
 	slotLabel,
@@ -42,13 +43,6 @@ interface CustomValueInputProps {
 	describeTarget: (uid: string) => string
 	onPickTarget: () => void
 	itemsLoading: boolean
-}
-
-// What a custom GIVE_ITEM holds besides the item, amount and qualifiers.
-interface GiveOptions {
-	chance?: number
-	giveLimit?: number
-	target?: StatTarget
 }
 
 // The input for one custom slot on a placement, chosen by the slot's type, as
@@ -80,44 +74,32 @@ export const CustomValueInput = ({
 					}
 				/>
 			)
-		case 'GIVE_ITEM':
+		case 'GIVE_ITEM': {
+			const current = value?.type === 'GIVE_ITEM' ? value : undefined
+			return (
+				<div className='mb-4 rounded border border-gray-200 bg-gray-50 p-3'>
+					<div className='mb-2 font-bold text-gray-700'>{slotLabel(slot)}</div>
+					<GiveItemList
+						id={id}
+						entries={current ? giveEntries(current) : []}
+						// An empty list is not stored.
+						onChange={(next) =>
+							onChange({
+								type: 'GIVE_ITEM',
+								...(next.length > 0 && { items: next }),
+							})
+						}
+						items={items}
+						itemsLoading={itemsLoading}
+					/>
+				</div>
+			)
+		}
 		case 'TAKE_ITEM':
 		case 'HAS_ITEM': {
 			const type = slot.type
 			const current = value?.type === type ? value : undefined
 			const item = items.find((i) => i._id === current?.itemId)
-			// Only a given item can carry qualifiers; they stay through an amount
-			// change and go when the item changes ([Inventory 30]).
-			const currentQualifiers =
-				current?.type === 'GIVE_ITEM' ? current.qualifiers : undefined
-			// A give's chance, limit ([Interactions 16]) and receiver
-			// ([Currency 7]) stay through every other change, the item included.
-			const currentGive: GiveOptions =
-				current?.type === 'GIVE_ITEM'
-					? {
-							chance: current.chance,
-							giveLimit: current.giveLimit,
-							target: current.target,
-						}
-					: {}
-			const withQualifiers = (
-				next: { itemId?: string; amount?: number },
-				qualifiers: Qualifiers | undefined,
-				give: GiveOptions = currentGive,
-			): CustomValue =>
-				type === 'GIVE_ITEM'
-					? {
-							type,
-							...next,
-							...(qualifiers && { qualifiers }),
-							...(give.chance !== undefined && { chance: give.chance }),
-							...(give.giveLimit !== undefined && {
-								giveLimit: give.giveLimit,
-							}),
-							// 'character' is what absent means, so it isn't stored.
-							...(give.target === 'party' && { target: give.target }),
-						}
-					: { type, ...next }
 			// Only an item with a maxQuantity has an amount (DATA-MODEL.md 4.3). A stored
 			// amount is still shown, so stored data is never hidden.
 			const showAmount =
@@ -132,16 +114,12 @@ export const CustomValueInput = ({
 						selectedId={current?.itemId ?? ''}
 						// A single-quantity item is always 1, so its amount is dropped.
 						onSelect={(i) =>
-							onChange(
-								withQualifiers(
-									{
-										itemId: i._id,
-										amount:
-											i.maxQuantity !== undefined ? current?.amount : undefined,
-									},
-									undefined,
-								),
-							)
+							onChange({
+								type,
+								itemId: i._id,
+								amount:
+									i.maxQuantity !== undefined ? current?.amount : undefined,
+							})
 						}
 					/>
 					{showAmount && (
@@ -157,104 +135,13 @@ export const CustomValueInput = ({
 								const n = parseNumberInput(e.target.value)
 								// Anything but a whole number of 1 or more is left blank, so
 								// the zone can always be saved.
-								onChange(
-									withQualifiers(
-										{
-											itemId: current?.itemId,
-											amount: Number.isInteger(n) && n >= 1 ? n : undefined,
-										},
-										currentQualifiers,
-									),
-								)
+								onChange({
+									type,
+									itemId: current?.itemId,
+									amount: Number.isInteger(n) && n >= 1 ? n : undefined,
+								})
 							}}
 						/>
-					)}
-					{type === 'GIVE_ITEM' && (
-						<QualifierPicker
-							id={`${id}-qualifiers`}
-							def={item}
-							value={currentQualifiers}
-							onChange={(q) =>
-								onChange(
-									withQualifiers(
-										{ itemId: current?.itemId, amount: current?.amount },
-										q,
-									),
-								)
-							}
-						/>
-					)}
-					{type === 'GIVE_ITEM' && (
-						<>
-							<TextInput
-								id={`${id}-chance`}
-								label='Chance % (blank = always)'
-								type='number'
-								inputWidth='sm'
-								min={0}
-								max={100}
-								step={1}
-								value={currentGive.chance ?? ''}
-								onChange={(e) => {
-									const n = parseNumberInput(e.target.value)
-									// Anything but a whole number from 0 to 100 is left blank.
-									onChange(
-										withQualifiers(
-											{ itemId: current?.itemId, amount: current?.amount },
-											currentQualifiers,
-											{
-												...currentGive,
-												chance:
-													Number.isInteger(n) && n >= 0 && n <= 100
-														? n
-														: undefined,
-											},
-										),
-									)
-								}}
-							/>
-							<TextInput
-								id={`${id}-give-limit`}
-								label='Times it can give (blank = unlimited)'
-								type='number'
-								inputWidth='sm'
-								min={1}
-								step={1}
-								value={currentGive.giveLimit ?? ''}
-								onChange={(e) => {
-									const n = parseNumberInput(e.target.value)
-									onChange(
-										withQualifiers(
-											{ itemId: current?.itemId, amount: current?.amount },
-											currentQualifiers,
-											{
-												...currentGive,
-												giveLimit:
-													Number.isInteger(n) && n >= 1 ? n : undefined,
-											},
-										),
-									)
-								}}
-							/>
-							<SelectDropdown
-								id={`${id}-target`}
-								label='Who receives'
-								options={RECEIVERS}
-								selectedValue={currentGive.target ?? 'character'}
-								onSelect={(v) =>
-									onChange(
-										withQualifiers(
-											{ itemId: current?.itemId, amount: current?.amount },
-											currentQualifiers,
-											{
-												...currentGive,
-												target: v === 'party' ? 'party' : undefined,
-											},
-										),
-									)
-								}
-							/>
-						</>
 					)}
 				</div>
 			)
