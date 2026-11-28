@@ -51,6 +51,7 @@ export type CustomValue =
 			qualifiers?: Qualifiers
 			chance?: number // as on the action: 0-100, absent = always gives
 			giveLimit?: number // as on the action: absent = unlimited
+			target?: StatTarget // as on the action: absent = character
 	  }
 	| {
 			type: 'SPAWN'

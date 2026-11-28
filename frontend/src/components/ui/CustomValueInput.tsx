@@ -19,10 +19,12 @@ import type {
 	Kind,
 	MonsterDef,
 	Qualifiers,
+	StatTarget,
 } from '@/lib/types'
 import {
 	defKey,
 	parseNumberInput,
+	RECEIVERS,
 	slotLabel,
 	type CustomSlot,
 } from '@/lib/utils'
@@ -40,6 +42,13 @@ interface CustomValueInputProps {
 	describeTarget: (uid: string) => string
 	onPickTarget: () => void
 	itemsLoading: boolean
+}
+
+// What a custom GIVE_ITEM holds besides the item, amount and qualifiers.
+interface GiveOptions {
+	chance?: number
+	giveLimit?: number
+	target?: StatTarget
 }
 
 // The input for one custom slot on a placement, chosen by the slot's type, as
@@ -81,16 +90,20 @@ export const CustomValueInput = ({
 			// change and go when the item changes ([Inventory 30]).
 			const currentQualifiers =
 				current?.type === 'GIVE_ITEM' ? current.qualifiers : undefined
-			// A give's chance and limit ([Interactions 16]) stay through every
-			// other change, the item included.
-			const currentGive: { chance?: number; giveLimit?: number } =
+			// A give's chance, limit ([Interactions 16]) and receiver
+			// ([Currency 7]) stay through every other change, the item included.
+			const currentGive: GiveOptions =
 				current?.type === 'GIVE_ITEM'
-					? { chance: current.chance, giveLimit: current.giveLimit }
+					? {
+							chance: current.chance,
+							giveLimit: current.giveLimit,
+							target: current.target,
+						}
 					: {}
 			const withQualifiers = (
 				next: { itemId?: string; amount?: number },
 				qualifiers: Qualifiers | undefined,
-				give: { chance?: number; giveLimit?: number } = currentGive,
+				give: GiveOptions = currentGive,
 			): CustomValue =>
 				type === 'GIVE_ITEM'
 					? {
@@ -101,6 +114,8 @@ export const CustomValueInput = ({
 							...(give.giveLimit !== undefined && {
 								giveLimit: give.giveLimit,
 							}),
+							// 'character' is what absent means, so it isn't stored.
+							...(give.target === 'party' && { target: give.target }),
 						}
 					: { type, ...next }
 			// Only an item with a maxQuantity has an amount (DATA-MODEL.md 4.3). A stored
@@ -220,6 +235,24 @@ export const CustomValueInput = ({
 										),
 									)
 								}}
+							/>
+							<SelectDropdown
+								id={`${id}-target`}
+								label='Who receives'
+								options={RECEIVERS}
+								selectedValue={currentGive.target ?? 'character'}
+								onSelect={(v) =>
+									onChange(
+										withQualifiers(
+											{ itemId: current?.itemId, amount: current?.amount },
+											currentQualifiers,
+											{
+												...currentGive,
+												target: v === 'party' ? 'party' : undefined,
+											},
+										),
+									)
+								}
 							/>
 						</>
 					)}
@@ -359,10 +392,7 @@ export const CustomValueInput = ({
 					<SelectDropdown
 						id={`${id}-target`}
 						label='Who receives'
-						options={[
-							{ value: 'character', label: 'One character' },
-							{ value: 'party', label: 'Each party member (full amount)' },
-						]}
+						options={RECEIVERS}
 						selectedValue={isParty ? 'party' : 'character'}
 						onSelect={(v) => onChange(make(amounts, v === 'party'))}
 					/>

@@ -45,6 +45,7 @@ export type Action =
 			qualifiers?: Qualifiers // weapons and armor; blank = rolled on pickup
 			chance?: number // 0-100, percent per trigger; absent = always gives
 			giveLimit?: number // times it may give; absent = unlimited
+			target?: StatTarget // absent = character; party = each gets the full amount
 			custom?: never
 	  }
 	| { type: 'GIVE_ITEM'; custom: true; slot: string }

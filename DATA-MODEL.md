@@ -343,7 +343,7 @@ Interactions can be **unlimited** (a generic NPC's "Hello and welcome to town X"
 
 ### 4.4 Initial actions
 
-`SHOW_DIALOG`, `GIVE_ITEM { itemId, amount?, qualifiers?, chance?, giveLimit? }` (below), `TAKE_ITEM`, `GIVE_CURRENCY` (always custom, section 8), `SET_FLAG`, `SPAWN { defKind, defId, quantity?, qualifiers? }` (adds to this cell's stack at runtime), `SPAWN_MONSTER` (a barrier's set encounter, below), `RANDOM_ENCOUNTER` (a random encounter space, below), `REMOVE_SELF`, `REMOVE_OBJECT` (removes another object in the zone, below), `TELEPORT { destination }`, `PLAY_SOUND`, `MODIFY_ATTRIBUTE`.
+`SHOW_DIALOG`, `GIVE_ITEM { itemId, amount?, qualifiers?, chance?, giveLimit?, target? }` (below; `target` in section 8), `TAKE_ITEM`, `GIVE_CURRENCY` (always custom, section 8), `SET_FLAG`, `SPAWN { defKind, defId, quantity?, qualifiers? }` (adds to this cell's stack at runtime), `SPAWN_MONSTER` (a barrier's set encounter, below), `RANDOM_ENCOUNTER` (a random encounter space, below), `REMOVE_SELF`, `REMOVE_OBJECT` (removes another object in the zone, below), `TELEPORT { destination }`, `PLAY_SOUND`, `MODIFY_ATTRIBUTE`.
 
 The engine implements them incrementally ([Game 2]). Fields not listed here are decided when each type is written.
 
@@ -352,7 +352,7 @@ The engine implements them incrementally ([Game 2]). Fields not listed here are 
 - `giveLimit`: how many times the give may **succeed**, a whole number, 1 or more. Absent = unlimited. It is separate from the interaction's `limit` (which counts runs, 4.2) and is runtime state per placement `uid`, never zone data.
 - **Checked before any of the interaction's actions run.** On a failed roll, or once `giveLimit` is used up, none of its actions run (no "You search the rack." line first), the player sees **"Nothing there!"**, and nothing is counted, `limit` included. On a success the actions run as usual and both counts go up.
 - The object stays either way (no `REMOVE_SELF`, no `numberOfUses`).
-- A custom `GIVE_ITEM` carries neither on the def; the placement's value sets them with the item (4.6).
+- A custom `GIVE_ITEM` carries neither on the def; the placement's value sets them with the item (4.6). The same goes for `target`.
 
 **Stat changes (`MODIFY_ATTRIBUTE`).** One action changes any numeric stat of a character. `GIVE_XP` is not a separate type: experience is just another stat.
 
@@ -393,7 +393,7 @@ An action's (or condition's) value can be left for each placement to fill in, so
 ```ts
 { type: 'SHOW_DIALOG'; text: string } | { type: 'SHOW_DIALOG'; custom: true; slot: string }
 { type: 'SPAWN'; defKind; defId; quantity? } | { type: 'SPAWN'; custom: true; slot: string }
-{ type: 'GIVE_ITEM'; itemId; amount?; qualifiers?; chance?; giveLimit? } | { type: 'GIVE_ITEM'; custom: true; slot: string }
+{ type: 'GIVE_ITEM'; itemId; amount?; qualifiers?; chance?; giveLimit?; target? } | { type: 'GIVE_ITEM'; custom: true; slot: string }
 { type: 'TAKE_ITEM'; itemId; amount? } | { type: 'TAKE_ITEM'; custom: true; slot: string }
 { type: 'HAS_ITEM'; itemId; amount } | { type: 'HAS_ITEM'; custom: true; slot: string } // a condition
 { type: 'SPAWN_MONSTER'; custom: true; slot: string } // always custom, see below
@@ -407,7 +407,7 @@ A placement fills the slots in with `customValues`, keyed by `slot`:
 type CustomValue =
 	| { type: 'SHOW_DIALOG'; text?: string }
 	| { type: 'TAKE_ITEM' | 'HAS_ITEM'; itemId?: string; amount?: number }
-	| { type: 'GIVE_ITEM'; itemId?: string; amount?: number; qualifiers?: Qualifiers; chance?: number; giveLimit?: number }
+	| { type: 'GIVE_ITEM'; itemId?: string; amount?: number; qualifiers?: Qualifiers; chance?: number; giveLimit?: number; target?: 'character' | 'party' }
 	| { type: 'SPAWN'; defKind?: Kind; defId?: string; quantity?: number; qualifiers?: Qualifiers }
 	| { type: 'SPAWN_MONSTER'; groups?: EncounterGroup[]; showAs?: number; hideSprite?: boolean }
 	| { type: 'REMOVE_OBJECT'; targetUid?: string }

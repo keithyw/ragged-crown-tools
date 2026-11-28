@@ -350,6 +350,7 @@ const giveItemSchema = z
 		qualifiers: qualifiersSchema.optional(),
 		chance: chance.optional(),
 		giveLimit: amount.optional(),
+		target: z.enum(['character', 'party']).optional(),
 	})
 	.superRefine((a, ctx) => {
 		if (!a.custom && !a.itemId) {
@@ -374,6 +375,8 @@ const giveItemSchema = z
 					qualifiers: a.qualifiers,
 					chance: a.chance,
 					giveLimit: a.giveLimit,
+					// 'character' is what absent means, so it isn't stored.
+					target: a.target === 'party' ? a.target : undefined,
 				},
 	)
 
@@ -584,6 +587,7 @@ export const customValueSchema = z.union([
 		qualifiers: qualifiersSchema.optional(),
 		chance: chance.optional(),
 		giveLimit: amount.optional(),
+		target: z.enum(['character', 'party']).optional(),
 	}),
 	z.object({
 		type: z.literal('SPAWN'),

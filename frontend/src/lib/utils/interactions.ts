@@ -5,6 +5,7 @@ import type {
 	Interaction,
 	InteractionType,
 	Kind,
+	StatTarget,
 } from '@/lib/types'
 
 // What can start an interaction on an object or space. PICKUP and DROP are for
@@ -53,6 +54,12 @@ export const CHARACTER_STATS: { value: CharacterStat; label: string }[] = [
 	{ value: 'sp', label: 'Resource: SP' },
 	{ value: 'xp', label: 'Progress: XP' },
 	{ value: 'level', label: 'Progress: Level' },
+]
+
+// Who a give pays out to (GIVE_ITEM and GIVE_CURRENCY, DATA-MODEL.md 8).
+export const RECEIVERS: { value: StatTarget; label: string }[] = [
+	{ value: 'character', label: 'One character' },
+	{ value: 'party', label: 'Each party member (full amount)' },
 ]
 
 // Only hp and sp are bars with a current and a max.
@@ -241,6 +248,13 @@ export const ACTION_TYPES: ActionTypeConfig[] = [
 				input: 'number',
 				optional: true,
 			},
+			{
+				key: 'target',
+				label: 'Who receives',
+				input: 'select',
+				options: RECEIVERS,
+				defaultValue: 'character',
+			},
 		],
 		blank: () => ({ type: 'GIVE_ITEM', itemId: '', amount: 1 }),
 		summary: (a, ctx) => {
@@ -250,6 +264,7 @@ export const ACTION_TYPES: ActionTypeConfig[] = [
 				a.chance !== undefined && `${a.chance}%`,
 				a.giveLimit !== undefined &&
 					(a.giveLimit === 1 ? 'once' : `up to ${a.giveLimit}x`),
+				a.target === 'party' && 'party',
 			].filter(Boolean)
 			return `give ${ctx.defName('item', a.itemId)}${a.amount && a.amount > 1 ? ` x${a.amount}` : ''}${odds.length ? ` (${odds.join(', ')})` : ''}`
 		},
