@@ -12,7 +12,7 @@ A monster is something the party fights. It is placed on the map like other defs
 - Collection: **`monsters`**, `kind: "monster"`. It is its own collection, not `entities`.
 - Sprite category: `monster`.
 - Batch cap: the default, 10.
-- Extra proposal columns: `level`, `hp`, `defenseValue`, `damage` (`1d4`), `removalChance`, `initiative`, `xp`, `rarity`, `numberAppearing` (`2d4`), whether it is unique, and the sprite plan.
+- Extra proposal columns: `level`, `hp`, `defenseValue`, `damage` (`1d4`), `removalChance`, `initiative`, `xp`, `rarity`, `numberAppearing` (`2d4`), `currency` (`2d6 silver`), whether it is unique, and the sprite plan.
 - Sandbox UI page: Monster Definitions.
 
 ## Monster, object or item?
@@ -50,7 +50,8 @@ A monster is what the party **fights**. A townsperson, a guard who only talks, o
 - `terrainIds`: optional list of terrain `_id`s (`tile_defs`, `kind: terrain`) the monster can turn up on in the open world ([Monsters 11]). Send it only when the owner names terrains: list `tile_defs` and use the `_id`s, never the user-facing `id`. **Absent or empty means it appears on no terrain**, so it is never drawn from the open world (dungeon pools are on the difficulty configuration). Every entry must exist and be a terrain, or the write is refused.
 - `numberAppearing`: **required**, dice in the same shape as a weapon's damage: `count` a whole number, 1 or more; `die` one of 4, 6, 8, 10, 12, 20, 100. So 3d6 is `{ "count": 3, "die": 6 }`. This is how many can appear together (rats and goblins come in numbers; a dragon is rare). A placement or encounter group can set its own number instead; that is not stored here.
 - `isUnique`: only when the owner says the monster is a one-off (a named boss, a dragon). Send `true` only, **never `false`** (absent means false). A unique monster only ever appears as one, and the game ignores `numberAppearing`, but **the field is still required**: send a small plausible value (`1d4` is fine) and say it is ignored. A unique monster never appears in random encounters, so its rarity is only a placeholder (`rare` or `ultra rare` is fine); there is no boss flag.
-- Not part of a monster: attributes, gear, interactions, currency, loot, abilities (breath, poison, drain, spells), special attacks, speed. Don't send them and don't hide them in the description.
+- `currency`: optional, what **one** of this monster carries ([Currency 8], DATA-MODEL.md 8): dice per currency, in the same shape as `damage`, keyed `bronze`, `copper`, `iron`, `silver`, `gold` or `platinum`, e.g. `{ "copper": { "count": 2, "die": 6 } }`. Each beaten monster is rolled and the party shares the total. **Leave it out for a monster with no coins**: humanoids usually carry some; animals and vermin (rats, spiders) don't, and a nest's or lair's treasure is not the monster's. Keep it small (a long sword is 12 gold, rations 1 gold); the amounts are guesses, so say so in the proposal.
+- Not part of a monster: attributes, gear, interactions, loot, abilities (breath, poison, drain, spells), special attacks, speed. Don't send them and don't hide them in the description.
 
 ## What makes two monsters different defs
 

@@ -1,6 +1,19 @@
 import { z } from 'zod'
 import { monsterDefSchema } from './contentSchemas'
 
+// The form holds an input pair for every currency. A blank count means none of
+// that coin, so its pair is dropped before the stored schema sees it.
+const carriedCurrency = z.preprocess(
+	(v) =>
+		v &&
+		Object.fromEntries(
+			Object.entries(
+				v as Record<string, { count?: number } | undefined>,
+			).filter(([, roll]) => roll?.count !== undefined),
+		),
+	monsterDefSchema.shape.currency,
+)
+
 // The monster form: the stored monster def, plus a required legacy id (the
 // edit hook needs one). The transform turns the form's shape back into the
 // stored one: a flag that is off is left out ("absent = false"), not saved as
@@ -12,6 +25,7 @@ export const monsterDefinitionSchema = monsterDefSchema
 			.trim()
 			.min(1, 'ID is required')
 			.regex(/^[A-Za-z0-9_-]+$/, 'Letters, numbers, - and _ only'), // user generated for now
+		currency: carriedCurrency,
 	})
 	// Typed as its own input, so the form keeps a plain boolean for the flag.
 	.transform((m): typeof m => ({

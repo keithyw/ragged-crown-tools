@@ -2,6 +2,7 @@
 
 import { Button, TileDetails, TileGlyph } from '@/components'
 import { useCollection } from '@/hooks'
+import { CURRENCIES } from '@/lib/constants'
 import { MonsterDef, TileDef } from '@/lib/types'
 
 interface MonsterInspectorProps {
@@ -19,6 +20,10 @@ export const MonsterInspector = ({
 	const terrainNames = (monster.terrainIds ?? []).map(
 		(_id) => terrains.find((t) => t._id === _id)?.name ?? '(missing)',
 	)
+	const carried = CURRENCIES.flatMap((c) => {
+		const roll = monster.currency?.[c]
+		return roll ? [`${roll.count}d${roll.die} ${c}`] : []
+	})
 	const details = [
 		{ key: 'Level', val: monster.level.toString() },
 		{ key: 'HP', val: monster.hp.toString() },
@@ -42,6 +47,7 @@ export const MonsterInspector = ({
 					? terrainNames.join(', ')
 					: 'None',
 		},
+		{ key: 'Carries', val: carried.join(', ') || 'Nothing' },
 		{ key: 'Description', val: monster.description ?? '-' },
 	]
 	return (

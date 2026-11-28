@@ -551,6 +551,11 @@ export const monsterDefSchema = baseDefSchema.extend({
 		.transform((v) => (v.length > 0 ? v : undefined))
 		.optional(),
 	isUnique: z.boolean().optional(),
+	// Nothing carried is stored as absent ([Currency 8]).
+	currency: z
+		.partialRecord(z.enum(CURRENCIES), randomRollSchema)
+		.transform((v) => (Object.keys(v).length > 0 ? v : undefined))
+		.optional(),
 }) satisfies z.ZodType<MonsterDef>
 
 export const portalDefSchema = baseDefSchema.extend({

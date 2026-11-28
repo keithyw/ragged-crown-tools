@@ -3,6 +3,7 @@
 // (see ARCHITECTURE.md 5).
 
 import type { Kind, RandomRoll } from './core'
+import type { Currency } from './currency'
 import type { ArmorDef, WeaponDef } from './gear'
 import type { Interaction } from './interactions'
 
@@ -87,6 +88,8 @@ export interface MonsterDef extends BaseDef {
 	numberAppearing: RandomRoll
 	terrainIds?: string[] // terrain defs (_id) it can turn up on in the open world; absent = none
 	isUnique?: boolean // absent = false. Only ever one; numberAppearing is ignored
+	// What one of them carries, dice per currency; absent = none (DATA-MODEL.md 8)
+	currency?: Partial<Record<Currency, RandomRoll>>
 }
 
 // Always walkable; the destination is set per placement. Stored in entities.

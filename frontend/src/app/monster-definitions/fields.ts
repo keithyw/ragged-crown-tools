@@ -124,6 +124,11 @@ export const fields: FormField<MonsterDefinitionFormData>[] = [
 		type: 'checkbox',
 	},
 	{
+		name: 'currency',
+		label: 'Carries (what one of them has; the party shares the total)',
+		type: 'currencyRolls',
+	},
+	{
 		name: 'description',
 		label: 'Description',
 		placeholder: 'Enter Description',

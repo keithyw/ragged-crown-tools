@@ -10,6 +10,7 @@ import {
 import {
 	CheckboxInput,
 	ColorPicker,
+	CurrencyRollsPicker,
 	InputErrorMessage,
 	MonsterPoolPicker,
 	SelectDropdown,
@@ -18,6 +19,7 @@ import {
 	TerrainPicker,
 	TextareaInput,
 	TextInput,
+	type CurrencyRollErrors,
 } from '@/components'
 import { FormField } from '@/lib/types'
 
@@ -168,6 +170,27 @@ export const FormInput = <
 							/>
 							<InputErrorMessage errorMessage={errorMessage as string} />
 						</>
+					)}
+				/>
+			)
+		case 'currencyRolls':
+			if (!control) {
+				console.error('Control is required')
+				return null
+			}
+			return (
+				<Controller
+					name={field.name as Path<T>}
+					control={control}
+					// Its errors sit under each currency, so they come from
+					// fieldState rather than the one errorMessage.
+					render={({ field: cf, fieldState }) => (
+						<CurrencyRollsPicker
+							label={field.label}
+							value={cf.value ?? {}}
+							onChange={cf.onChange}
+							errors={fieldState.error as CurrencyRollErrors | undefined}
+						/>
 					)}
 				/>
 			)
